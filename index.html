@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- PWA -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <title>Gotana Scanner (Standalone)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <style>
+      html, body { overscroll-behavior-y: contain; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; }
+      input { user-select: text; }
+      .loader { border-top-color: #3498db; -webkit-animation: spinner 1.5s linear infinite; animation: spinner 1.5s linear infinite; }
+      @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      #reader { width: 100%; border-radius: 12px; margin-bottom: 16px; border: 3px solid #334155; min-height: 250px; background: #000; overflow: hidden; }
+      .nav-item.active { border-bottom: 3px solid #60a5fa; color: white; background: rgba(255,255,255,0.1); }
+      .nav-item { border-bottom: 3px solid transparent; color: #94a3b8; }
+      
+      /* Animácie */
+      @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      .animate-scale-in { animation: scaleIn 0.2s ease-out forwards; }
+      
+      /* Checkbox štýl */
+      .custom-checkbox { width: 24px; height: 24px; border-radius: 6px; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+      .custom-checkbox.checked { background-color: #2563eb; border-color: #2563eb; }
+      .custom-checkbox span { display: none; color: white; font-size: 18px; }
+      .custom-checkbox.checked span { display: block; }
+
+      /* Vizuálne bliknutie */
+      .flash-success { animation: flashGreen 0.5s ease-out; }
+      .flash-error { animation: flashRed 0.5s ease-out; }
+      @keyframes flashGreen { 0% { background-color: #86efac; } 100% { background-color: #f1f5f9; } }
+      @keyframes flashRed { 0% { background-color: #fca5a5; } 100% { background-color: #f1f5f9; } }
+      
+      /* Badge count animation */
+      @keyframes pop { 50% { transform: scale(1.2); } }
+      .animate-pop { animation: pop 0.2s ease-in-out; }
+    </style>
+  </head>
+  <body id="appBody" class="bg-slate-100 min-h-screen font-sans text-slate-800 pb-32 transition-colors duration-300">
+
+    <!-- HLAVIČKA S OFFLINE INDIKÁTOROM -->
+    <div class="bg-slate-900 text-white sticky top-0 z-50 shadow-lg">
+      <div class="p-4 flex justify-between items-center max-w-lg mx-auto">
+        <div class="font-bold text-2xl flex items-center gap-2 tracking-tight">
+          <div id="networkStatus" class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] transition-colors duration-500"></div>
+          <span class="material-icons text-blue-400 text-3xl">qr_code_scanner</span> Gotana
+        </div>
+        <button onclick="changeUser()" id="userBadge" class="bg-slate-800 text-xs font-bold px-3 py-1 rounded-full border border-slate-700 hover:bg-slate-700 flex items-center gap-1 transition-colors">
+            <span class="material-icons text-sm text-yellow-400">person</span><span id="userNameDisplay">...</span>
+        </button>
+      </div>
+      <div class="flex max-w-lg mx-auto">
+        <button onclick="switchView('scan')" id="tab-scan" class="nav-item active flex-1 py-4 font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 transition-all">
+          <span class="material-icons">filter_center_focus</span> Skenovať
+        </button>
+        <button onclick="switchView('db')" id="tab-db" class="nav-item flex-1 py-4 font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 transition-all">
+          <span class="material-icons">storage</span> Zoznam
+        </button>
+      </div>
+      
+      <!-- LAST ACTION BAR -->
+      <div id="lastActionPanel" class="bg-slate-800 text-slate-300 text-xs py-1 px-4 text-center border-t border-slate-700 truncate font-mono block">
+          Posledná akcia: <span id="lastActionText" class="text-white font-bold">Pripravený...</span>
+      </div>
+    </div>
+
+    <input type="file" id="galleryInput" accept="image/*" class="hidden" onchange="handleFileScan(this)">
+
+    <div class="max-w-lg mx-auto p-4 relative">
+
+      <!-- GLOBAL SKENER -->
+      <div id="scanner-container" class="hidden relative z-[50] mb-6 bg-slate-900 rounded-2xl p-3 shadow-xl">
+          <div id="reader"></div>
+          
+          <div class="flex gap-2">
+            <button onclick="stopCamera()" class="flex-1 bg-slate-700 text-white py-4 font-bold uppercase rounded-xl tap-feedback">Zavrieť</button>
+            <button id="torchBtn" onclick="toggleTorch()" class="w-16 bg-slate-800 border border-slate-600 text-yellow-400 rounded-xl flex items-center justify-center hidden tap-feedback active:bg-slate-700">
+                <span class="material-icons">flashlight_on</span>
+            </button>
+          </div>
+      </div>
+
+      <!-- SKENER VIEW -->
+      <div id="view-scan">
+          <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200 mb-6 space-y-4">
+             <button onclick="initCamera()" class="w-full bg-blue-600 active:bg-blue-800 text-white py-5 rounded-xl font-bold text-xl flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-transform tap-feedback">
+                  <span class="material-icons text-3xl">videocam</span> Skenovať QR
+             </button>
+
+             <div class="grid grid-cols-2 gap-3">
+                 <button onclick="startBulkMode()" class="bg-indigo-600 active:bg-indigo-800 text-white py-4 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform tap-feedback border-2 border-indigo-500 border-dashed">
+                     <span class="material-icons">layers</span> PALETA
+                 </button>
+                 <button onclick="startLocationVerification()" class="bg-teal-600 active:bg-teal-800 text-white py-4 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform tap-feedback border-2 border-teal-500 border-dashed">
+                     <span class="material-icons">fact_check</span> POZÍCIA
+                 </button>
+             </div>
+
+             <div class="grid grid-cols-2 gap-3">
+                 <button onclick="document.getElementById('galleryInput').click()" class="bg-slate-800 active:bg-slate-900 text-white py-4 rounded-xl flex items-center justify-center gap-2 font-bold shadow-md active:scale-95 transition-transform tap-feedback">
+                     <span class="material-icons">image</span> Z fotogalérie
+                 </button>
+                 <div class="relative">
+                    <input id="scanInput" type="text" autocapitalize="characters" class="w-full h-full pl-4 pr-10 text-center border-2 border-slate-300 rounded-xl font-bold uppercase focus:border-blue-500 outline-none" placeholder="RUČNE..." oninput="handleInputChange(this)" onkeydown="if(event.key === 'Enter') handleScan()">
+                    <span class="material-icons absolute right-3 top-4 text-slate-400">keyboard</span>
+                 </div>
+            </div>
+          </div>
+
+          <div id="resultArea" class="hidden space-y-6 animate-scale-in"></div>
+
+          <div id="dailyQuoteBox" class="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-center shadow-sm opacity-80">
+              <div class="text-[10px] uppercase font-bold text-yellow-600 tracking-widest mb-1">💡 Múdrosť na dnes</div>
+              <p id="dailyQuoteText" class="text-sm font-medium text-slate-700 italic">...</p>
+          </div>
+          <div class="mt-4 text-center">
+              <div id="status" onclick="resetApiUrl()" class="text-xs font-mono text-slate-400 cursor-pointer hover:text-red-500 tap-feedback">Zmazať pamäť prístupu</div>
+          </div>
+      </div>
+
+      <!-- BULK SCAN VIEW (PALETA) -->
+      <div id="view-bulk" class="hidden animate-scale-in">
+          <div class="sticky top-20 z-40 bg-slate-100 pb-2 -mt-2">
+              <div class="bg-indigo-600 text-white p-3 rounded-2xl shadow-lg flex justify-between items-center mb-2 transition-colors duration-300" id="bulkHeader">
+                  <div class="flex items-center gap-2">
+                      <button onclick="confirmExitBulk()" class="bg-indigo-700 p-2 rounded-full hover:bg-indigo-800"><span class="material-icons text-sm">arrow_back</span></button>
+                      <div>
+                          <h2 class="font-black text-lg flex items-center gap-1" id="bulkTitle">PALETA</h2>
+                      </div>
+                  </div>
+                  <div class="bg-white text-indigo-700 w-10 h-10 rounded-full flex items-center justify-center font-black text-lg shadow-inner" id="bulkCount">0</div>
+              </div>
+              
+              <button id="btnResumeCamera" onclick="toggleBulkCamera(true)" class="hidden w-full bg-blue-600 active:bg-blue-800 text-white py-4 rounded-xl font-bold mb-2 shadow-md animate-scale-in flex items-center justify-center gap-2 tap-feedback">
+                  <span class="material-icons">videocam</span> OTVORIŤ SKENER
+              </button>
+          </div>
+
+          <div id="bulkList" class="space-y-2 pb-32 pt-2">
+              <div class="text-center text-slate-400 py-4 font-medium italic">Naskenuj prvú rolku...</div>
+          </div>
+
+          <div class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200 shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-50 flex flex-col gap-2">
+              <button onclick="finishBulkToLoc()" id="btnFinishBulk" class="w-full bg-green-600 active:bg-green-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale transition-all" disabled>
+                  <span class="material-icons">where_to_vote</span> DOKONČIŤ NA POZÍCIU
+              </button>
+          </div>
+      </div>
+
+      <!-- INVENTORY VIEW (PRIEBEŽNÁ INVENTÚRA) -->
+      <div id="view-inventory" class="hidden animate-scale-in">
+          <div class="sticky top-20 z-40 bg-slate-100 pb-2 -mt-2">
+              <div class="bg-teal-600 text-white p-3 rounded-2xl shadow-lg flex justify-between items-center mb-2 transition-colors duration-300">
+                  <div class="flex items-center gap-2">
+                      <button onclick="confirmExitInventory()" class="bg-teal-700 p-2 rounded-full hover:bg-teal-800"><span class="material-icons text-sm">arrow_back</span></button>
+                      <div>
+                          <div class="text-[10px] uppercase font-bold text-teal-200">Inventúra Pozície</div>
+                          <h2 class="font-black text-xl flex items-center gap-1" id="invTitleLoc">...</h2>
+                      </div>
+                  </div>
+                  <div class="bg-white text-teal-700 w-12 h-10 rounded-xl flex items-center justify-center font-black text-lg shadow-inner" id="invCount">0</div>
+              </div>
+              
+              <button id="btnResumeInvCamera" onclick="toggleInvCamera(true)" class="hidden w-full bg-teal-500 active:bg-teal-700 text-white py-4 rounded-xl font-bold mb-2 shadow-md animate-scale-in flex items-center justify-center gap-2 tap-feedback">
+                  <span class="material-icons">videocam</span> SKENOVAŤ ĎALŠIE
+              </button>
+          </div>
+
+          <div id="invList" class="space-y-2 pb-32 pt-2">
+              <div class="text-center text-slate-400 py-8 font-medium">Začni skenovať všetko, čo vidíš fyzicky v tomto regáli.</div>
+          </div>
+
+          <div class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200 shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-50 flex flex-col gap-2">
+              <button onclick="finishInventory()" id="btnFinishInv" class="w-full bg-slate-800 active:bg-black text-white py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all tap-feedback">
+                  <span class="material-icons">difference</span> POROVNAŤ S DATABÁZOU
+              </button>
+          </div>
+      </div>
+
+      <!-- ZOZNAM VIEW -->
+      <div id="view-db" class="hidden">
+          <div class="sticky top-[138px] z-40 bg-slate-100 pb-2 -mx-4 px-4 shadow-sm" style="margin-top: -1rem; padding-top: 1rem;">
+             <div class="bg-white p-3 rounded-xl shadow-md border border-slate-200 space-y-2">
+                 <div class="relative flex gap-2">
+                    <div class="relative flex-1">
+                        <input type="text" id="dbSearchCode" autocapitalize="characters" oninput="filterDb()" placeholder="KÓD / LOKÁCIA..." class="w-full pl-10 p-3 text-base sm:text-lg border-2 border-slate-100 rounded-lg focus:outline-none focus:border-blue-500 font-bold uppercase">
+                        <span class="material-icons absolute left-3 top-3.5 text-slate-400 text-xl sm:text-2xl">qr_code_2</span>
+                    </div>
+                    <button onclick="triggerBackup()" class="bg-slate-800 text-white w-12 rounded-lg shadow-md flex items-center justify-center tap-feedback shrink-0"><span class="material-icons text-xl">shield</span></button>
+                    <button onclick="triggerArchive()" class="bg-amber-600 text-white w-12 rounded-lg shadow-md flex items-center justify-center tap-feedback shrink-0"><span class="material-icons text-xl">inventory_2</span></button>
+                 </div>
+                 <div class="relative">
+                    <input type="text" id="dbSearchName" oninput="filterDb()" placeholder="NÁZOV LÁTKY (napr. teplákovina)..." class="w-full pl-10 p-3 text-base sm:text-lg border-2 border-slate-100 rounded-lg focus:outline-none focus:border-blue-500 font-bold uppercase">
+                    <span class="material-icons absolute left-3 top-3.5 text-slate-400 text-xl sm:text-2xl">search</span>
+                 </div>
+             </div>
+             <div id="dbStats" class="flex justify-between items-center mt-2 px-2 text-xs font-bold text-slate-500 uppercase tracking-wide bg-slate-200/50 p-2 rounded-lg"><span>Načítavam...</span></div>
+          </div>
+          <div id="dbList" class="space-y-4 mt-4 pb-20"></div>
+      </div>
+      
+      <!-- BULK ACTIONS PANEL (ZOZNAM) -->
+      <div id="bulkActionsPanel" class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-[0_-5px_20px_rgba(0,0,0,0.1)] p-4 z-[90] transform translate-y-full transition-transform duration-300 flex flex-col gap-3">
+           <div class="flex justify-between items-center mb-1">
+               <span class="font-bold text-slate-700 text-lg">Označené: <span id="selectedCount" class="text-blue-600">0</span> ks</span>
+               <button onclick="clearSelection()" class="text-slate-400 text-sm font-bold uppercase tap-feedback">Zrušiť</button>
+           </div>
+           <div class="flex gap-3">
+               <button onclick="bulkMove()" class="flex-1 bg-blue-600 active:bg-blue-700 text-white py-4 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 tap-feedback">
+                   <span class="material-icons">swap_horiz</span> Presunúť
+               </button>
+               <button onclick="bulkDelete()" class="flex-1 bg-red-50 active:bg-red-100 text-red-700 border-2 border-red-100 py-4 rounded-xl font-bold flex items-center justify-center gap-2 tap-feedback">
+                   <span class="material-icons">delete</span> Zmazať
+               </button>
+           </div>
+      </div>
+      
+      <button onclick="manualRefresh()" class="fixed bottom-24 right-6 bg-slate-900 text-white w-14 h-14 rounded-full shadow-2xl hover:bg-blue-600 z-50 active:scale-90 flex items-center justify-center border-4 border-slate-100 tap-feedback opacity-80 hover:opacity-100 transition-all"><span class="material-icons text-2xl">sync</span></button>
+      <div id="loading" class="hidden fixed inset-0 bg-slate-900/90 z-[100] flex flex-col items-center justify-center backdrop-blur-sm"><div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-600 h-16 w-16 mb-6"></div><p id="loadingText" class="text-lg font-bold text-white tracking-widest uppercase">Pracujem...</p></div>
+
+      <!-- API URL Setup Modal -->
+      <div id="apiSetupModal" class="hidden fixed inset-0 bg-slate-900 z-[120] flex flex-col items-center justify-center p-6 backdrop-blur-md">
+          <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center animate-scale-in">
+              <span class="material-icons text-blue-600 text-5xl mb-4">link</span>
+              <h2 class="text-2xl font-extrabold text-slate-800 mb-2">Prepojenie Skladu</h2>
+              <div class="text-left bg-blue-50 p-4 rounded-xl mb-6 border border-blue-100">
+                  <p class="text-sm text-slate-700 font-medium">
+                      Tu vlož <b>Web App URL</b> z tvojej Google Tabuľky. Odkaz musí končiť na <b>/exec</b>.<br><br>
+                      <span class="text-xs text-slate-500">Nájdeš ho v tabuľke: Rozšírenia &rarr; Apps Script &rarr; Nasadiť (Deploy) &rarr; Nové nasadenie &rarr; Webová aplikácia. (Kto má prístup: Ktokoľvek)</span>
+                  </p>
+              </div>
+              <input type="url" id="apiUrlInput" class="w-full p-4 border-2 border-slate-300 rounded-xl text-center font-mono text-[10px] sm:text-xs mb-4 focus:border-blue-500 outline-none" placeholder="https://script.google.com/macros/s/.../exec">
+              <button onclick="saveApiUrl()" class="w-full bg-blue-600 active:bg-blue-800 text-white py-4 rounded-xl font-bold text-lg shadow-lg tap-feedback transition-transform active:scale-95">ULOŽIŤ A SPUSTIŤ</button>
+          </div>
+      </div>
+
+      <!-- Identity Modal -->
+      <div id="identityModal" class="hidden fixed inset-0 bg-slate-900 z-[70] flex flex-col items-center justify-center p-6 backdrop-blur-md">
+          <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center animate-scale-in">
+              <h2 class="text-2xl font-extrabold text-slate-800 mb-2">Kto dnes pracuje?</h2>
+              <input type="text" id="identityInput" class="w-full p-4 border-2 border-slate-300 rounded-xl text-center font-bold text-xl mb-4 uppercase" oninput="this.value = this.value.toUpperCase()" placeholder="MENO">
+              <button onclick="saveIdentity()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg tap-feedback">POTVRDIŤ</button>
+          </div>
+      </div>
+      
+      <!-- ITEM DETAIL MODAL -->
+      <div id="itemDetailModal" class="hidden fixed inset-0 z-[80] bg-slate-900/80 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm">
+          <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
+              <div class="bg-slate-100 p-4 border-b border-slate-200 flex justify-between items-start">
+                  <div>
+                      <h3 id="modalItemTitle" class="text-xl font-black font-mono text-slate-800 break-all">SKU...</h3>
+                      <div id="modalItemSub" class="text-sm text-slate-500 mt-1 leading-snug hidden"></div>
+                  </div>
+                  <button onclick="closeDetailModal()" class="text-slate-500 hover:text-slate-800 p-2 bg-white rounded-full shadow-sm tap-feedback shrink-0 ml-4"><span class="material-icons">close</span></button>
+              </div>
+              <div class="p-6 space-y-5">
+                  <div class="flex justify-between items-center">
+                      <span class="text-xs uppercase font-bold text-slate-500">Lokácia</span>
+                      <div id="modalItemLoc" class="text-xl font-bold">...</div>
+                  </div>
+                  <div>
+                      <label class="text-xs uppercase font-bold text-slate-500 mb-1 block">Poznámka</label>
+                      <div class="flex gap-2">
+                          <input type="text" id="modalItemNote" class="flex-1 p-3 border-2 border-slate-300 rounded-xl font-medium focus:border-blue-500 outline-none transition-colors" placeholder="Napíš poznámku...">
+                          <button onclick="saveModalNote()" class="bg-blue-600 text-white px-4 rounded-xl shadow-md active:bg-blue-700 font-bold tap-feedback"><span class="material-icons">save</span></button>
+                      </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
+                      <button onclick="moveFromModal()" class="bg-white border-2 border-slate-200 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-50 flex items-center justify-center gap-2 tap-feedback"><span class="material-icons">swap_horiz</span> Presun</button>
+                      <button onclick="deleteFromModal()" class="bg-red-50 border-2 border-red-100 text-red-700 py-3 rounded-xl font-bold hover:bg-red-100 flex items-center justify-center gap-2 tap-feedback"><span class="material-icons">delete</span> Zmazať</button>
+                  </div>
+                  <input type="hidden" id="modalItemId">
+              </div>
+          </div>
+      </div>
+
+      <!-- CUSTOM ALERT/CONFIRM -->
+      <div id="customModal" class="hidden fixed inset-0 z-[100] bg-slate-900/90 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-scale-in border border-slate-200">
+              <h3 id="modalTitle" class="text-xl font-extrabold text-slate-800 mb-2 flex items-center gap-2"></h3>
+              <p id="modalMessage" class="text-slate-600 mb-6 text-lg leading-relaxed font-medium whitespace-pre-line overflow-y-auto max-h-[50vh]"></p>
+              <div id="modalButtons" class="flex gap-3"></div>
+          </div>
+      </div>
+      
+      <!-- INPUT MODAL -->
+      <div id="inputModal" class="hidden fixed inset-0 z-[110] bg-slate-900/90 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-scale-in border border-slate-200">
+              <h3 id="inputModalTitle" class="text-xl font-extrabold text-slate-800 mb-4 flex items-center gap-2">
+                  <span class="material-icons text-blue-500">edit_location</span> Zadaj údaj
+              </h3>
+              <div class="relative flex gap-2 mb-6">
+                <input type="text" id="inputModalValue" autocapitalize="characters" class="w-full p-4 border-2 border-slate-300 rounded-xl text-xl font-bold uppercase focus:border-blue-600 outline-none" oninput="this.value = this.value.toUpperCase()" placeholder="...">
+                <button onclick="startScanInput('inputModalValue')" class="bg-blue-100 text-blue-600 w-16 rounded-xl flex items-center justify-center border border-blue-200 tap-feedback active:bg-blue-200">
+                    <span class="material-icons">qr_code_scanner</span>
+                </button>
+              </div>
+              <div class="flex gap-3">
+                  <button onclick="closeInputModal(null)" class="flex-1 bg-white border-2 border-slate-200 text-slate-600 py-3 rounded-xl font-bold text-lg tap-feedback">Zrušiť</button>
+                  <button onclick="confirmInputModal()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-md tap-feedback">OK</button>
+              </div>
+          </div>
+      </div>
+    </div>
+
+    <script>
+      // =========================================================================
+      // --- DYNAMICKÉ API PREPOJENIE & OFFLINE OCHRANA ---
+      // =========================================================================
+      
+      const DEFAULT_API_URL = ""; 
+      let SCRIPT_URL = "";
+      let dbCatalog = {}; // Uložíský slovník názvov z Google Tabuľky
+      
+      // Sledovanie siete
+      let isOnline = navigator.onLine;
+      window.addEventListener('online', () => {
+          isOnline = true;
+          document.getElementById('networkStatus').className = "w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] transition-colors duration-500";
+          processOfflineQueue();
+      });
+      window.addEventListener('offline', () => {
+          isOnline = false;
+          document.getElementById('networkStatus').className = "w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] transition-colors duration-500";
+      });
+
+      function saveApiUrl() {
+          const val = document.getElementById('apiUrlInput').value.trim();
+          if (!val.startsWith("https://script.google.com/")) { alert("Neplatný odkaz!\nOdkaz musí začínať na: https://script.google.com/... a končiť na /exec"); return; }
+          if (!val.endsWith("/exec")) { alert("Pozor! Odkaz musí končiť presne na /exec"); return; }
+          localStorage.setItem('gotana_api_url', val);
+          SCRIPT_URL = val;
+          document.getElementById('apiSetupModal').classList.add('hidden');
+          finishInit(); 
+      }
+      
+      function resetApiUrl() {
+          if(confirm("Chceš zmazať prístupový odkaz do databázy?")) {
+              localStorage.removeItem('gotana_api_url');
+              if (DEFAULT_API_URL && DEFAULT_API_URL !== "") alert("Pozor: V kóde je natvrdo nastavený tvoj odkaz, takže sa appka znova načíta automaticky bez pýtania.");
+              location.reload();
+          }
+      }
+
+      async function apiCall(action, params = {}) {
+          if (!SCRIPT_URL) { throw new Error("Missing SCRIPT_URL"); }
+          
+          // OFFLINE LOGIKA OCHRANY
+          if (!isOnline) {
+              const allowedOffline = ['createItem', 'createBulkItems', 'syncInventory'];
+              if (allowedOffline.includes(action)) {
+                  let queue = JSON.parse(localStorage.getItem('gotana_offline_queue') || '[]');
+                  queue.push({ action, params, timestamp: new Date().getTime() });
+                  localStorage.setItem('gotana_offline_queue', JSON.stringify(queue));
+                  updateLastAction(`OFFLINE ULOŽENÉ: ${action}`);
+                  return { success: true, processed: params.items ? params.items.length : 1, offline: true };
+              } else {
+                  if (action === 'getCatalog') return {}; // Ignoruj pokus o stiahnutie katalógu offline
+                  showCustomAlert("Sklad je Offline", "Stratil sa internet. Akcie ako výdaj alebo presun nemožno robiť offline, aby sa nerozbila celofiremná databáza. Naskladňovať a robiť inventúru však môžeš aj naďalej.");
+                  throw new Error("Offline mód nedovoľuje túto akciu");
+              }
+          }
+
+          try {
+              const response = await fetch(SCRIPT_URL, {
+                  method: 'POST',
+                  body: JSON.stringify({ action, ...params }),
+                  headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
+              });
+              const data = await response.json();
+              if (data.error) throw new Error(data.error);
+              return data;
+          } catch (e) {
+              console.error("API Zlyhalo:", e);
+              throw e;
+          }
+      }
+      
+      function loadCatalog() {
+          // Načítaj z pamäte ak už máme z minula (rýchly štart)
+          const stored = localStorage.getItem('gotana_catalog');
+          if (stored) { try { dbCatalog = JSON.parse(stored); } catch(e){} }
+          
+          // Stiahni čerstvý zoznam z cloudu
+          apiCall('getCatalog').then(data => {
+              if (data && typeof data === 'object') {
+                  dbCatalog = data;
+                  localStorage.setItem('gotana_catalog', JSON.stringify(dbCatalog));
+              }
+          }).catch(e => console.log("Katalóg zatiaľ nie je na backende."));
+      }
+
+      async function processOfflineQueue() {
+          let queue = JSON.parse(localStorage.getItem('gotana_offline_queue') || '[]');
+          if (queue.length === 0) return;
+          
+          setLoading(true, `Odosielam offline dáta (${queue.length} úloh)...`);
+          let remaining = [];
+          for (let task of queue) {
+              try {
+                  await fetch(SCRIPT_URL, {
+                      method: 'POST',
+                      body: JSON.stringify({ action: task.action, ...task.params }),
+                      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                  });
+              } catch(e) {
+                  remaining.push(task); 
+              }
+          }
+          localStorage.setItem('gotana_offline_queue', JSON.stringify(remaining));
+          setLoading(false);
+          
+          if(remaining.length === 0) {
+              showCustomAlert("Online", "Pripojenie obnovené. Všetky offline dáta boli úspešne odoslané do skladu.");
+              loadDb(false);
+          } else {
+              showCustomAlert("Upozornenie", "Pripojenie nabehlo, ale niektoré offline dáta sa nepodarilo odoslať. Skúsime to neskôr znova.");
+          }
+      }
+
+      // --- CORE SMART PARSER ---
+      function extractRealId(rawText) {
+          if(!rawText) return "";
+          let text = rawText.toUpperCase().trim();
+          if (text.includes('\n')) {
+              const lines = text.split('\n').map(l => l.trim());
+              const skuLine = lines.find(l => /^[A-Z]+-[0-9]+/.test(l));
+              if (skuLine) return skuLine;
+              return lines[0];
+          }
+          if (text.includes('|')) return text.split('|')[0].trim();
+          return text;
+      }
+
+      function getBaseCode(code) {
+          if (!code) return "";
+          return code.split('_')[0].trim().toUpperCase();
+      }
+
+      // --- UI HELPERS ---
+      function resetScanScreen() {
+          const area = document.getElementById('resultArea');
+          if (area) { 
+              area.classList.add('hidden'); 
+              area.innerHTML = ''; 
+          }
+          const input = document.getElementById('scanInput');
+          if (input) input.value = '';
+          const quoteBox = document.getElementById('dailyQuoteBox');
+          if (quoteBox) quoteBox.style.display = 'block';
+      }
+
+      function vibrate(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
+      document.addEventListener('click', (e) => { if(e.target.closest('.tap-feedback') || e.target.tagName === 'BUTTON') vibrate(20); });
+
+      function beep(type = 'success') {
+          if (type === 'success') vibrate(50); else vibrate([50, 50, 100]);
+          const body = document.getElementById('appBody');
+          const flashClass = type === 'success' ? 'flash-success' : 'flash-error';
+          body.classList.add(flashClass);
+          setTimeout(() => body.classList.remove(flashClass), 500);
+          try {
+              if(!window.audioCtx) window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+              if (window.audioCtx.state === 'suspended') window.audioCtx.resume();
+              const osc = window.audioCtx.createOscillator();
+              const gain = window.audioCtx.createGain();
+              osc.connect(gain); gain.connect(window.audioCtx.destination);
+              if (type === 'success') {
+                  osc.type = 'sine'; osc.frequency.setValueAtTime(1200, window.audioCtx.currentTime);
+                  osc.frequency.exponentialRampToValueAtTime(600, window.audioCtx.currentTime + 0.1);
+                  gain.gain.setValueAtTime(0.3, window.audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, window.audioCtx.currentTime + 0.1);
+                  osc.start(); osc.stop(window.audioCtx.currentTime + 0.1);
+              } else {
+                  osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, window.audioCtx.currentTime);
+                  gain.gain.setValueAtTime(0.5, window.audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.01, window.audioCtx.currentTime + 0.3);
+                  osc.start(); osc.stop(window.audioCtx.currentTime + 0.3);
+              }
+          } catch (e) {}
+      }
+
+      let wakeLock = null;
+      async function requestWakeLock() {
+        if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
+      }
+      document.addEventListener('visibilitychange', async () => { if (wakeLock !== null && document.visibilityState === 'visible') await requestWakeLock(); });
+      const initWakeLock = async () => { await requestWakeLock(); document.removeEventListener('click', initWakeLock); document.removeEventListener('touchstart', initWakeLock); };
+      document.addEventListener('click', initWakeLock); document.addEventListener('touchstart', initWakeLock);
+
+      // --- LIVE CAMERA LOGIC ---
+      let html5Qrcode = null;
+      let activeScanCallback = null;
+      let isContinuousScan = false;
+      let isProcessingBulk = false; 
+      let isTorchOn = false;
+      let hiddenModalForCamera = null;
+
+      function toggleTorch() {
+          if (!html5Qrcode) return;
+          try {
+              isTorchOn = !isTorchOn;
+              html5Qrcode.applyVideoConstraints({ advanced: [{ torch: isTorchOn }] }).then(() => {
+                  const btn = document.getElementById('torchBtn');
+                  if (isTorchOn) {
+                      btn.classList.add('bg-yellow-400', 'text-slate-900', 'border-yellow-500');
+                      btn.classList.remove('bg-slate-800', 'text-yellow-400', 'border-slate-600');
+                  } else {
+                      btn.classList.remove('bg-yellow-400', 'text-slate-900', 'border-yellow-500');
+                      btn.classList.add('bg-slate-800', 'text-yellow-400', 'border-slate-600');
+                  }
+              }).catch(err => {
+                  isTorchOn = !isTorchOn; 
+              });
+          } catch(e) {}
+      }
+
+      function showChromePermissionGuide() {
+          const modal = document.getElementById('customModal');
+          document.getElementById('modalTitle').innerHTML = `<span class="material-icons text-red-600 text-3xl">videocam_off</span> Kamera zablokovaná`;
+          document.getElementById('modalMessage').innerHTML = `
+              <div class="text-left text-sm text-slate-700 font-medium">
+                  Prehliadač odmietol prístup ku kamere. Zrejme to bolo v minulosti zakázané.<br><br>
+                  <strong class="text-slate-900">Ako to opraviť:</strong><br>
+                  1. Hore v riadku s adresou klikni na ikonku <strong>Nastavenia</strong>.<br>
+                  2. Vyber možnosť <strong>Povolenia</strong>.<br>
+                  3. Nájdi <strong>Kamera</strong> a zmeň na <strong>Povoliť</strong>.<br>
+                  4. Obnov túto stránku.
+              </div>
+          `;
+          const btns = document.getElementById('modalButtons');
+          btns.innerHTML = `<button onclick="closeCustomModal()" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold text-lg tap-feedback">Rozumiem</button>`;
+          modal.classList.remove('hidden');
+      }
+
+      async function initCamera(customCallback = null, isContinuous = false) {
+        document.getElementById('scanner-container').classList.remove('hidden');
+        if (document.getElementById('btnResumeCamera')) document.getElementById('btnResumeCamera').classList.add('hidden');
+        if (document.getElementById('btnResumeInvCamera')) document.getElementById('btnResumeInvCamera').classList.add('hidden');
+        document.getElementById('torchBtn').classList.remove('hidden');
+        isTorchOn = false;
+        document.getElementById('torchBtn').classList.remove('bg-yellow-400', 'text-slate-900'); 
+
+        activeScanCallback = customCallback;
+        isContinuousScan = isContinuous;
+        isProcessingBulk = false;
+        
+        if (html5Qrcode) { 
+            try{await html5Qrcode.stop();}catch(e){} 
+            try{html5Qrcode.clear();}catch(e){}
+            html5Qrcode = null; 
+        }
+        
+        document.getElementById('reader').innerHTML = '';
+        html5Qrcode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+
+        const successCb = async (decodedText) => {
+             if (isContinuousScan) {
+                 if (isProcessingBulk) return;
+                 isProcessingBulk = true;
+
+                 if(activeScanCallback) activeScanCallback(decodedText);
+
+                 const reader = document.getElementById('reader');
+                 let overlay = document.getElementById('scanOverlay');
+                 if(!overlay) {
+                     overlay = document.createElement('div');
+                     overlay.id = 'scanOverlay';
+                     overlay.className = "absolute inset-0 bg-slate-900/95 z-[60] flex flex-col items-center justify-center text-white rounded-xl";
+                     overlay.innerHTML = '<span class="material-icons text-6xl text-green-400 mb-2">check_circle</span><span class="font-bold text-2xl animate-pulse text-green-400">MÁM TO!</span><span class="text-sm mt-2 text-slate-300">Ďalší kód...</span>';
+                     reader.style.position = 'relative';
+                     reader.appendChild(overlay);
+                 }
+
+                 try { if(html5Qrcode) html5Qrcode.pause(); } catch(e){}
+
+                 setTimeout(() => {
+                     const ovr = document.getElementById('scanOverlay');
+                     if (ovr) ovr.remove();
+                     try { if(html5Qrcode) html5Qrcode.resume(); } catch(e){}
+                     isProcessingBulk = false;
+                 }, 1200);
+
+             } else {
+                 stopCamera(); 
+                 if(activeScanCallback) { activeScanCallback(decodedText); activeScanCallback = null; } 
+                 else { processResult(decodedText); }
+             }
+        };
+
+        try {
+            await html5Qrcode.start({ facingMode: "environment" }, config, successCb, () => {});
+        } catch (err) {
+            try { await html5Qrcode.start({ facingMode: "user" }, config, successCb, () => {}); } 
+            catch (fallbackErr) { document.getElementById('scanner-container').classList.add('hidden'); stopCamera(); showChromePermissionGuide(); }
+        }
+      }
+
+      async function stopCamera() { 
+        if(html5Qrcode){ try{await html5Qrcode.stop();}catch(e){} try{html5Qrcode.clear();}catch(e){} } 
+        html5Qrcode = null;
+        document.getElementById('scanner-container').classList.add('hidden'); 
+        const ovr = document.getElementById('scanOverlay');
+        if(ovr) ovr.remove();
+        activeScanCallback = null; isContinuousScan = false; isProcessingBulk = false;
+
+        if (hiddenModalForCamera) { hiddenModalForCamera.classList.remove('opacity-0', 'pointer-events-none'); hiddenModalForCamera = null; }
+        if (!document.getElementById('view-bulk').classList.contains('hidden') && document.getElementById('btnResumeCamera')) document.getElementById('btnResumeCamera').classList.remove('hidden');
+        if (!document.getElementById('view-inventory').classList.contains('hidden') && document.getElementById('btnResumeInvCamera')) document.getElementById('btnResumeInvCamera').classList.remove('hidden');
+      }
+
+      async function startScanInput(targetId) {
+          const modal = document.getElementById('inputModal');
+          if (!modal.classList.contains('hidden')) { hiddenModalForCamera = modal; modal.classList.add('opacity-0', 'pointer-events-none'); }
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          await initCamera((decodedText) => {
+              const val = decodedText.toUpperCase().trim();
+              const target = document.getElementById(targetId);
+              if(target) { target.value = val; target.classList.add('bg-green-100'); setTimeout(() => target.classList.remove('bg-green-100'), 500); }
+              stopCamera(); beep('success');
+          }, false);
+      }
+
+      function handleInputChange(el) {
+          el.value = el.value.toUpperCase();
+          if(el.value.trim() === "") { resetScanScreen(); }
+      }
+
+      function handleFileScan(input) {
+          if (input.files.length === 0) return;
+          const imageFile = input.files[0]; input.value = ''; 
+          if (typeof Html5Qrcode === 'undefined') return;
+          const tempQrCode = new Html5Qrcode("reader");
+          setLoading(true, "Čítam kód z fotky...");
+          tempQrCode.scanFile(imageFile, true)
+            .then(decodedText => { setLoading(false); beep('success'); processResult(decodedText); })
+            .catch(err => { setLoading(false); beep('error'); showCustomAlert("Chyba", "Nepodarilo prečítať kód z obrázka."); });
+      }
+
+      // ---------------------------------------------------------------------------------
+      // --- OVERENIE POZÍCIE (PRIAME SKENOVANIE LOKÁCIE) ---
+      // ---------------------------------------------------------------------------------
+      function startLocationVerification() {
+          resetScanScreen();
+          initCamera((decodedText) => {
+              let rawCode = extractRealId(decodedText);
+              if(!rawCode) return;
+              let locId = rawCode.toUpperCase().trim();
+              stopCamera(); beep('success');
+              const items = dbData.filter(i => String(i.location).toUpperCase() === locId);
+              renderLocationView(locId, items);
+          }, false);
+      }
+
+      // ---------------------------------------------------------------------------------
+      // --- PRIEBEŽNÁ INVENTÚRA (MODUL) ---
+      // ---------------------------------------------------------------------------------
+      let invExpectedItems = [];
+      let invScannedItems = [];
+      let currentInvLoc = "";
+
+      function startInventory(locId, expectedItemsStr) {
+          currentInvLoc = locId;
+          invExpectedItems = JSON.parse(decodeURIComponent(expectedItemsStr));
+          invScannedItems = [];
+          switchView('inventory');
+          document.getElementById('invTitleLoc').innerText = locId;
+          renderInvList();
+          initCamera((d) => handleInvItemScan(d), true);
+      }
+
+      function toggleInvCamera(active) {
+          if (active) { if (document.getElementById('btnResumeInvCamera')) document.getElementById('btnResumeInvCamera').classList.add('hidden'); initCamera((d) => handleInvItemScan(d), true); } 
+          else { stopCamera(); }
+      }
+
+      function handleInvItemScan(code) {
+          if(!code) return; let rawCode = extractRealId(code); if(!rawCode) return;
+          const baseCode = getBaseCode(rawCode);
+          invScannedItems.push({ uid: Math.random().toString(36).substr(2, 9), code: rawCode, baseCode: baseCode });
+          beep('success'); renderInvList();
+      }
+
+      function renderInvList() {
+          const list = document.getElementById('invList'); const count = document.getElementById('invCount');
+          count.innerText = invScannedItems.length; count.classList.remove('animate-pop'); void count.offsetWidth; count.classList.add('animate-pop');
+          
+          if(invScannedItems.length === 0) { list.innerHTML = '<div class="text-center text-slate-400 py-8 font-medium">Začni skenovať všetko, čo vidíš fyzicky v tomto regáli.</div>'; return; }
+
+          let html = '';
+          [...invScannedItems].reverse().forEach((item) => {
+               let displayTitle = dbCatalog[item.baseCode] || item.code;
+               html += `<div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center animate-scale-in"><div><div class="font-bold font-mono text-slate-800 text-lg break-all">${item.code}</div>${displayTitle !== item.code ? `<div class="text-xs text-slate-500 leading-snug">${displayTitle}</div>`:''}</div><button onclick="removeInvItem('${item.uid}')" class="text-red-400 hover:text-red-600 px-2 py-1"><span class="material-icons">delete</span></button></div>`;
+          });
+          list.innerHTML = html;
+      }
+
+      function removeInvItem(uid) { invScannedItems = invScannedItems.filter(i => i.uid !== uid); renderInvList(); }
+
+      async function confirmExitInventory() {
+          if (invScannedItems.length > 0) { 
+              if (await showCustomConfirm("Zrušiť inventúru?", "Všetky naskenované kódy pre túto pozíciu sa stratia.")) { stopCamera(); resetScanScreen(); switchView('scan'); } 
+          } else { stopCamera(); resetScanScreen(); switchView('scan'); }
+      }
+
+      async function finishInventory() {
+          stopCamera();
+          let expectedPool = invExpectedItems.map(i => ({ id: i.id, baseCode: getBaseCode(i.id), matched: false }));
+          let scannedPool = invScannedItems.map(i => ({ code: i.code, baseCode: i.baseCode, matched: false }));
+
+          for (let s of scannedPool) { let match = expectedPool.find(e => !e.matched && e.id === s.code); if (match) { match.matched = true; s.matched = true; } }
+          for (let s of scannedPool) { if (!s.matched) { let match = expectedPool.find(e => !e.matched && e.baseCode === s.baseCode); if (match) { match.matched = true; s.matched = true; } } }
+
+          let missingIds = expectedPool.filter(e => !e.matched).map(e => e.id);
+          let extraItems = scannedPool.filter(s => !s.matched).map(s => ({ code: s.code, baseCode: s.baseCode }));
+
+          if (missingIds.length === 0 && extraItems.length === 0) {
+              await showCustomAlert("Perfektné!", `Pozícia ${currentInvLoc} sedí na 100%. Nenašli sa žiadne rozdiely.`);
+              resetScanScreen(); switchView('scan'); return;
+          }
+
+          let msgHtml = `<div class="text-left space-y-4"><div class="p-3 bg-slate-50 border border-slate-200 rounded-lg"><div class="text-xs font-bold text-slate-400 uppercase">Očakávané:</div> <div class="text-lg font-bold">${expectedPool.length} ks</div></div><div class="p-3 bg-slate-50 border border-slate-200 rounded-lg"><div class="text-xs font-bold text-slate-400 uppercase">Naskenované:</div> <div class="text-lg font-bold">${scannedPool.length} ks</div></div>`;
+          if (missingIds.length > 0) { msgHtml += `<div class="mt-4"><h4 class="font-bold text-red-600 flex items-center gap-1"><span class="material-icons text-sm">remove_circle</span> CHÝBAJÚ (${missingIds.length} ks) - Budú zmazané</h4><ul class="text-xs font-mono text-slate-600 pl-4 list-disc mt-1">`; missingIds.forEach(id => msgHtml += `<li>${id}</li>`); msgHtml += `</ul></div>`; }
+          if (extraItems.length > 0) { msgHtml += `<div class="mt-4"><h4 class="font-bold text-green-600 flex items-center gap-1"><span class="material-icons text-sm">add_circle</span> NAVYŠE (${extraItems.length} ks) - Budú pridané</h4><ul class="text-xs font-mono text-slate-600 pl-4 list-disc mt-1">`; extraItems.forEach(i => msgHtml += `<li>${i.code}</li>`); msgHtml += `</ul></div>`; }
+          msgHtml += `</div><div class="mt-6 text-slate-800 font-bold text-center">Naozaj zapísať tieto úpravy do systému?</div>`;
+
+          if (await showCustomConfirm("Rozdielový report", msgHtml, "Potvrdiť úpravy", "Späť do skenera")) {
+              setLoading(true, "Synchronizujem inventúru...");
+              try {
+                  let res = await apiCall('syncInventory', { location: currentInvLoc, missingIds: missingIds, extraItems: extraItems, user: currentUser });
+                  updateLastAction(`INVENTÚRA ${currentInvLoc} (Zmazané: ${res.removed}, Pridané: ${res.added})`);
+                  setLoading(false); beep('success'); await showCustomAlert("Hotovo", `Inventúra pre ${currentInvLoc} bola úspešne zapísaná.`);
+                  loadDb(false); resetScanScreen(); switchView('scan');
+              } catch(e) { setLoading(false); showCustomAlert("Chyba", e.message); toggleInvCamera(true); }
+          } else { toggleInvCamera(true); }
+      }
+
+      // ---------------------------------------------------------------------------------
+      // --- HROMADNÉ AKCIE (BULK Z ZOZNAMU) ---
+      // ---------------------------------------------------------------------------------
+      let selectedIds = new Set();
+      let dbData = []; 
+
+      function toggleSelection(id) { if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id); updateBulkUI(); }
+      function updateBulkUI() {
+          document.querySelectorAll('.item-checkbox').forEach(el => {
+              const id = el.dataset.id;
+              if (selectedIds.has(id)) { el.classList.add('checked'); el.innerHTML = '<span class="material-icons text-sm">check</span>'; el.parentElement.parentElement.classList.add('bg-blue-50', 'border-blue-200'); } 
+              else { el.classList.remove('checked'); el.innerHTML = ''; el.parentElement.parentElement.classList.remove('bg-blue-50', 'border-blue-200'); }
+          });
+          const panel = document.getElementById('bulkActionsPanel'); const countSpan = document.getElementById('selectedCount');
+          if (selectedIds.size > 0) { panel.classList.remove('translate-y-full'); countSpan.innerText = selectedIds.size; document.getElementById('dbList').classList.add('pb-32'); }
+          else { panel.classList.add('translate-y-full'); document.getElementById('dbList').classList.remove('pb-32'); }
+      }
+      function clearSelection() { selectedIds.clear(); updateBulkUI(); }
+
+      async function bulkMove() {
+          const targetLoc = await showInputModal(`Presunúť ${selectedIds.size} ks`, "Nová lokácia..."); if (!targetLoc) return;
+          const ids = Array.from(selectedIds); setLoading(true, `Hromadný presun ${ids.length} roliek...`);
+          try {
+              const result = await apiCall('updateBulkItems', {ids: ids, loc: targetLoc.toUpperCase(), act: "HROMADNÝ PRESUN", user: currentUser});
+              updateLastAction(`HROMADNÝ PRESUN ${result.processed} ks -> ${targetLoc}`);
+              setLoading(false); beep('success'); clearSelection(); loadDb(false);
+          } catch(e) { setLoading(false); showCustomAlert("Chyba", e.message); beep('error'); }
+      }
+
+      async function bulkDelete() {
+          if (!await showCustomConfirm("Hromadný výdaj", `Naozaj odčítať ${selectedIds.size} označených roliek?`)) return;
+          const ids = Array.from(selectedIds); setLoading(true, `Hromadne mažem ${ids.length} roliek...`);
+          try {
+              const result = await apiCall('deleteBulkItems', {ids: ids, user: currentUser});
+              updateLastAction(`HROMADNÝ VÝDAJ ${result.processed} ks`);
+              setLoading(false); beep('success'); clearSelection(); loadDb(false);
+          } catch(e) { setLoading(false); showCustomAlert("Chyba", e.message); beep('error'); }
+      }
+
+      // ---------------------------------------------------------------------------------
+      // --- PALLET BULK MODE (RÝCHLE HROMADNÉ ULOŽENIE) ---
+      // ---------------------------------------------------------------------------------
+      let bulkItems = []; 
+      function startBulkMode() {
+          switchView('bulk'); bulkItems = []; renderBulkList();
+          if (document.getElementById('btnResumeCamera')) document.getElementById('btnResumeCamera').classList.add('hidden');
+          document.getElementById('btnFinishBulk').disabled = true; initCamera((d) => handleBulkItemScan(d), true);
+      }
+      async function confirmExitBulk() {
+          if (bulkItems.length > 0) { if (await showCustomConfirm("Zrušiť paletu?", "Všetky naskenované kódy sa stratia.")) { stopCamera(); resetScanScreen(); switchView('scan'); } } else { stopCamera(); resetScanScreen(); switchView('scan'); }
+      }
+      function toggleBulkCamera(active) {
+          if (active) { if (document.getElementById('btnResumeCamera')) document.getElementById('btnResumeCamera').classList.add('hidden'); initCamera((d) => handleBulkItemScan(d), true); } else { stopCamera(); }
+      }
+      function handleBulkItemScan(code) {
+          if(!code) return; let rawCode = extractRealId(code); if(!rawCode) return;
+          const baseCode = getBaseCode(rawCode);
+          const existingItem = dbData.find(i => i.id === baseCode || i.id === rawCode || i.id.startsWith(baseCode + "_"));
+          const existingLoc = existingItem ? existingItem.location : null;
+          bulkItems.push({ uid: Math.random().toString(36).substr(2, 9), code: rawCode, baseCode: baseCode, timestamp: new Date(), existingLoc: existingLoc });
+          beep('success'); renderBulkList();
+      }
+      function renderBulkList() {
+          const list = document.getElementById('bulkList'); const count = document.getElementById('bulkCount'); const btn = document.getElementById('btnFinishBulk');
+          count.innerText = bulkItems.length; count.classList.remove('animate-pop'); void count.offsetWidth; count.classList.add('animate-pop'); btn.disabled = bulkItems.length === 0;
+          if(bulkItems.length === 0) { list.innerHTML = '<div class="text-center text-slate-400 py-4 font-medium italic">Naskenuj prvú rolku...</div>'; return; }
+
+          let html = '';
+          [...bulkItems].reverse().forEach((item) => {
+               let display = dbCatalog[item.baseCode] || item.code; let infoBadge = '';
+               if(item.existingLoc) { infoBadge = `<div class="text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-1 rounded border border-amber-200 mt-1 flex items-center gap-1 w-max"><span class="material-icons text-[10px]">warning</span> Vidím na: ${item.existingLoc}</div>`; }
+               html += `<div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex justify-between items-start animate-scale-in"><div><div class="font-bold font-mono text-slate-800 text-lg break-all">${item.code}</div>${display !== item.code ? `<div class="text-xs text-slate-500 leading-snug mt-0.5">${display}</div>`:''}${infoBadge}</div><button onclick="removeBulkItem('${item.uid}')" class="text-red-400 hover:text-red-600 px-2 py-1"><span class="material-icons">delete</span></button></div>`;
+          });
+          list.innerHTML = html;
+      }
+      function removeBulkItem(uid) { bulkItems = bulkItems.filter(i => i.uid !== uid); renderBulkList(); }
+      async function finishBulkToLoc() {
+          stopCamera(); const targetLoc = await showInputModal(`Uložiť ${bulkItems.length} ks`, "Oskenuj pozíciu (napr. B-05)");
+          if(!targetLoc) { toggleBulkCamera(true); return; }
+          const loc = targetLoc.toUpperCase().trim(); setLoading(true, `Ukladám ${bulkItems.length} roliek naraz...`);
+          try {
+              const result = await apiCall('createBulkItems', { items: bulkItems, loc: loc, user: currentUser });
+              updateLastAction(`PALETA ${result.processed} ks -> ${loc}`);
+              setLoading(false); beep('success'); showCustomAlert("Hotovo", `Paleta (${result.processed} ks) bola úspešne uložená na pozíciu ${loc}.`);
+              bulkItems = []; loadDb(false); resetScanScreen(); switchView('scan');
+          } catch(e) { setLoading(false); showCustomAlert("Chyba spojenia", e.message); loadDb(false); }
+      }
+
+      // --- UI HELPERS ---
+      function showCustomAlert(title, message) {
+          return new Promise((resolve) => {
+              const modal = document.getElementById('customModal');
+              document.getElementById('modalTitle').innerHTML = `<span class="material-icons text-blue-500">info</span> ${title}`;
+              document.getElementById('modalMessage').innerHTML = message; 
+              const btns = document.getElementById('modalButtons');
+              btns.innerHTML = `<button onclick="closeCustomModal()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold text-lg tap-feedback">OK</button>`;
+              btns.querySelector('button').onclick = () => { closeCustomModal(); resolve(); };
+              modal.classList.remove('hidden');
+          });
+      }
+      function showCustomConfirm(title, message, yesText="Áno", noText="Zrušiť") {
+          return new Promise((resolve) => {
+              const modal = document.getElementById('customModal');
+              document.getElementById('modalTitle').innerHTML = `<span class="material-icons text-amber-500">warning</span> ${title}`;
+              document.getElementById('modalMessage').innerHTML = message;
+              const btns = document.getElementById('modalButtons');
+              btns.innerHTML = `<button id="btnNo" class="flex-1 bg-white border-2 border-slate-200 text-slate-600 py-3 rounded-xl font-bold text-lg tap-feedback">${noText}</button><button id="btnYes" class="flex-1 bg-amber-600 text-white py-3 rounded-xl font-bold text-lg hover:bg-amber-700 tap-feedback">${yesText}</button>`;
+              document.getElementById('btnNo').onclick = () => { closeCustomModal(); resolve(false); };
+              document.getElementById('btnYes').onclick = () => { closeCustomModal(); resolve(true); };
+              modal.classList.remove('hidden');
+          });
+      }
+      function closeCustomModal() { document.getElementById('customModal').classList.add('hidden'); }
+      window.alert = function(msg) { showCustomAlert("Info", msg); }
+      
+      let inputModalResolve = null;
+      function showInputModal(title, placeholder, defaultValue = "") {
+          return new Promise((resolve) => {
+              inputModalResolve = resolve;
+              document.getElementById('inputModalTitle').innerHTML = `<span class="material-icons text-blue-500">edit_location</span> ${title}`;
+              const input = document.getElementById('inputModalValue');
+              input.value = defaultValue; input.placeholder = placeholder;
+              document.getElementById('inputModal').classList.remove('hidden');
+              setTimeout(() => input.focus(), 100);
+              input.onkeydown = (e) => { if(e.key === 'Enter') confirmInputModal(); };
+          });
+      }
+      function closeInputModal(val) { document.getElementById('inputModal').classList.add('hidden'); if(inputModalResolve) inputModalResolve(val); inputModalResolve = null; }
+      function confirmInputModal() { closeInputModal(document.getElementById('inputModalValue').value.trim()); }
+
+      let currentUser = "";
+      function checkIdentity() {
+          const stored = localStorage.getItem('gotana_user');
+          if (!stored || stored === "null") { document.getElementById('identityModal').classList.remove('hidden'); document.getElementById('identityInput').focus(); }
+          else { currentUser = stored; document.getElementById('userNameDisplay').innerText = currentUser; }
+      }
+      function saveIdentity() {
+          const val = document.getElementById('identityInput').value.trim().toUpperCase();
+          if (val.length < 2) { showCustomAlert("Chyba", "Meno príliš krátke."); return; }
+          currentUser = val; localStorage.setItem('gotana_user', currentUser);
+          document.getElementById('identityModal').classList.add('hidden');
+          document.getElementById('userNameDisplay').innerText = currentUser;
+      }
+      async function changeUser() { if(await showCustomConfirm("Odhlásenie", `Odhlásiť ${currentUser}?`)) { localStorage.removeItem('gotana_user'); location.reload(); } }
+      
+      function updateLastAction(text) {
+          const panel = document.getElementById('lastActionPanel'); const span = document.getElementById('lastActionText');
+          const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+          span.innerText = text + ` (${currentUser} • ${time})`;
+          panel.classList.remove('hidden'); panel.classList.add('bg-slate-700'); setTimeout(() => panel.classList.remove('bg-slate-700'), 500);
+      }
+
+      function initApp() {
+          if(!isOnline) document.getElementById('networkStatus').className = "w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]";
+          let storedApiUrl = localStorage.getItem('gotana_api_url');
+          if (!storedApiUrl && DEFAULT_API_URL && DEFAULT_API_URL.startsWith("https://script.google.com/")) {
+              storedApiUrl = DEFAULT_API_URL; localStorage.setItem('gotana_api_url', DEFAULT_API_URL);
+          }
+          if (!storedApiUrl) { document.getElementById('apiSetupModal').classList.remove('hidden'); } 
+          else { SCRIPT_URL = storedApiUrl; finishInit(); }
+      }
+      
+      function finishInit() {
+          checkIdentity(); document.getElementById('status').classList.add('text-green-500'); 
+          initDailyQuote(); loadDb(false); loadCatalog(); requestWakeLock(); processOfflineQueue();
+      }
+      
+      const quotes = ["Logistika je Tetris s 20kg kockami.", "Skladník nemešká, kamión je skoro.", "Chaos je iný druh poriadku.", "Najlepšia paleta je tá, čo netreba prekladať.", "Dobrý systém šetrí nohy.", "V logistike je jediná istota zmena."];
+      function initDailyQuote() {
+         const now = new Date(); const start = new Date(now.getFullYear(), 0, 0); const diff = now - start; const oneDay = 1000 * 60 * 60 * 24; const dayOfYear = Math.floor(diff / oneDay);
+         document.getElementById('dailyQuoteText').innerText = '"' + quotes[dayOfYear % quotes.length] + '"';
+      }
+
+      // --- AKCIE PREPOJENÉ NA API ---
+      async function triggerBackup() { 
+          if(await showCustomConfirm("Záloha", "Vytvoriť zálohu?\n(Andrej informovaný?)")) { 
+              setLoading(true, "Zálohujem..."); apiCall('performBackup').then(m => { setLoading(false); showCustomAlert("Hotovo", "OK"); beep('success'); }).catch(e => { setLoading(false); showCustomAlert("Chyba", e.message); beep('error'); }); 
+          } 
+      }
+      async function triggerArchive() { 
+          if(await showCustomConfirm("Archivácia", "Presunúť históriu do archívu?\n(Andrej informovaný?)")) { 
+              setLoading(true, "Archivujem..."); apiCall('archiveOldData').then(r => { setLoading(false); showCustomAlert("Hotovo", "OK"); beep('success'); }).catch(e => { setLoading(false); showCustomAlert("Chyba", e.message); beep('error'); }); 
+          } 
+      }
+
+      function switchView(v) {
+         ['scan','db', 'bulk', 'inventory'].forEach(t => { 
+             const el = document.getElementById('view-'+t); if(el) el.classList.add('hidden'); 
+             const tab = document.getElementById('tab-'+t); if(tab) tab.classList.remove('active'); 
+         });
+         document.getElementById('view-'+v).classList.remove('hidden'); 
+         const activeTab = document.getElementById('tab-'+v); if(activeTab) activeTab.classList.add('active');
+         if(v === 'db') renderDb(dbData);
+      }
+      function manualRefresh() { const btn = document.querySelector('button[onclick="manualRefresh()"] span'); btn.classList.add('animate-spin'); loadDb(true); loadCatalog(); setTimeout(() => btn.classList.remove('animate-spin'), 1000); }
+
+      function loadDb(l = false) {
+         if(l) setLoading(true);
+         apiCall('getAllData').then(data => {
+             if(l) setLoading(false);
+             dbData = (data && Array.isArray(data)) ? data : [];
+             dbData.forEach(i => i.id = String(i.id).toUpperCase());
+             document.getElementById('status').innerText = `Online (${dbData.length}) • ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+             if(!document.getElementById('view-db').classList.contains('hidden')) renderDb(dbData);
+         }).catch(e => { setLoading(false); if(isOnline) showCustomAlert("API Chyba", e.message); beep('error'); });
+      }
+
+      function processResult(val) {
+        val = val ? val.trim() : "";
+        if(!val) { resetScanScreen(); return; }
+        document.getElementById('scanInput').value = val.replace(/[\n\r]/g, " | ");
+        
+        let rawScannedId = extractRealId(val);
+        if (rawScannedId.match(/^[A-Z]-[0-9]+/)) { renderLocationView(rawScannedId, dbData.filter(i => String(i.location) === rawScannedId)); return; }
+        
+        let baseId = getBaseCode(rawScannedId);
+        const matches = dbData.filter(item => item.id === baseId || item.id === rawScannedId || item.id.startsWith(baseId + "_"));
+        beep(matches.length > 0 ? 'success' : 'error');
+        renderProductView(baseId, matches, [val]);
+      }
+
+      function renderLocationView(locId, items) {
+         const area = document.getElementById('resultArea'); area.classList.remove('hidden'); document.getElementById('dailyQuoteBox').style.display = 'none';
+         let html = `<div class="bg-white rounded-2xl shadow-xl border border-slate-300 overflow-hidden relative">
+             <button onclick="resetScanScreen()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-white p-2 rounded-full shadow-md tap-feedback z-10 border border-slate-200"><span class="material-icons">close</span></button>
+             <div class="bg-slate-50 p-6 border-b border-slate-200 pr-16"><div class="text-xs text-slate-500 font-bold uppercase mb-2 tracking-wider flex items-center gap-1"><span class="material-icons text-sm">place</span> Pozícia v sklade</div><h2 class="text-4xl font-black text-slate-900 leading-tight mb-2">${locId}</h2><div class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-lg text-sm font-bold shadow-inner">Obsahuje: ${items.length} roliek</div></div>`;
+         
+         const skuGroups = {};
+         items.forEach(item => { const bSku = getBaseCode(item.id); if(!skuGroups[bSku]) skuGroups[bSku] = []; skuGroups[bSku].push(item); });
+         
+         html += `<div class="max-h-[350px] overflow-y-auto bg-slate-50 p-2 space-y-2">`;
+         if(items.length === 0) {
+             html += `<div class="text-center text-slate-400 py-6 font-medium">Táto pozícia je prázdna.</div>`;
+         } else {
+             for (const [sku, skuItems] of Object.entries(skuGroups)) {
+                 let skuName = dbCatalog[sku] || sku;
+                 html += `<div class="bg-white p-3 rounded-xl border border-slate-200 flex justify-between items-center"><div><div class="font-bold font-mono text-slate-800 text-lg leading-tight">${sku}</div>${skuName !== sku ? `<div class="text-xs text-slate-500 leading-snug mt-0.5">${skuName}</div>`:''}</div><div class="font-black text-lg bg-slate-100 px-3 py-1 rounded-lg ml-2 whitespace-nowrap">${skuItems.length} ks</div></div>`;
+             }
+         }
+         html += `</div>`;
+         
+         let expectedStr = encodeURIComponent(JSON.stringify(items));
+         html += `<div class="p-4 bg-white border-t border-slate-200"><button onclick="startInventory('${locId}', '${expectedStr}')" class="w-full bg-teal-600 active:bg-teal-800 text-white py-4 rounded-xl font-bold shadow-lg text-lg tap-feedback flex items-center justify-center gap-2"><span class="material-icons">fact_check</span> Spustiť inventúru tejto pozície</button></div></div>`;
+         
+         area.innerHTML = html;
+      }
+
+      function renderProductView(scannedId, matches, rawParts) {
+         const area = document.getElementById('resultArea'); area.classList.remove('hidden'); document.getElementById('dailyQuoteBox').style.display = 'none';
+         const count = matches.length;
+
+         // Inteligentné zobrazenie názvu (Najprv dbData, potom dbCatalog, nakoniec len SKU)
+         let displayName = scannedId;
+         let firstMatchWithName = matches.find(m => m.name && m.name.trim() !== "");
+         if (firstMatchWithName) displayName = firstMatchWithName.name;
+         else if (dbCatalog[scannedId]) displayName = dbCatalog[scannedId];
+
+         let html = `<div class="bg-white rounded-2xl shadow-xl border border-slate-300 overflow-hidden relative">
+             <button onclick="resetScanScreen()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-white p-2 rounded-full shadow-md tap-feedback z-10 border border-slate-200"><span class="material-icons">close</span></button>
+             <div class="bg-slate-50 p-6 border-b border-slate-200 pr-16">
+                ${displayName !== scannedId ? `<div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 leading-snug">${displayName}</div>` : ''}
+                <h2 class="text-3xl font-black font-mono text-slate-900 leading-tight mb-1 break-words tracking-tight">${scannedId}</h2>
+             </div>`;
+         
+         if (count > 0) {
+             html += `<div class="bg-blue-50 p-4 border-b border-blue-100 flex justify-between items-center text-blue-900"><span class="font-bold flex items-center gap-2 text-2xl"><span class="material-icons text-2xl">info</span> Nájdené: ${count} ks</span></div><div class="p-4 bg-white border-b border-slate-200"><button onclick="prepareNew('${scannedId}', true)" class="w-full bg-blue-600 active:bg-blue-800 text-white py-4 rounded-xl font-bold shadow-lg text-lg tap-feedback"><span class="material-icons">add_circle</span> Pridať ďalší kus</button></div><div class="max-h-[500px] overflow-y-auto bg-slate-50 p-2 space-y-3">`;
+             
+             const locGroups = {};
+             matches.forEach(item => { const loc = item.location || 'NEUSKLADNENÉ'; if(!locGroups[loc]) locGroups[loc] = []; locGroups[loc].push(item); });
+
+             for (const [loc, itemsInLoc] of Object.entries(locGroups)) {
+                 const locDisplay = loc !== 'NEUSKLADNENÉ' ? `<span style="${getColorForLoc(loc)}" class="px-3 py-1 rounded-lg text-xl font-extrabold shadow-sm border-2 border-opacity-20">${loc}</span>` : `<span class="bg-red-100 text-red-800 px-2 py-1 rounded-lg text-xs font-bold border border-red-200">NEUSKLADNENÉ</span>`;
+                 const sampleId = itemsInLoc[0].id;
+
+                 html += `<div class="p-5 rounded-xl bg-white shadow-sm border border-slate-200"><div class="flex justify-between items-center mb-4"><div><div class="text-[10px] uppercase font-bold text-slate-400 mb-1">Pozícia</div>${locDisplay}</div><div class="text-right"><div class="text-[10px] uppercase font-bold text-slate-400 mb-1">Na tejto pozícii</div><div class="text-3xl font-black text-slate-800">${itemsInLoc.length} <span class="text-sm text-slate-500">ks</span></div></div></div><div class="grid grid-cols-2 gap-3" id="actions-${sampleId}"><button onclick="doAction('move', '${sampleId}')" class="bg-white border-2 border-slate-200 hover:text-blue-600 text-slate-600 py-4 rounded-xl font-bold flex items-center justify-center gap-2 tap-feedback"><span class="material-icons">swap_horiz</span> Presun 1 ks</button><button onclick="doAction('delete', '${sampleId}')" class="bg-red-50 border-2 border-red-100 hover:text-red-700 text-red-700 py-4 rounded-xl font-bold flex items-center justify-center gap-2 tap-feedback"><span class="material-icons">delete</span> Vydať 1 ks</button></div></div>`;
+             }
+             html += `</div>`;
+         } else { 
+             html += `<div class="p-10 text-center bg-slate-50"><h3 class="text-xl font-bold text-slate-700 mb-1">Nenájdené</h3><p class="text-sm text-slate-400 mb-6">Tento kód neevidujeme.</p><button onclick="prepareNew('${scannedId}', false)" class="w-full bg-green-600 active:bg-green-800 text-white py-4 rounded-xl font-bold shadow-lg text-lg tap-feedback">Naskladniť nové</button></div>`; 
+         }
+         html += `</div>`;
+         if(count === 0 && rawParts.length > 2) prepareNew(scannedId, false, rawParts); else area.innerHTML = html;
+      }
+      
+      function renderDb(items) {
+         const list = document.getElementById('dbList');
+         document.getElementById('dbStats').innerHTML = `<span class="text-slate-700">Počet: ${items.length} ks</span>`;
+         list.innerHTML = "";
+         if(items.length === 0) { list.innerHTML = `<div class="text-center text-slate-400 py-10 font-bold">Žiadne záznamy.</div>`; return; }
+         const allItems = [...items].reverse(); const firstBatch = allItems.slice(0, 50); let html = "";
+         firstBatch.forEach(i => html += createRowHtml(i)); list.innerHTML = html; updateBulkUI();
+         if(allItems.length > 50) { renderRemaining(allItems.slice(50)); }
+      }
+
+      function renderRemaining(items) {
+          const list = document.getElementById('dbList'); const chunkSize = 100; let index = 0;
+          function nextChunk() {
+              const limit = Math.min(index + chunkSize, items.length); let html = "";
+              for (let i = index; i < limit; i++) { html += createRowHtml(items[i]); }
+              list.insertAdjacentHTML('beforeend', html); updateBulkUI(); index += chunkSize;
+              if (index < items.length) { setTimeout(nextChunk, 10); }
+          }
+          setTimeout(nextChunk, 10);
+      }
+      
+      function createRowHtml(i) {
+         const locDisplay = i.location ? `<span style="${getColorForLoc(i.location)}" class="px-2 py-1 rounded text-sm font-bold border">${i.location}</span>` : `<span class="bg-red-100 text-red-800 px-2 py-1 text-xs">NEUSKL.</span>`;
+         const noteDisplay = i.note ? `<div class="text-xs text-amber-600 mt-1 italic"><span class="material-icons text-[10px]">sticky_note_2</span> ${i.note}</div>` : '';
+         const isSelected = selectedIds.has(String(i.id)) ? 'checked' : '';
+         const bgClass = isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200';
+         const checkHtml = isSelected ? '<span class="material-icons text-sm">check</span>' : '';
+
+         // Inteligentné zobrazenie názvu aj v zozname
+         let displayTitle = (i.name && i.name.trim() !== "") ? i.name : (dbCatalog[i.sku || getBaseCode(i.id)] || i.id);
+         let subtitle = (displayTitle !== i.id) ? `<div class="text-xs text-slate-500 mt-1 leading-snug">${displayTitle}</div>` : '';
+
+         return `<div class="${bgClass} p-4 rounded-xl shadow-sm border mb-3 transition-colors flex gap-4"><div class="flex items-center justify-center pt-1" onclick="toggleSelection('${i.id}')"><div class="custom-checkbox ${isSelected} item-checkbox" data-id="${i.id}">${checkHtml}</div></div><div class="flex-1 active:scale-[0.98] transition-transform" onclick="openDetailModal('${i.id}')"><div class="flex justify-between items-start gap-4"><div><div class="font-bold font-mono text-slate-900 text-lg leading-snug break-words">${i.id}</div>${subtitle}</div><div>${locDisplay}</div></div>${noteDisplay}<div class="text-[10px] text-slate-400 mt-2">${i.date.substring(0,10)}</div></div></div>`;
+      }
+      
+      function filterDb() {
+          const codeQ = document.getElementById('dbSearchCode').value.toUpperCase().trim();
+          const nameQ = document.getElementById('dbSearchName').value.trim();
+
+          // Ignorovanie dĺžňov a mäkčeňov pre lepšie vyhľadávanie názvov
+          const normalize = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() : "";
+
+          const codeTerms = codeQ.split(/\s+/).filter(t => t.length > 0);
+          const nameTerms = nameQ.split(/\s+/).filter(t => t.length > 0).map(normalize);
+
+          if(codeTerms.length === 0 && nameTerms.length === 0) { renderDb(dbData); return; }
+
+          const filtered = dbData.filter(i => {
+              // 1. Kontrola podľa kódu/lokácie
+              let matchCode = true;
+              if (codeTerms.length > 0) {
+                  matchCode = codeTerms.every(term => {
+                      // Ochrana: hľadáme len na začiatku textu alebo za oddeľovačom (napr. pomlčkou), aby 9B nenašlo 19B
+                      const safeTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                      const prefixRegex = new RegExp(`(^|[^a-zA-Z0-9])${safeTerm}`);
+                      
+                      return prefixRegex.test(i.id) || 
+                             (i.location ? prefixRegex.test(i.location) : false) || 
+                             (i.note ? i.note.toUpperCase().includes(term) : false); // Poznámka môže ostať voľnejšia
+                  });
+              }
+
+              // 2. Kontrola podľa názvu produktu
+              let matchName = true;
+              if (nameTerms.length > 0) {
+                  let itemName = normalize(i.name || dbCatalog[i.sku || getBaseCode(i.id)] || "");
+                  matchName = nameTerms.every(term => itemName.includes(term));
+              }
+
+              // Musí sedieť aj kód, aj názov (ak sú zadané obe polia)
+              return matchCode && matchName;
+          });
+          
+          renderDb(filtered);
+      }
+
+      function prepareNew(id, isDuplicate, parts = []) {
+          let finalId = id; if(isDuplicate) finalId = id + "_" + Math.floor(Math.random() * 1000);
+          const skuBase = finalId.split('_')[0];
+          const uniqueLocs = [...new Set(dbData.map(i => i.location).filter(l => l))].sort(); const locOptions = uniqueLocs.map(l => `<option value="${l}">`).join('');
+          
+          const existingLocs = [...new Set(dbData.filter(i => i.sku === skuBase || i.id.startsWith(skuBase)).map(i => i.location).filter(l=>l))];
+          const hintHtml = existingLocs.length > 0 ? `<div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 p-2 rounded-lg mt-2 font-bold flex items-center gap-1 shadow-inner"><span class="material-icons text-sm text-amber-500">lightbulb</span> Tip: Tento materiál už máme na: ${existingLocs.join(', ')}</div>` : '';
+
+          // Nájdenie názvu v Katalógu
+          const prefilledName = dbCatalog[skuBase] || "";
+
+          document.getElementById('resultArea').innerHTML = `
+             <div class="bg-green-50 border-2 border-green-200 rounded-2xl p-6 shadow-lg relative">
+                <button onclick="resetScanScreen()" class="absolute top-4 right-4 text-green-600 hover:text-green-800 bg-white p-2 rounded-full shadow-md tap-feedback z-10 border border-green-200"><span class="material-icons">close</span></button>
+                <h3 class="text-green-800 font-extrabold text-2xl mb-6 flex items-center gap-3 pr-10"><span class="material-icons bg-green-200 p-2 rounded-lg">add_box</span> ${isDuplicate ? 'Pridať kus' : 'Nový príjem'}</h3>
+                <div class="space-y-4">
+                    <div><label class="text-xs text-slate-500 uppercase font-bold ml-1 mb-1 block">SKU</label><input id="nId" type="text" class="w-full p-4 border-2 border-slate-200 rounded-xl bg-slate-100 font-mono text-slate-500 font-bold text-lg" value="${finalId}" disabled></div>
+                    
+                    <div><label class="text-xs text-slate-500 uppercase font-bold ml-1 mb-1 block">Názov produktu</label><input id="nName" type="text" class="w-full p-4 border-2 border-slate-200 rounded-xl bg-white focus:border-blue-500 font-bold text-lg text-slate-800 shadow-inner" placeholder="napr. Teplákovina Mätová" value="${prefilledName}"></div>
+
+                    <div class="mb-2"><label class="text-xs text-slate-500 uppercase font-bold ml-1 mb-1 block">Počet kusov</label><input id="nQty" type="number" class="w-full p-4 border-2 border-slate-200 rounded-xl bg-white focus:border-blue-500 font-bold text-xl text-slate-800 text-center shadow-inner" value="1" min="1"></div>
+                    <div>
+                        <label class="text-xs text-slate-500 uppercase font-bold ml-1 mb-1 block">Lokácia <span class="text-red-500 font-bold">*</span></label>
+                        <div class="relative flex gap-2">
+                           <input id="nLoc" type="text" list="locList" class="w-full p-4 border-2 border-white focus:border-green-500 rounded-xl shadow-sm font-bold text-lg uppercase" oninput="this.value = this.value.toUpperCase()" placeholder="Vyber...">
+                           <datalist id="locList">${locOptions}</datalist>
+                           <button onclick="startScanInput('nLoc')" class="bg-blue-100 text-blue-600 w-16 rounded-xl flex items-center justify-center shadow-sm active:bg-blue-200 tap-feedback active:scale-95 transition-transform"><span class="material-icons text-2xl">qr_code_scanner</span></button>
+                        </div>
+                        ${hintHtml}
+                    </div>
+                    <div><label class="text-xs text-slate-500 uppercase font-bold ml-1 mb-1 block">Poznámka (Nepovinné)</label><input id="nNote" type="text" class="w-full p-4 border-2 border-slate-200 rounded-xl bg-white text-lg" placeholder="napr. Poškodené, Rezerva..."></div>
+                </div>
+                <div class="flex gap-4 mt-8"><button onclick="resetScanScreen()" class="flex-1 bg-white border-2 border-slate-200 py-4 rounded-xl font-bold text-lg tap-feedback">Zrušiť</button><button onclick="saveNew()" class="flex-1 bg-green-600 text-white py-4 rounded-xl font-bold shadow-lg text-lg tap-feedback">Uložiť</button></div>
+             </div>`;
+      }
+
+      function saveNew() {
+          const idInput = document.getElementById('nId').value; 
+          const sku = idInput.split('_')[0]; 
+          const nameInput = document.getElementById('nName').value.trim();
+          const loc = document.getElementById('nLoc').value; 
+          const qty = parseInt(document.getElementById('nQty').value) || 1; 
+          const note = document.getElementById('nNote').value;
+          
+          if (!loc || loc.trim() === "") { document.getElementById('nLoc').classList.add('border-red-500'); showCustomAlert("Chyba", "Musíš zadať lokáciu!"); beep('error'); return; }
+          if (qty > 1) { saveNextItem(sku, nameInput, loc, note, qty, 1); }
+          else { 
+              setLoading(true); 
+              apiCall('createItem', { id: idInput, name: nameInput, sku: sku, len: 0, loc: loc.toUpperCase(), note: note, user: currentUser }).then(() => { 
+                  setLoading(false); resetScanScreen(); loadDb(false); beep('success'); updateLastAction(`NOVÝ ${sku} -> ${loc}`); 
+              }).catch(e => { setLoading(false); showCustomAlert("Chyba", e.message); beep('error'); });
+          }
+      }
+      function saveNextItem(sku, nameInput, loc, note, total, current) {
+          setLoading(true, `Ukladám ${current} z ${total}...`); const uniqueId = sku + "_" + Math.floor(1000 + Math.random() * 9000);
+          apiCall('createItem', { id: uniqueId, name: nameInput, sku: sku, len: 0, loc: loc.toUpperCase(), note: note, user: currentUser }).then(() => { 
+              if (current < total) saveNextItem(sku, nameInput, loc, note, total, current + 1); 
+              else { setLoading(false); resetScanScreen(); loadDb(false); beep('success'); updateLastAction(`NOVÝ ${sku} x ${total} -> ${loc}`); } 
+          }).catch(e => { setLoading(false); showCustomAlert("Chyba", e.message); beep('error'); });
+      }
+      
+      async function doAction(type, id) {
+          if(type === 'move') {
+              const uniqueLocs = [...new Set(dbData.map(i => i.location).filter(l => l))].sort(); const locOptions = uniqueLocs.map(l => `<option value="${l}">`).join('');
+              document.getElementById('actions-' + id).innerHTML = `<div class="col-span-2 bg-blue-50 p-3 rounded-xl border border-blue-200 animate-fade-in"><div class="flex gap-2"><input id="moveInput-${id}" type="text" list="locList-${id}" class="flex-1 p-3 border-2 border-blue-300 rounded-lg font-bold text-lg uppercase" oninput="this.value = this.value.toUpperCase()" placeholder="Scan..."><button onclick="startScanInput('moveInput-${id}')" class="bg-blue-100 text-blue-600 w-12 rounded-lg flex items-center justify-center shadow-sm active:bg-blue-200 tap-feedback"><span class="material-icons">qr_code_scanner</span></button><datalist id="locList-${id}">${locOptions}</datalist></div><div class="flex gap-2 mt-2"><button onclick="confirmMove('${id}')" class="flex-1 bg-green-600 text-white py-3 rounded-lg font-bold tap-feedback">OK</button><button onclick="cancelMove('${id.split('_')[0]}')" class="flex-1 bg-white text-slate-600 border border-slate-300 py-3 rounded-lg font-bold tap-feedback">Zrušiť</button></div></div>`;
+              setTimeout(() => document.getElementById(`moveInput-${id}`).focus(), 100);
+          }
+          if(type === 'delete') { 
+              if(await showCustomConfirm("Výdaj", "Naozaj odčítať túto rolku?")) { 
+                  setLoading(true); resetScanScreen();
+                  apiCall('deleteItem', { id: id, user: currentUser }).then(() => { setLoading(false); loadDb(false); beep('success'); updateLastAction(`ZMAZANÉ ${id}`); }).catch(e => { setLoading(false); showCustomAlert("Chyba", e.message); beep('error'); });
+              } 
+          }
+      }
+      function confirmMove(id) { 
+          const val = document.getElementById(`moveInput-${id}`).value; 
+          if(val) { 
+              setLoading(true); 
+              apiCall('updateItem', { id: id, len: null, loc: val.toUpperCase(), act: "PRESUN", note: null, user: currentUser }).then(() => { 
+                  const itemIndex = dbData.findIndex(i => i.id === id); if(itemIndex > -1) { dbData[itemIndex].location = val.toUpperCase(); }
+                  setLoading(false); closeDetailModal(); loadDb(false); beep('success'); processResult(id.split('_')[0]); updateLastAction(`PRESUN ${id} -> ${val.toUpperCase()}`); 
+              }).catch(e => { setLoading(false); showCustomAlert("Chyba", e.message); beep('error'); });
+          } 
+      }
+      function updateNote(id) { 
+          const val = document.getElementById(`note-${id}`).value; setLoading(true); 
+          apiCall('updateItem', { id: id, len: null, loc: null, act: "POZNAMKA", note: val, user: currentUser }).then(() => { 
+              setLoading(false); closeDetailModal(); loadDb(false); beep('success'); setTimeout(() => processResult(id.split('_')[0]), 500); updateLastAction(`POZNÁMKA ${id}`); 
+          }).catch(e => { setLoading(false); showCustomAlert("Chyba", e.message); beep('error'); });
+      }
+      function cancelMove(mainId) { processResult(mainId); }
+      function handleScan() { processResult(document.getElementById('scanInput').value); }
+      
+      function getColorForLoc(str) { if(!str) return ""; let hash = 0; for (let i = 0; i < str.length; i++) hash = Math.imul(31, hash) + str.charCodeAt(i) | 0; hash = Math.imul(hash ^ (hash >>> 15), 0x735a2d97); hash = (hash ^ (hash >>> 15)) | 0; const h = Math.abs(hash % 360); return (hash % 2 === 0) ? `background-color: hsl(${h}, 75%, 40%); color: #ffffff; border-color: hsl(${h}, 75%, 30%);` : `background-color: hsl(${h}, 85%, 92%); color: hsl(${h}, 100%, 15%); border-color: hsl(${h}, 60%, 80%);`; }
+      function openItemDetail(id) { switchView('scan'); processResult(id); }
+      function openDetailModal(id) { 
+          const item = dbData.find(i => i.id === id); if(!item) return; 
+          let displayTitle = (item.name && item.name.trim() !== "") ? item.name : (dbCatalog[item.sku || getBaseCode(item.id)] || item.id);
+          
+          document.getElementById('modalItemTitle').innerText = item.id; 
+          const subEl = document.getElementById('modalItemSub');
+          if (displayTitle !== item.id) { subEl.innerText = displayTitle; subEl.classList.remove('hidden'); } else { subEl.classList.add('hidden'); }
+          
+          document.getElementById('modalItemId').value = item.id; document.getElementById('modalItemLoc').innerText = item.location; document.getElementById('modalItemLoc').style = getColorForLoc(item.location); document.getElementById('modalItemLoc').className = "px-3 py-1 rounded-lg text-xl font-extrabold shadow-sm border-2"; document.getElementById('modalItemNote').value = item.note || ""; document.getElementById('itemDetailModal').classList.remove('hidden'); 
+      }
+      function closeDetailModal() { document.getElementById('itemDetailModal').classList.add('hidden'); }
+      function saveModalNote() { 
+          const id = document.getElementById('modalItemId').value; const note = document.getElementById('modalItemNote').value; setLoading(true); 
+          apiCall('updateItem', { id: id, len: null, loc: null, act: "POZNAMKA", note: note, user: currentUser }).then(() => { 
+              setLoading(false); closeDetailModal(); loadDb(false); beep('success'); updateLastAction(`POZNÁMKA ${id}`); 
+          }).catch(e => { setLoading(false); showCustomAlert("Chyba", e.message); beep('error'); });
+      }
+      
+      async function moveFromModal() { 
+          const id = document.getElementById('modalItemId').value; const newLoc = await showInputModal("Presun na pozíciu", "Skenuj / zadaj novú pozíciu..."); 
+          if(newLoc) { 
+              setLoading(true); 
+              apiCall('updateItem', { id: id, len: null, loc: newLoc.toUpperCase(), act: "PRESUN", note: null, user: currentUser }).then(() => { 
+                  const itemIndex = dbData.findIndex(i => i.id === id); if(itemIndex > -1) { dbData[itemIndex].location = newLoc.toUpperCase(); }
+                  setLoading(false); closeDetailModal(); loadDb(false); beep('success'); 
+                  if(!document.getElementById('resultArea').classList.contains('hidden')) { processResult(id.split('_')[0]); }
+                  updateLastAction(`PRESUN ${id} -> ${newLoc.toUpperCase()}`); 
+              }).catch(e => { setLoading(false); showCustomAlert("Chyba", e.message); beep('error'); });
+          } 
+      }
+      
+      async function deleteFromModal() { 
+          const id = document.getElementById('modalItemId').value; 
+          if(await showCustomConfirm("Výdaj", "Naozaj odčítať túto rolku?")) { 
+              setLoading(true); resetScanScreen(); 
+              apiCall('deleteItem', { id: id, user: currentUser }).then(() => { setLoading(false); closeDetailModal(); loadDb(false); beep('success'); updateLastAction(`ZMAZANÉ ${id}`); }).catch(e => { setLoading(false); showCustomAlert("Chyba", e.message); beep('error'); });
+          } 
+      }
+      
+      function setLoading(b, t="Pracujem...") { document.getElementById('loading').className = b?'flex fixed inset-0 bg-slate-900/90 z-[100] flex-col items-center justify-center backdrop-blur-sm':'hidden'; if(b)document.getElementById('loadingText').innerText=t; }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initApp); else initApp();
+    </script>
+  </body>
+</html>
