@@ -70,8 +70,6 @@
       </div>
     </div>
 
-    <input type="file" id="galleryInput" accept="image/*" class="hidden" onchange="handleFileScan(this)">
-
     <div class="max-w-lg mx-auto p-4 relative">
 
       <!-- GLOBAL SKENER -->
@@ -88,29 +86,43 @@
 
       <!-- SKENER VIEW -->
       <div id="view-scan">
-          <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200 mb-6 space-y-4">
-             <button onclick="initCamera()" class="w-full bg-blue-600 active:bg-blue-800 text-white py-5 rounded-xl font-bold text-xl flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-transform tap-feedback">
-                  <span class="material-icons text-3xl">videocam</span> Skenovať QR
-             </button>
-
-             <div class="grid grid-cols-2 gap-3">
-                 <button onclick="startBulkMode()" class="bg-indigo-600 active:bg-indigo-800 text-white py-4 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform tap-feedback border-2 border-indigo-500 border-dashed">
-                     <span class="material-icons">layers</span> PALETA
+          <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200 mb-6 space-y-6">
+             
+             <!-- BLOK 1: PRODUKT (HLAVNÝ) -->
+             <div class="space-y-3">
+                 <button onclick="initCamera()" class="w-full bg-blue-600 active:bg-blue-800 text-white py-5 rounded-xl font-black text-xl flex items-center justify-center gap-3 shadow-lg active:scale-[0.98] transition-transform tap-feedback">
+                      <span class="material-icons text-3xl">qr_code_scanner</span> SKENOVAŤ PRODUKT
                  </button>
-                 <button onclick="startLocationVerification()" class="bg-teal-600 active:bg-teal-800 text-white py-4 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform tap-feedback border-2 border-teal-500 border-dashed">
-                     <span class="material-icons">fact_check</span> POZÍCIA
-                 </button>
+                 <div class="flex justify-center">
+                    <div class="relative w-3/4 sm:w-2/3">
+                        <input id="scanInput" type="text" autocapitalize="characters" class="w-full p-3 pl-4 pr-10 text-center border-2 border-slate-200 rounded-xl font-bold uppercase focus:border-blue-500 outline-none shadow-inner text-sm sm:text-base" placeholder="RUČNE KÓD..." oninput="handleInputChange(this)" onkeydown="if(event.key === 'Enter') handleScan()">
+                        <span class="material-icons absolute right-3 top-3.5 text-slate-400">keyboard</span>
+                    </div>
+                 </div>
              </div>
 
+             <hr class="border-slate-100">
+
+             <!-- BLOK 2: VEDĽAJŠIE AKCIE (VEDĽA SEBA) -->
              <div class="grid grid-cols-2 gap-3">
-                 <button onclick="document.getElementById('galleryInput').click()" class="bg-slate-800 active:bg-slate-900 text-white py-4 rounded-xl flex items-center justify-center gap-2 font-bold shadow-md active:scale-95 transition-transform tap-feedback">
-                     <span class="material-icons">image</span> Z fotogalérie
-                 </button>
-                 <div class="relative">
-                    <input id="scanInput" type="text" autocapitalize="characters" class="w-full h-full pl-4 pr-10 text-center border-2 border-slate-300 rounded-xl font-bold uppercase focus:border-blue-500 outline-none" placeholder="RUČNE..." oninput="handleInputChange(this)" onkeydown="if(event.key === 'Enter') handleScan()">
-                    <span class="material-icons absolute right-3 top-4 text-slate-400">keyboard</span>
+                 <!-- POZÍCIA -->
+                 <div class="space-y-2">
+                     <button onclick="startLocationVerification()" class="w-full h-16 bg-teal-600 active:bg-teal-800 text-white rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-1 shadow-md active:scale-[0.98] transition-transform tap-feedback border-2 border-teal-500 border-dashed leading-tight px-1">
+                         <span class="material-icons">fact_check</span> POZÍCIA
+                     </button>
+                     <div class="relative">
+                        <input id="locInput" type="text" autocapitalize="characters" class="w-full p-2 pl-2 pr-8 text-center border-2 border-slate-200 rounded-xl font-bold uppercase focus:border-teal-500 outline-none shadow-inner text-xs sm:text-sm" placeholder="RUČNE..." onkeydown="if(event.key === 'Enter') handleLocScan(this)">
+                        <span class="material-icons absolute right-2 top-2 text-slate-400 text-sm sm:text-base">keyboard</span>
+                     </div>
                  </div>
-            </div>
+
+                 <!-- HROMADNÝ PRÍJEM -->
+                 <div class="space-y-2">
+                     <button onclick="startBulkMode()" class="w-full h-16 bg-indigo-600 active:bg-indigo-800 text-white rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-1 shadow-md active:scale-[0.98] transition-transform tap-feedback border-2 border-indigo-500 border-dashed leading-tight px-1">
+                         <span class="material-icons">layers</span> PRÍJEM
+                     </button>
+                 </div>
+             </div>
           </div>
 
           <div id="resultArea" class="hidden space-y-6 animate-scale-in"></div>
@@ -131,7 +143,7 @@
                   <div class="flex items-center gap-2">
                       <button onclick="confirmExitBulk()" class="bg-indigo-700 p-2 rounded-full hover:bg-indigo-800"><span class="material-icons text-sm">arrow_back</span></button>
                       <div>
-                          <h2 class="font-black text-lg flex items-center gap-1" id="bulkTitle">PALETA</h2>
+                          <h2 class="font-black text-lg flex items-center gap-1" id="bulkTitle">HROMADNÝ PRÍJEM</h2>
                       </div>
                   </div>
                   <div class="bg-white text-indigo-700 w-10 h-10 rounded-full flex items-center justify-center font-black text-lg shadow-inner" id="bulkCount">0</div>
@@ -185,24 +197,28 @@
 
       <!-- ZOZNAM VIEW -->
       <div id="view-db" class="hidden">
+          <!-- Zmenšené vyhľadávacie polia -->
           <div class="sticky top-[138px] z-40 bg-slate-100 pb-2 -mx-4 px-4 shadow-sm" style="margin-top: -1rem; padding-top: 1rem;">
-             <div class="bg-white p-3 rounded-xl shadow-md border border-slate-200 space-y-2">
-                 <div class="relative flex gap-2">
-                    <div class="relative flex-1">
-                        <input type="text" id="dbSearchCode" autocapitalize="characters" oninput="filterDb()" placeholder="KÓD / LOKÁCIA..." class="w-full pl-10 p-3 text-base sm:text-lg border-2 border-slate-100 rounded-lg focus:outline-none focus:border-blue-500 font-bold uppercase">
-                        <span class="material-icons absolute left-3 top-3.5 text-slate-400 text-xl sm:text-2xl">qr_code_2</span>
-                    </div>
-                    <button onclick="triggerBackup()" class="bg-slate-800 text-white w-12 rounded-lg shadow-md flex items-center justify-center tap-feedback shrink-0"><span class="material-icons text-xl">shield</span></button>
-                    <button onclick="triggerArchive()" class="bg-amber-600 text-white w-12 rounded-lg shadow-md flex items-center justify-center tap-feedback shrink-0"><span class="material-icons text-xl">inventory_2</span></button>
+             <div class="bg-white p-2 rounded-xl shadow-md border border-slate-200 space-y-2">
+                 <div class="relative">
+                    <input type="text" id="dbSearchCode" autocapitalize="characters" oninput="filterDb()" placeholder="KÓD / LOKÁCIA..." class="w-full pl-8 p-2 text-sm sm:text-base border-2 border-slate-100 rounded-lg focus:outline-none focus:border-blue-500 font-bold uppercase">
+                    <span class="material-icons absolute left-2 top-2.5 text-slate-400 text-lg">qr_code_2</span>
                  </div>
                  <div class="relative">
-                    <input type="text" id="dbSearchName" oninput="filterDb()" placeholder="NÁZOV LÁTKY (napr. teplákovina)..." class="w-full pl-10 p-3 text-base sm:text-lg border-2 border-slate-100 rounded-lg focus:outline-none focus:border-blue-500 font-bold uppercase">
-                    <span class="material-icons absolute left-3 top-3.5 text-slate-400 text-xl sm:text-2xl">search</span>
+                    <input type="text" id="dbSearchName" oninput="filterDb()" placeholder="NÁZOV LÁTKY..." class="w-full pl-8 p-2 text-sm sm:text-base border-2 border-slate-100 rounded-lg focus:outline-none focus:border-blue-500 font-bold uppercase">
+                    <span class="material-icons absolute left-2 top-2.5 text-slate-400 text-lg">search</span>
                  </div>
              </div>
              <div id="dbStats" class="flex justify-between items-center mt-2 px-2 text-xs font-bold text-slate-500 uppercase tracking-wide bg-slate-200/50 p-2 rounded-lg"><span>Načítavam...</span></div>
           </div>
-          <div id="dbList" class="space-y-4 mt-4 pb-20"></div>
+          
+          <div id="dbList" class="space-y-4 mt-4 pb-4"></div>
+          
+          <!-- Presunuté tlačidlá na zálohu a archív (úplne dole) -->
+          <div class="flex justify-center gap-4 pb-24 pt-6 border-t border-slate-200">
+             <button onclick="triggerBackup()" class="bg-slate-800 active:bg-slate-900 text-white px-5 py-3 rounded-xl shadow-md flex items-center justify-center tap-feedback text-sm font-bold gap-2"><span class="material-icons text-lg">shield</span> Zálohovať</button>
+             <button onclick="triggerArchive()" class="bg-amber-600 active:bg-amber-700 text-white px-5 py-3 rounded-xl shadow-md flex items-center justify-center tap-feedback text-sm font-bold gap-2"><span class="material-icons text-lg">inventory_2</span> Archivovať</button>
+          </div>
       </div>
       
       <!-- BULK ACTIONS PANEL (ZOZNAM) -->
@@ -351,7 +367,6 @@
       async function apiCall(action, params = {}) {
           if (!SCRIPT_URL) { throw new Error("Missing SCRIPT_URL"); }
           
-          // OFFLINE LOGIKA OCHRANY
           if (!isOnline) {
               const allowedOffline = ['createItem', 'createBulkItems', 'syncInventory'];
               if (allowedOffline.includes(action)) {
@@ -361,7 +376,7 @@
                   updateLastAction(`OFFLINE ULOŽENÉ: ${action}`);
                   return { success: true, processed: params.items ? params.items.length : 1, offline: true };
               } else {
-                  if (action === 'getCatalog') return {}; // Ignoruj pokus o stiahnutie katalógu offline
+                  if (action === 'getCatalog') return {}; 
                   showCustomAlert("Sklad je Offline", "Stratil sa internet. Akcie ako výdaj alebo presun nemožno robiť offline, aby sa nerozbila celofiremná databáza. Naskladňovať a robiť inventúru však môžeš aj naďalej.");
                   throw new Error("Offline mód nedovoľuje túto akciu");
               }
@@ -383,11 +398,8 @@
       }
       
       function loadCatalog() {
-          // Načítaj z pamäte ak už máme z minula (rýchly štart)
           const stored = localStorage.getItem('gotana_catalog');
           if (stored) { try { dbCatalog = JSON.parse(stored); } catch(e){} }
-          
-          // Stiahni čerstvý zoznam z cloudu
           apiCall('getCatalog').then(data => {
               if (data && typeof data === 'object') {
                   dbCatalog = data;
@@ -399,7 +411,6 @@
       async function processOfflineQueue() {
           let queue = JSON.parse(localStorage.getItem('gotana_offline_queue') || '[]');
           if (queue.length === 0) return;
-          
           setLoading(true, `Odosielam offline dáta (${queue.length} úloh)...`);
           let remaining = [];
           for (let task of queue) {
@@ -446,12 +457,9 @@
       // --- UI HELPERS ---
       function resetScanScreen() {
           const area = document.getElementById('resultArea');
-          if (area) { 
-              area.classList.add('hidden'); 
-              area.innerHTML = ''; 
-          }
-          const input = document.getElementById('scanInput');
-          if (input) input.value = '';
+          if (area) { area.classList.add('hidden'); area.innerHTML = ''; }
+          const input = document.getElementById('scanInput'); if (input) input.value = '';
+          const locInput = document.getElementById('locInput'); if (locInput) locInput.value = '';
           const quoteBox = document.getElementById('dailyQuoteBox');
           if (quoteBox) quoteBox.style.display = 'block';
       }
@@ -563,9 +571,7 @@
              if (isContinuousScan) {
                  if (isProcessingBulk) return;
                  isProcessingBulk = true;
-
                  if(activeScanCallback) activeScanCallback(decodedText);
-
                  const reader = document.getElementById('reader');
                  let overlay = document.getElementById('scanOverlay');
                  if(!overlay) {
@@ -576,16 +582,13 @@
                      reader.style.position = 'relative';
                      reader.appendChild(overlay);
                  }
-
                  try { if(html5Qrcode) html5Qrcode.pause(); } catch(e){}
-
                  setTimeout(() => {
                      const ovr = document.getElementById('scanOverlay');
                      if (ovr) ovr.remove();
                      try { if(html5Qrcode) html5Qrcode.resume(); } catch(e){}
                      isProcessingBulk = false;
                  }, 1200);
-
              } else {
                  stopCamera(); 
                  if(activeScanCallback) { activeScanCallback(decodedText); activeScanCallback = null; } 
@@ -626,24 +629,22 @@
           }, false);
       }
 
-      function handleInputChange(el) {
-          el.value = el.value.toUpperCase();
-          if(el.value.trim() === "") { resetScanScreen(); }
-      }
-
-      function handleFileScan(input) {
-          if (input.files.length === 0) return;
-          const imageFile = input.files[0]; input.value = ''; 
-          if (typeof Html5Qrcode === 'undefined') return;
-          const tempQrCode = new Html5Qrcode("reader");
-          setLoading(true, "Čítam kód z fotky...");
-          tempQrCode.scanFile(imageFile, true)
-            .then(decodedText => { setLoading(false); beep('success'); processResult(decodedText); })
-            .catch(err => { setLoading(false); beep('error'); showCustomAlert("Chyba", "Nepodarilo prečítať kód z obrázka."); });
+      function handleInputChange(el) { el.value = el.value.toUpperCase(); if(el.value.trim() === "") resetScanScreen(); }
+      
+      // Nová funkcia pre ručné zadanie pozície z domovskej obrazovky
+      function handleLocScan(el) {
+          let val = el.value.toUpperCase().trim();
+          if(!val) return;
+          el.value = ''; // Vymazať po stlačení Enter
+          let locId = extractRealId(val);
+          if(!locId) return;
+          beep('success');
+          const items = dbData.filter(i => String(i.location).toUpperCase() === locId);
+          renderLocationView(locId, items);
       }
 
       // ---------------------------------------------------------------------------------
-      // --- OVERENIE POZÍCIE (PRIAME SKENOVANIE LOKÁCIE) ---
+      // --- OVERENIE POZÍCIE (KAMERA) ---
       // ---------------------------------------------------------------------------------
       function startLocationVerification() {
           resetScanScreen();
@@ -750,8 +751,8 @@
       function updateBulkUI() {
           document.querySelectorAll('.item-checkbox').forEach(el => {
               const id = el.dataset.id;
-              if (selectedIds.has(id)) { el.classList.add('checked'); el.innerHTML = '<span class="material-icons text-sm">check</span>'; el.parentElement.parentElement.classList.add('bg-blue-50', 'border-blue-200'); } 
-              else { el.classList.remove('checked'); el.innerHTML = ''; el.parentElement.parentElement.classList.remove('bg-blue-50', 'border-blue-200'); }
+              if (selectedIds.has(id)) { el.classList.add('checked'); el.innerHTML = '<span class="material-icons text-sm">check</span>'; el.closest('.border').classList.add('bg-blue-50', 'border-blue-400'); } 
+              else { el.classList.remove('checked'); el.innerHTML = ''; el.closest('.border').classList.remove('bg-blue-50', 'border-blue-400'); }
           });
           const panel = document.getElementById('bulkActionsPanel'); const countSpan = document.getElementById('selectedCount');
           if (selectedIds.size > 0) { panel.classList.remove('translate-y-full'); countSpan.innerText = selectedIds.size; document.getElementById('dbList').classList.add('pb-32'); }
@@ -789,7 +790,7 @@
           document.getElementById('btnFinishBulk').disabled = true; initCamera((d) => handleBulkItemScan(d), true);
       }
       async function confirmExitBulk() {
-          if (bulkItems.length > 0) { if (await showCustomConfirm("Zrušiť paletu?", "Všetky naskenované kódy sa stratia.")) { stopCamera(); resetScanScreen(); switchView('scan'); } } else { stopCamera(); resetScanScreen(); switchView('scan'); }
+          if (bulkItems.length > 0) { if (await showCustomConfirm("Zrušiť hromadný príjem?", "Všetky naskenované kódy sa stratia.")) { stopCamera(); resetScanScreen(); switchView('scan'); } } else { stopCamera(); resetScanScreen(); switchView('scan'); }
       }
       function toggleBulkCamera(active) {
           if (active) { if (document.getElementById('btnResumeCamera')) document.getElementById('btnResumeCamera').classList.add('hidden'); initCamera((d) => handleBulkItemScan(d), true); } else { stopCamera(); }
@@ -822,8 +823,8 @@
           const loc = targetLoc.toUpperCase().trim(); setLoading(true, `Ukladám ${bulkItems.length} roliek naraz...`);
           try {
               const result = await apiCall('createBulkItems', { items: bulkItems, loc: loc, user: currentUser });
-              updateLastAction(`PALETA ${result.processed} ks -> ${loc}`);
-              setLoading(false); beep('success'); showCustomAlert("Hotovo", `Paleta (${result.processed} ks) bola úspešne uložená na pozíciu ${loc}.`);
+              updateLastAction(`HROMADNÝ PRÍJEM ${result.processed} ks -> ${loc}`);
+              setLoading(false); beep('success'); showCustomAlert("Hotovo", `Naskenované položky (${result.processed} ks) boli úspešne uložené na pozíciu ${loc}.`);
               bulkItems = []; loadDb(false); resetScanScreen(); switchView('scan');
           } catch(e) { setLoading(false); showCustomAlert("Chyba spojenia", e.message); loadDb(false); }
       }
@@ -991,7 +992,6 @@
          const area = document.getElementById('resultArea'); area.classList.remove('hidden'); document.getElementById('dailyQuoteBox').style.display = 'none';
          const count = matches.length;
 
-         // Inteligentné zobrazenie názvu (Najprv dbData, potom dbCatalog, nakoniec len SKU)
          let displayName = scannedId;
          let firstMatchWithName = matches.find(m => m.name && m.name.trim() !== "");
          if (firstMatchWithName) displayName = firstMatchWithName.name;
@@ -1024,6 +1024,19 @@
          if(count === 0 && rawParts.length > 2) prepareNew(scannedId, false, rawParts); else area.innerHTML = html;
       }
       
+      // Úprava funkcie pre výpočet farby, aby bola vhodná pre ľavý hrubý okraj celého bloku
+      function getColorForLoc(str) { 
+          if(!str) return ""; 
+          let hash = 0; 
+          for (let i = 0; i < str.length; i++) hash = Math.imul(31, hash) + str.charCodeAt(i) | 0; 
+          hash = Math.imul(hash ^ (hash >>> 15), 0x735a2d97); 
+          hash = (hash ^ (hash >>> 15)) | 0; 
+          const h = Math.abs(hash % 360); 
+          return (hash % 2 === 0) 
+              ? `background-color: hsl(${h}, 75%, 40%); color: #ffffff; border-left-color: hsl(${h}, 75%, 30%);` 
+              : `background-color: hsl(${h}, 85%, 92%); color: hsl(${h}, 100%, 15%); border-left-color: hsl(${h}, 60%, 80%);`; 
+      }
+
       function renderDb(items) {
          const list = document.getElementById('dbList');
          document.getElementById('dbStats').innerHTML = `<span class="text-slate-700">Počet: ${items.length} ks</span>`;
@@ -1046,24 +1059,52 @@
       }
       
       function createRowHtml(i) {
-         const locDisplay = i.location ? `<span style="${getColorForLoc(i.location)}" class="px-2 py-1 rounded text-sm font-bold border">${i.location}</span>` : `<span class="bg-red-100 text-red-800 px-2 py-1 text-xs">NEUSKL.</span>`;
-         const noteDisplay = i.note ? `<div class="text-xs text-amber-600 mt-1 italic"><span class="material-icons text-[10px]">sticky_note_2</span> ${i.note}</div>` : '';
+         let locStyle = ''; let locText = ''; let locClasses = '';
+         if (i.location) {
+             locStyle = getColorForLoc(i.location);
+             locText = i.location;
+             locClasses = "w-20 sm:w-24 shrink-0 flex items-center justify-center font-black text-center text-sm sm:text-base border-l border-opacity-50 cursor-pointer";
+         } else {
+             locStyle = "background-color: #fee2e2; color: #991b1b; border-color: #fca5a5;";
+             locText = "NEUSKL.";
+             locClasses = "w-20 sm:w-24 shrink-0 flex items-center justify-center font-bold text-center text-[10px] sm:text-xs border-l cursor-pointer";
+         }
+
+         const noteDisplay = i.note ? `<div class="text-xs text-amber-600 mt-1.5 font-medium flex items-center gap-1"><span class="material-icons text-[12px]">sticky_note_2</span> ${i.note}</div>` : '';
          const isSelected = selectedIds.has(String(i.id)) ? 'checked' : '';
-         const bgClass = isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200';
+         const bgClass = isSelected ? 'bg-blue-50 border-blue-400' : 'bg-white border-slate-200';
          const checkHtml = isSelected ? '<span class="material-icons text-sm">check</span>' : '';
 
-         // Inteligentné zobrazenie názvu aj v zozname
-         let displayTitle = (i.name && i.name.trim() !== "") ? i.name : (dbCatalog[i.sku || getBaseCode(i.id)] || i.id);
-         let subtitle = (displayTitle !== i.id) ? `<div class="text-xs text-slate-500 mt-1 leading-snug">${displayTitle}</div>` : '';
+         let displayTitle = (i.name && i.name.trim() !== "") ? i.name : (dbCatalog[i.sku || getBaseCode(i.id)] || "");
+         let titleHtml = `<div class="font-black text-slate-900 text-xl sm:text-2xl font-mono leading-tight break-words tracking-tight">${i.id}</div>`;
+         let subtitleHtml = (displayTitle && displayTitle !== i.id) ? `<div class="font-bold text-slate-700 text-lg sm:text-xl leading-snug mt-0.5">${displayTitle}</div>` : '';
 
-         return `<div class="${bgClass} p-4 rounded-xl shadow-sm border mb-3 transition-colors flex gap-4"><div class="flex items-center justify-center pt-1" onclick="toggleSelection('${i.id}')"><div class="custom-checkbox ${isSelected} item-checkbox" data-id="${i.id}">${checkHtml}</div></div><div class="flex-1 active:scale-[0.98] transition-transform" onclick="openDetailModal('${i.id}')"><div class="flex justify-between items-start gap-4"><div><div class="font-bold font-mono text-slate-900 text-lg leading-snug break-words">${i.id}</div>${subtitle}</div><div>${locDisplay}</div></div>${noteDisplay}<div class="text-[10px] text-slate-400 mt-2">${i.date.substring(0,10)}</div></div></div>`;
+         const userName = i.user ? i.user : 'Neznámy';
+
+         return `
+         <div class="${bgClass} rounded-xl shadow-sm border mb-3 transition-colors flex overflow-hidden">
+            <div class="flex items-center justify-center px-3 cursor-pointer" onclick="toggleSelection('${i.id}')">
+                <div class="custom-checkbox ${isSelected} item-checkbox" data-id="${i.id}">${checkHtml}</div>
+            </div>
+            <div class="flex-1 py-3 pr-2 active:scale-[0.99] transition-transform cursor-pointer" onclick="openDetailModal('${i.id}')">
+                ${titleHtml}
+                ${subtitleHtml}
+                ${noteDisplay}
+                <div class="text-[10px] text-slate-400 mt-2 font-medium flex items-center gap-1">
+                    <span class="material-icons text-[10px]">event</span> ${i.date.substring(0,10)}
+                    <span class="material-icons text-[10px] ml-1">person</span> ${userName}
+                </div>
+            </div>
+            <div style="${locStyle}" class="${locClasses}" onclick="openDetailModal('${i.id}')">
+                ${locText}
+            </div>
+         </div>`;
       }
       
       function filterDb() {
           const codeQ = document.getElementById('dbSearchCode').value.toUpperCase().trim();
           const nameQ = document.getElementById('dbSearchName').value.trim();
 
-          // Ignorovanie dĺžňov a mäkčeňov pre lepšie vyhľadávanie názvov
           const normalize = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() : "";
 
           const codeTerms = codeQ.split(/\s+/).filter(t => t.length > 0);
@@ -1072,28 +1113,21 @@
           if(codeTerms.length === 0 && nameTerms.length === 0) { renderDb(dbData); return; }
 
           const filtered = dbData.filter(i => {
-              // 1. Kontrola podľa kódu/lokácie
               let matchCode = true;
               if (codeTerms.length > 0) {
                   matchCode = codeTerms.every(term => {
-                      // Ochrana: hľadáme len na začiatku textu alebo za oddeľovačom (napr. pomlčkou), aby 9B nenašlo 19B
                       const safeTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                       const prefixRegex = new RegExp(`(^|[^a-zA-Z0-9])${safeTerm}`);
-                      
-                      return prefixRegex.test(i.id) || 
-                             (i.location ? prefixRegex.test(i.location) : false) || 
-                             (i.note ? i.note.toUpperCase().includes(term) : false); // Poznámka môže ostať voľnejšia
+                      return prefixRegex.test(i.id) || (i.location ? prefixRegex.test(i.location) : false) || (i.note ? i.note.toUpperCase().includes(term) : false);
                   });
               }
 
-              // 2. Kontrola podľa názvu produktu
               let matchName = true;
               if (nameTerms.length > 0) {
                   let itemName = normalize(i.name || dbCatalog[i.sku || getBaseCode(i.id)] || "");
                   matchName = nameTerms.every(term => itemName.includes(term));
               }
 
-              // Musí sedieť aj kód, aj názov (ak sú zadané obe polia)
               return matchCode && matchName;
           });
           
@@ -1108,7 +1142,6 @@
           const existingLocs = [...new Set(dbData.filter(i => i.sku === skuBase || i.id.startsWith(skuBase)).map(i => i.location).filter(l=>l))];
           const hintHtml = existingLocs.length > 0 ? `<div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 p-2 rounded-lg mt-2 font-bold flex items-center gap-1 shadow-inner"><span class="material-icons text-sm text-amber-500">lightbulb</span> Tip: Tento materiál už máme na: ${existingLocs.join(', ')}</div>` : '';
 
-          // Nájdenie názvu v Katalógu
           const prefilledName = dbCatalog[skuBase] || "";
 
           document.getElementById('resultArea').innerHTML = `
@@ -1193,7 +1226,6 @@
       function cancelMove(mainId) { processResult(mainId); }
       function handleScan() { processResult(document.getElementById('scanInput').value); }
       
-      function getColorForLoc(str) { if(!str) return ""; let hash = 0; for (let i = 0; i < str.length; i++) hash = Math.imul(31, hash) + str.charCodeAt(i) | 0; hash = Math.imul(hash ^ (hash >>> 15), 0x735a2d97); hash = (hash ^ (hash >>> 15)) | 0; const h = Math.abs(hash % 360); return (hash % 2 === 0) ? `background-color: hsl(${h}, 75%, 40%); color: #ffffff; border-color: hsl(${h}, 75%, 30%);` : `background-color: hsl(${h}, 85%, 92%); color: hsl(${h}, 100%, 15%); border-color: hsl(${h}, 60%, 80%);`; }
       function openItemDetail(id) { switchView('scan'); processResult(id); }
       function openDetailModal(id) { 
           const item = dbData.find(i => i.id === id); if(!item) return; 
