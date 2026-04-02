@@ -639,6 +639,7 @@
           let locId = extractRealId(val);
           if(!locId) return;
           beep('success');
+          document.getElementById('scanInput').value = locId; // Uchovanie kontextu pre automatický refresh
           const items = dbData.filter(i => String(i.location).toUpperCase() === locId);
           renderLocationView(locId, items);
       }
@@ -653,6 +654,7 @@
               if(!rawCode) return;
               let locId = rawCode.toUpperCase().trim();
               stopCamera(); beep('success');
+              document.getElementById('scanInput').value = locId; // Uchovanie kontextu pre automatický refresh
               const items = dbData.filter(i => String(i.location).toUpperCase() === locId);
               renderLocationView(locId, items);
           }, false);
@@ -968,17 +970,28 @@
              <button onclick="resetScanScreen()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-white p-2 rounded-full shadow-md tap-feedback z-10 border border-slate-200"><span class="material-icons">close</span></button>
              <div class="bg-slate-50 p-6 border-b border-slate-200 pr-16"><div class="text-xs text-slate-500 font-bold uppercase mb-2 tracking-wider flex items-center gap-1"><span class="material-icons text-sm">place</span> Pozícia v sklade</div><h2 class="text-4xl font-black text-slate-900 leading-tight mb-2">${locId}</h2><div class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-lg text-sm font-bold shadow-inner">Obsahuje: ${items.length} roliek</div></div>`;
          
-         const skuGroups = {};
-         items.forEach(item => { const bSku = getBaseCode(item.id); if(!skuGroups[bSku]) skuGroups[bSku] = []; skuGroups[bSku].push(item); });
-         
          html += `<div class="max-h-[350px] overflow-y-auto bg-slate-50 p-2 space-y-2">`;
          if(items.length === 0) {
              html += `<div class="text-center text-slate-400 py-6 font-medium">Táto pozícia je prázdna.</div>`;
          } else {
-             for (const [sku, skuItems] of Object.entries(skuGroups)) {
-                 let skuName = dbCatalog[sku] || sku;
-                 html += `<div class="bg-white p-3 rounded-xl border border-slate-200 flex justify-between items-center"><div><div class="font-bold font-mono text-slate-800 text-lg leading-tight">${sku}</div>${skuName !== sku ? `<div class="text-xs text-slate-500 leading-snug mt-0.5">${skuName}</div>`:''}</div><div class="font-black text-lg bg-slate-100 px-3 py-1 rounded-lg ml-2 whitespace-nowrap">${skuItems.length} ks</div></div>`;
-             }
+             // Zobrazenie každej rolky osobitne s možnosťou rozkliku
+             const sortedItems = [...items].sort((a,b) => a.id.localeCompare(b.id));
+             sortedItems.forEach(item => {
+                 let sku = getBaseCode(item.id);
+                 let displayTitle = (item.name && item.name.trim() !== "") ? item.name : (dbCatalog[sku] || "");
+                 let subtitleHtml = (displayTitle && displayTitle !== item.id) ? `<div class="text-xs text-slate-500 leading-snug mt-0.5">${displayTitle}</div>` : '';
+                 
+                 html += `
+                 <div class="bg-white p-3 rounded-xl border border-slate-200 flex justify-between items-center active:scale-[0.98] transition-transform cursor-pointer tap-feedback shadow-sm" onclick="openDetailModal('${item.id}')">
+                     <div class="flex-1 pr-2">
+                         <div class="font-bold font-mono text-slate-800 text-lg leading-tight break-all">${item.id}</div>
+                         ${subtitleHtml}
+                     </div>
+                     <button class="bg-slate-100 text-slate-500 w-10 h-10 rounded-lg shrink-0 flex items-center justify-center">
+                         <span class="material-icons text-sm">edit</span>
+                     </button>
+                 </div>`;
+             });
          }
          html += `</div>`;
          
@@ -1237,7 +1250,10 @@
       function saveModalNote() { 
           const id = document.getElementById('modalItemId').value; const note = document.getElementById('modalItemNote').value; setLoading(true); 
           apiCall('updateItem', { id: id, len: null, loc: null, act: "POZNAMKA", note: note, user: currentUser }).then(() => { 
-              setLoading(false); closeDetailModal(); loadDb(false); beep('success'); updateLastAction(`POZNÁMKA ${id}`); 
+              const itemIndex = dbData.findIndex(i => i.id === id); if(itemIndex > -1) { dbData[itemIndex].note = note; } // Lokálna synchro
+              setLoading(false); closeDetailModal(); loadDb(false); beep('success'); 
+              if(!document.getElementById('resultArea').classList.contains('hidden')) { processResult(document.getElementById('scanInput').value); } // Okamžitý refresh aktuálneho okna
+              updateLastAction(`POZNÁMKA ${id}`); 
           }).catch(e => { setLoading(false); showCustomAlert("Chyba", e.message); beep('error'); });
       }
       
@@ -1246,9 +1262,11 @@
           if(newLoc) { 
               setLoading(true); 
               apiCall('updateItem', { id: id, len: null, loc: newLoc.toUpperCase(), act: "PRESUN", note: null, user: currentUser }).then(() => { 
-                  const itemIndex = dbData.findIndex(i => i.id === id); if(itemIndex > -1) { dbData[itemIndex].location = newLoc.toUpperCase(); }
+                  const itemIndex = dbData.findIndex(i => i.id === id); if(itemIndex > -1) { dbData[itemIndex].location = newLoc.toUpperCase(); } // Lokálna synchro
                   setLoading(false); closeDetailModal(); loadDb(false); beep('success'); 
-                  if(!document.getElementById('resultArea').classList.contains('hidden')) { processResult(id.split('_')[0]); }
+                  if(!document.getElementById('resultArea').classList.contains('hidden')) { 
+                      processResult(document.getElementById('scanInput').value); // Okamžitý refresh aktuálneho okna (Produkt alebo Regál)
+                  }
                   updateLastAction(`PRESUN ${id} -> ${newLoc.toUpperCase()}`); 
               }).catch(e => { setLoading(false); showCustomAlert("Chyba", e.message); beep('error'); });
           } 
@@ -1257,8 +1275,17 @@
       async function deleteFromModal() { 
           const id = document.getElementById('modalItemId').value; 
           if(await showCustomConfirm("Výdaj", "Naozaj odčítať túto rolku?")) { 
-              setLoading(true); resetScanScreen(); 
-              apiCall('deleteItem', { id: id, user: currentUser }).then(() => { setLoading(false); closeDetailModal(); loadDb(false); beep('success'); updateLastAction(`ZMAZANÉ ${id}`); }).catch(e => { setLoading(false); showCustomAlert("Chyba", e.message); beep('error'); });
+              setLoading(true); 
+              apiCall('deleteItem', { id: id, user: currentUser }).then(() => { 
+                  const itemIndex = dbData.findIndex(i => i.id === id); 
+                  if(itemIndex > -1) { dbData.splice(itemIndex, 1); } // Lokálna synchro pre okamžité zmiznutie
+                  
+                  setLoading(false); closeDetailModal(); 
+                  if(!document.getElementById('resultArea').classList.contains('hidden')) { 
+                      processResult(document.getElementById('scanInput').value); // Okamžitý refresh aktuálneho okna
+                  }
+                  loadDb(false); beep('success'); updateLastAction(`ZMAZANÉ ${id}`); 
+              }).catch(e => { setLoading(false); showCustomAlert("Chyba", e.message); beep('error'); });
           } 
       }
       
