@@ -1350,20 +1350,12 @@
           setVzorStatus('Načítavam databázu vzorov...');
           let response = null;
           try {
-              const cache = await caches.open('vzory-index-v1');
-              const cached = await cache.match(VZOR_INDEX_URL);
-              if (cached) { response = cached; }
-              else {
-                  vzorProgress('Sťahujem databázu vzorov...', null);
-                  response = await fetch(VZOR_INDEX_URL);
-                  if (!response.ok) throw new Error('index.json HTTP ' + response.status);
-                  await cache.put(VZOR_INDEX_URL, response.clone());
-              }
+              vzorProgress('Kontrolujem databázu vzorov...', null);
+              response = await fetch(VZOR_INDEX_URL, { cache: 'no-cache' });
+              if (!response.ok) throw new Error('HTTP ' + response.status);
           } catch (e) {
-              if (!response) {
-                  response = await fetch(VZOR_INDEX_URL);
-                  if (!response.ok) throw new Error('index.json sa nepodarilo stiahnuť (HTTP ' + response.status + ')');
-              }
+              response = await fetch(VZOR_INDEX_URL, { cache: 'force-cache' });
+              if (!response.ok) throw new Error('index.json sa nepodarilo stiahnuť (HTTP ' + response.status + ')');
           }
           vzorIndex = await response.json();
           if (!vzorIndex.items || vzorIndex.items.length === 0) throw new Error('index.json je prázdny');
@@ -1416,7 +1408,7 @@
               const scored = vzorIndex.items.map(item => {
                   let dot = 0; const e = item.emb;
                   for (let i = 0; i < q.length; i++) dot += q[i] * e[i];
-                  return { item, score: dot };
+                  return { item, score: dot / (vzorIndex.q || 1) };
               });
               scored.sort((a, b) => b.score - a.score);
               vEl('vzorSearchStatus').innerText = 'Hotovo ✓';
