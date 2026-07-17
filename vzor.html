@@ -119,23 +119,12 @@
         setStatus('Načítavam databázu vzorov...');
         let response = null;
         try {
-          const cache = await caches.open('vzory-index-v1');
-          const cached = await cache.match(INDEX_URL);
-          if (cached) {
-            response = cached;
-            setStatus('Databáza vzorov z pamäte telefónu.');
-          } else {
-            setProgress('Sťahujem databázu vzorov...', null);
-            response = await fetch(INDEX_URL);
-            if (!response.ok) throw new Error('HTTP ' + response.status);
-            await cache.put(INDEX_URL, response.clone());
-          }
+          setProgress('Kontrolujem databázu vzorov...', null);
+          response = await fetch(INDEX_URL, { cache: 'no-cache' });
+          if (!response.ok) throw new Error('HTTP ' + response.status);
         } catch (e) {
-          // Cache API nemusi byt dostupna (http, stary prehliadac) - ideme priamo
-          if (!response) {
-            response = await fetch(INDEX_URL);
-            if (!response.ok) throw new Error('index.json sa nepodarilo stiahnuť (HTTP ' + response.status + ')');
-          }
+          response = await fetch(INDEX_URL, { cache: 'force-cache' });
+          if (!response.ok) throw new Error('index.json sa nepodarilo stiahnuť (HTTP ' + response.status + ')');
         }
         indexData = await response.json();
         if (!indexData.items || indexData.items.length === 0) throw new Error('index.json je prázdny');
@@ -194,7 +183,7 @@
             let dot = 0;
             const e = item.emb;
             for (let i = 0; i < q.length; i++) dot += q[i] * e[i];
-            return { item, score: dot };
+            return { item, score: dot / (indexData.q || 1) };
           });
           scored.sort((a, b) => b.score - a.score);
           const top = scored.slice(0, 5);
