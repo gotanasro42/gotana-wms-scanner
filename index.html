@@ -428,6 +428,19 @@
           }
       }
       
+      let dbNahlady = {};
+      function loadNahlady() {
+          const stored = localStorage.getItem('gotana_nahlady');
+          if (stored) { try { dbNahlady = JSON.parse(stored); } catch(e){} }
+          fetch('./nahlady.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(data => {
+              if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+                  dbNahlady = data;
+                  try { localStorage.setItem('gotana_nahlady', JSON.stringify(data)); } catch(e) {}
+                  if (!document.getElementById('view-db').classList.contains('hidden')) renderDb(dbData);
+              }
+          }).catch(e => {});
+      }
+
       function loadCatalog() {
           const stored = localStorage.getItem('gotana_catalog');
           if (stored) { try { dbCatalog = JSON.parse(stored); } catch(e){} }
@@ -938,7 +951,7 @@
       
       function finishInit() {
           checkIdentity(); document.getElementById('status').classList.add('text-green-500'); 
-          initDailyQuote(); loadDb(false); loadCatalog(); requestWakeLock(); processOfflineQueue();
+          initDailyQuote(); loadDb(false); loadCatalog(); loadNahlady(); requestWakeLock(); processOfflineQueue();
           const kodParam = new URLSearchParams(location.search).get('kod');
           if (kodParam) { setTimeout(() => processResult(kodParam.toUpperCase()), 2000); }
       }
@@ -1017,6 +1030,7 @@
                  
                  html += `
                  <div class="bg-white p-3 rounded-xl border border-slate-200 flex justify-between items-center active:scale-[0.98] transition-transform cursor-pointer tap-feedback shadow-sm" onclick="openDetailModal('${item.id}')">
+                     ${dbNahlady[sku] ? `<img src="${dbNahlady[sku]}" loading="lazy" class="w-12 h-12 object-cover rounded-lg mr-2 shrink-0" onerror="this.style.display='none'">` : ''}
                      <div class="flex-1 pr-2">
                          <div class="font-bold font-mono text-slate-800 text-lg leading-tight break-all">${item.id}</div>
                          ${subtitleHtml}
@@ -1048,6 +1062,7 @@
              <button onclick="resetScanScreen()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-white p-2 rounded-full shadow-md tap-feedback z-10 border border-slate-200"><span class="material-icons">close</span></button>
              <div class="bg-slate-50 p-6 border-b border-slate-200 pr-16">
                 ${displayName !== scannedId ? `<div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 leading-snug">${displayName}</div>` : ''}
+                ${dbNahlady[scannedId] ? `<img src="${dbNahlady[scannedId]}" loading="lazy" class="w-20 h-20 object-cover rounded-xl border border-slate-200 mb-2 shadow-sm" onerror="this.style.display='none'">` : ''}
                 <h2 class="text-3xl font-black font-mono text-slate-900 leading-tight mb-1 break-words tracking-tight">${scannedId}</h2>
              </div>`;
          
@@ -1131,6 +1146,7 @@
             <div class="flex items-center justify-center px-2 cursor-pointer" onclick="toggleSelection('${i.id}')">
                 <div class="custom-checkbox ${isSelected} item-checkbox" data-id="${i.id}">${checkHtml}</div>
             </div>
+            ${dbNahlady[i.sku || getBaseCode(i.id)] ? `<img src="${dbNahlady[i.sku || getBaseCode(i.id)]}" loading="lazy" class="w-12 h-12 object-cover rounded-lg self-center ml-1 shrink-0 cursor-pointer" onclick="openDetailModal('${i.id}')" onerror="this.style.display='none'">` : ''}
             <div class="flex-1 py-2 pr-2 active:scale-[0.99] transition-transform cursor-pointer" onclick="openDetailModal('${i.id}')">
                 ${titleHtml}
                 ${subtitleHtml}
@@ -1327,13 +1343,16 @@
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initApp); else initApp();
     </script>
     <script type="module">
-      // ================= VZOR FINDER (CLIP v prehliadaci) =================
+      // ================= VZOR FINDER v2 (CLIP v prehliadaci) =================
       import { AutoProcessor, CLIPVisionModelWithProjection, RawImage, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
       env.allowLocalModels = false;
 
-      const VZOR_MODEL_ID = 'Xenova/clip-vit-base-patch32';
       const VZOR_INDEX_URL = './index.json';
+      const VZOR_FALLBACK_MODEL = 'Xenova/clip-vit-base-patch32';
+      const VZOR_TOP = 10;        // kolko skupin vysledkov zobrazit
+      const VZOR_DUP = 0.985;     // hranica pre zlucenie duplicit
       let vzorProcessor = null, vzorModel = null, vzorIndex = null;
+      let vzorQ = 1, vzorModelId = null;
       let vzorReady = false, vzorLoading = false;
 
       const vEl = (id) => document.getElementById(id);
@@ -1359,13 +1378,20 @@
           }
           vzorIndex = await response.json();
           if (!vzorIndex.items || vzorIndex.items.length === 0) throw new Error('index.json je prázdny');
+          vzorQ = vzorIndex.q || 1;
+          if (vzorQ === 1) {
+              let m = 0; const e0 = vzorIndex.items[0].emb;
+              for (let i = 0; i < e0.length; i++) m = Math.max(m, Math.abs(e0[i]));
+              if (m > 2) vzorQ = 1000; // poistka: kompaktny index bez pola q
+          }
+          vzorModelId = vzorIndex.model || VZOR_FALLBACK_MODEL;
       }
 
       async function loadVzorModel() {
           setVzorStatus('Načítavam AI model...');
           const cb = (d) => { if (d.status === 'progress' && d.total) vzorProgress('Sťahujem AI model...', (d.loaded / d.total) * 100); };
-          vzorProcessor = await AutoProcessor.from_pretrained(VZOR_MODEL_ID, { progress_callback: cb });
-          vzorModel = await CLIPVisionModelWithProjection.from_pretrained(VZOR_MODEL_ID, { quantized: true, progress_callback: cb });
+          vzorProcessor = await AutoProcessor.from_pretrained(vzorModelId, { progress_callback: cb });
+          vzorModel = await CLIPVisionModelWithProjection.from_pretrained(vzorModelId, { quantized: true, progress_callback: cb });
       }
 
       window.vzorLazyInit = async function() {
@@ -1389,30 +1415,68 @@
           }
       };
 
+      function vzorNorm(v) { const n = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1; return v.map(x => x / n); }
+
+      async function vzorEmbedUrl(url) {
+          const image = await RawImage.read(url);
+          const inputs = await vzorProcessor(image);
+          const { image_embeds } = await vzorModel(inputs);
+          return Array.from(image_embeds.data);
+      }
+
+      // 3 pohlady na fotku: cela + stredovy vyrez + blizky stred -> priemer
+      async function vzorQueryVector(file, baseUrl) {
+          const img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('Fotku sa nepodarilo načítať')); im.src = baseUrl; });
+          const crops = [1, 0.7, 0.45];
+          const vecs = [];
+          for (const f of crops) {
+              let url = baseUrl, tmp = null;
+              if (f < 1) {
+                  const side = Math.min(img.naturalWidth, img.naturalHeight) * f;
+                  const sx = (img.naturalWidth - side) / 2, sy = (img.naturalHeight - side) / 2;
+                  const canvas = document.createElement('canvas');
+                  canvas.width = 448; canvas.height = 448;
+                  canvas.getContext('2d').drawImage(img, sx, sy, side, side, 0, 0, 448, 448);
+                  const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.92));
+                  tmp = URL.createObjectURL(blob); url = tmp;
+              }
+              try { vecs.push(vzorNorm(await vzorEmbedUrl(url))); }
+              finally { if (tmp) setTimeout(() => URL.revokeObjectURL(tmp), 2000); }
+          }
+          const avg = new Array(vecs[0].length).fill(0);
+          vecs.forEach(v => v.forEach((x, i) => avg[i] += x));
+          return vzorNorm(avg.map(x => x / vecs.length));
+      }
+
+      function vzorCos(a, b) { let d = 0; for (let i = 0; i < a.length; i++) d += a[i] * b[i]; return d / (vzorQ * vzorQ); }
+
       window.vzorHandlePhoto = async function(input) {
           if (!vzorReady || !input.files || !input.files[0]) return;
           const file = input.files[0];
           const url = URL.createObjectURL(file);
           vEl('vzorPreview').classList.remove('hidden');
           vEl('vzorPreviewImg').src = url;
-          vEl('vzorSearchStatus').innerText = 'Analyzujem vzor...';
+          vEl('vzorSearchStatus').innerText = 'Analyzujem vzor (3 pohľady)...';
           vEl('vzorResults').innerHTML = '';
           vEl('vzorError').classList.add('hidden');
           try {
-              const image = await RawImage.read(url);
-              const inputs = await vzorProcessor(image);
-              const { image_embeds } = await vzorModel(inputs);
-              const v = Array.from(image_embeds.data);
-              const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1;
-              const q = v.map(x => x / norm);
+              const q = await vzorQueryVector(file, url);
               const scored = vzorIndex.items.map(item => {
                   let dot = 0; const e = item.emb;
                   for (let i = 0; i < q.length; i++) dot += q[i] * e[i];
-                  return { item, score: dot / (vzorIndex.q || 1) };
+                  return { item, score: dot / vzorQ };
               });
               scored.sort((a, b) => b.score - a.score);
+              const groups = [];
+              for (let idx = 0; idx < scored.length && idx < 250; idx++) {
+                  const r = scored[idx];
+                  const g = groups.find(x => vzorCos(x.item.emb, r.item.emb) >= VZOR_DUP);
+                  if (g) { if (g.variants.length < 6) g.variants.push(r.item); }
+                  else if (groups.length < VZOR_TOP) { groups.push({ item: r.item, score: r.score, variants: [] }); }
+                  if (groups.length >= VZOR_TOP && idx > 80) break;
+              }
               vEl('vzorSearchStatus').innerText = 'Hotovo ✓';
-              renderVzorResults(scored.slice(0, 5));
+              renderVzorResults(groups);
               if (window.beep) beep('success');
           } catch (e) {
               console.error(e);
@@ -1422,33 +1486,50 @@
               eb.classList.remove('hidden');
           } finally {
               input.value = '';
-              setTimeout(() => URL.revokeObjectURL(url), 5000);
+              setTimeout(() => URL.revokeObjectURL(url), 8000);
           }
       };
 
+      function vzorPct(score) {
+          const lo = 0.60, hi = 0.92; // roztiahnutie CLIP skore na zmysluplne percenta
+          return Math.round(Math.max(0, Math.min(1, (score - lo) / (hi - lo))) * 100);
+      }
+
       function vzorScoreBadge(score) {
-          const pct = Math.round(score * 100);
+          const pct = vzorPct(score);
           let cls = 'bg-red-100 text-red-800 border-red-200';
-          if (pct >= 80) cls = 'bg-green-100 text-green-800 border-green-200';
-          else if (pct >= 65) cls = 'bg-amber-100 text-amber-800 border-amber-200';
+          if (pct >= 70) cls = 'bg-green-100 text-green-800 border-green-200';
+          else if (pct >= 45) cls = 'bg-amber-100 text-amber-800 border-amber-200';
           return '<span class="text-xs font-black px-2 py-1 rounded-lg border ' + cls + '">' + pct + ' %</span>';
       }
 
-      function renderVzorResults(top) {
-          let html = '<div class="text-xs uppercase font-bold text-slate-400 tracking-widest px-1">Najpodobnejšie vzory</div>';
-          top.forEach((r, idx) => {
-              const it = r.item;
+      function vzorSkuNaSklade(sku) {
+          return dbData.filter(d => d.id === sku || d.id.startsWith(sku + '_')).length;
+      }
+
+      function renderVzorResults(groups) {
+          let html = '<div class="text-xs uppercase font-bold text-slate-400 tracking-widest px-1">Najpodobnejšie vzory (' + groups.length + ')</div>';
+          groups.forEach((g, idx) => {
+              const it = g.item;
               const safeName = (it.name || '').replace(/</g, '&lt;');
-              const naSklade = dbData.filter(d => d.id === it.sku || d.id.startsWith(it.sku + '_')).length;
+              let naSklade = vzorSkuNaSklade(it.sku);
+              g.variants.forEach(v => naSklade += vzorSkuNaSklade(v.sku));
               const skladBadge = naSklade > 0
                   ? '<span class="text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded">Na sklade: ' + naSklade + ' ks</span>'
                   : '<span class="text-[10px] font-bold text-slate-400 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded">Nie je v sklade</span>';
+              let variantHtml = '';
+              if (g.variants.length > 0) {
+                  variantHtml = '<div class="text-[11px] text-slate-500 mt-1">Ďalšie kódy: ' + g.variants.map(v =>
+                      '<span class="underline font-mono" onclick="event.stopPropagation();vzorOpen(\'' + v.sku + '\')">' + v.sku + '</span>'
+                  ).join(', ') + '</div>';
+              }
               html += '<div class="bg-white rounded-2xl shadow-md border ' + (idx === 0 ? 'border-pink-300 ring-2 ring-pink-100' : 'border-slate-200') + ' overflow-hidden animate-scale-in">'
                   + '<div class="flex cursor-pointer tap-feedback" onclick="vzorOpen(\'' + it.sku + '\')">'
                   + '<img src="' + it.img + '" loading="lazy" class="w-28 h-28 object-cover shrink-0 bg-slate-100" alt="">'
                   + '<div class="p-3 flex-1 min-w-0">'
-                  + '<div class="flex justify-between items-start gap-2"><div class="font-black font-mono text-slate-900 text-lg leading-tight break-all">' + it.sku + '</div>' + vzorScoreBadge(r.score) + '</div>'
+                  + '<div class="flex justify-between items-start gap-2"><div class="font-black font-mono text-slate-900 text-lg leading-tight break-all">' + it.sku + '</div>' + vzorScoreBadge(g.score) + '</div>'
                   + '<div class="text-xs text-slate-500 leading-snug mt-1">' + safeName + '</div>'
+                  + variantHtml
                   + '<div class="mt-2">' + skladBadge + '</div>'
                   + '</div></div>'
                   + '<div class="border-t border-slate-100"><button onclick="vzorOpen(\'' + it.sku + '\')" class="w-full py-3 text-sm font-bold text-blue-600 active:bg-blue-50 flex items-center justify-center gap-1 tap-feedback"><span class="material-icons text-base">warehouse</span> Nájsť v sklade</button></div>'
