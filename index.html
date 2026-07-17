@@ -62,6 +62,9 @@
         <button onclick="switchView('db')" id="tab-db" class="nav-item flex-1 py-4 font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 transition-all">
           <span class="material-icons">storage</span> Zoznam
         </button>
+        <button onclick="switchView('vzor')" id="tab-vzor" class="nav-item flex-1 py-4 font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 transition-all">
+          <span class="material-icons">image_search</span> Vzor
+        </button>
       </div>
       
       <!-- LAST ACTION BAR -->
@@ -221,6 +224,34 @@
           </div>
       </div>
       
+      <!-- VZOR FINDER VIEW -->
+      <div id="view-vzor" class="hidden">
+          <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200 mb-4">
+              <button id="btnVzorPhoto" onclick="document.getElementById('vzorPhotoInput').click()" disabled class="w-full bg-pink-600 active:bg-pink-800 disabled:bg-slate-300 text-white py-5 rounded-xl font-black text-xl flex items-center justify-center gap-3 shadow-lg active:scale-[0.98] transition-transform tap-feedback">
+                  <span class="material-icons text-3xl">photo_camera</span> <span id="btnVzorPhotoText">PRIPRAVUJEM...</span>
+              </button>
+              <input type="file" id="vzorPhotoInput" accept="image/*" capture="environment" class="hidden" onchange="window.vzorHandlePhoto(this)">
+              <p class="text-xs text-slate-400 text-center mt-3 font-medium">Odfoť látku kolmo a zblízka, nech vzor vyplní čo najväčšiu časť záberu. AI nájde najpodobnejšie grafiky.</p>
+              <div id="vzorStatus" class="text-[11px] font-mono text-slate-400 text-center mt-2">Čakám na prvé otvorenie...</div>
+          </div>
+          <div id="vzorFirstRun" class="hidden bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-slate-700 font-medium mb-4">
+              <div class="flex items-start gap-2"><span class="material-icons text-blue-500">downloading</span><div>Prvé spustenie sťahuje AI model a databázu vzorov (~60–80 MB). Ideálne na wifi. Potom už všetko beží z pamäte telefónu a je to rýchle.</div></div>
+              <div class="mt-3 bg-white rounded-lg p-2 border border-blue-100">
+                  <div class="flex justify-between text-xs font-bold text-slate-500 mb-1"><span id="vzorProgressLabel">Sťahujem...</span><span id="vzorProgressPct"></span></div>
+                  <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden"><div id="vzorProgressFill" class="bg-blue-500 h-2 rounded-full transition-all" style="width:0%"></div></div>
+              </div>
+          </div>
+          <div id="vzorPreview" class="hidden bg-white p-3 rounded-2xl shadow-md border border-slate-200 mb-4 animate-scale-in">
+              <div class="flex items-center gap-3">
+                  <img id="vzorPreviewImg" class="w-24 h-24 object-cover rounded-xl border border-slate-200" alt="">
+                  <div class="flex-1"><div class="text-xs uppercase font-bold text-slate-400 mb-1">Tvoja fotka</div><div id="vzorSearchStatus" class="font-bold text-slate-700">...</div></div>
+              </div>
+          </div>
+          <div id="vzorResults" class="space-y-3 pb-4"></div>
+          <div id="vzorError" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 font-medium"></div>
+      </div>
+
+
       <!-- BULK ACTIONS PANEL (ZOZNAM) -->
       <div id="bulkActionsPanel" class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-[0_-5px_20px_rgba(0,0,0,0.1)] p-4 z-[90] transform translate-y-full transition-transform duration-300 flex flex-col gap-3">
            <div class="flex justify-between items-center mb-1">
@@ -908,6 +939,8 @@
       function finishInit() {
           checkIdentity(); document.getElementById('status').classList.add('text-green-500'); 
           initDailyQuote(); loadDb(false); loadCatalog(); requestWakeLock(); processOfflineQueue();
+          const kodParam = new URLSearchParams(location.search).get('kod');
+          if (kodParam) { setTimeout(() => processResult(kodParam.toUpperCase()), 2000); }
       }
       
       const quotes = ["Logistika je Tetris s 20kg kockami.", "Skladník nemešká, kamión je skoro.", "Chaos je iný druh poriadku.", "Najlepšia paleta je tá, čo netreba prekladať.", "Dobrý systém šetrí nohy.", "V logistike je jediná istota zmena."];
@@ -929,13 +962,14 @@
       }
 
       function switchView(v) {
-         ['scan','db', 'bulk', 'inventory'].forEach(t => { 
+         ['scan','db', 'vzor', 'bulk', 'inventory'].forEach(t => { 
              const el = document.getElementById('view-'+t); if(el) el.classList.add('hidden'); 
              const tab = document.getElementById('tab-'+t); if(tab) tab.classList.remove('active'); 
          });
          document.getElementById('view-'+v).classList.remove('hidden'); 
          const activeTab = document.getElementById('tab-'+v); if(activeTab) activeTab.classList.add('active');
          if(v === 'db') renderDb(dbData);
+         if(v === 'vzor' && window.vzorLazyInit) window.vzorLazyInit();
       }
       function manualRefresh() { const btn = document.querySelector('button[onclick="manualRefresh()"] span'); btn.classList.add('animate-spin'); loadDb(true); loadCatalog(); setTimeout(() => btn.classList.remove('animate-spin'), 1000); }
 
@@ -1291,6 +1325,152 @@
       
       function setLoading(b, t="Pracujem...") { document.getElementById('loading').className = b?'flex fixed inset-0 bg-slate-900/90 z-[100] flex-col items-center justify-center backdrop-blur-sm':'hidden'; if(b)document.getElementById('loadingText').innerText=t; }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initApp); else initApp();
+    </script>
+    <script type="module">
+      // ================= VZOR FINDER (CLIP v prehliadaci) =================
+      import { AutoProcessor, CLIPVisionModelWithProjection, RawImage, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+      env.allowLocalModels = false;
+
+      const VZOR_MODEL_ID = 'Xenova/clip-vit-base-patch32';
+      const VZOR_INDEX_URL = './index.json';
+      let vzorProcessor = null, vzorModel = null, vzorIndex = null;
+      let vzorReady = false, vzorLoading = false;
+
+      const vEl = (id) => document.getElementById(id);
+      const setVzorStatus = (t) => { const el = vEl('vzorStatus'); if (el) el.innerText = t; };
+
+      function vzorProgress(label, pct) {
+          vEl('vzorFirstRun').classList.remove('hidden');
+          vEl('vzorProgressLabel').innerText = label;
+          vEl('vzorProgressPct').innerText = pct !== null ? Math.round(pct) + ' %' : '';
+          vEl('vzorProgressFill').style.width = (pct !== null ? pct : 30) + '%';
+      }
+
+      async function loadVzorIndex() {
+          setVzorStatus('Načítavam databázu vzorov...');
+          let response = null;
+          try {
+              const cache = await caches.open('vzory-index-v1');
+              const cached = await cache.match(VZOR_INDEX_URL);
+              if (cached) { response = cached; }
+              else {
+                  vzorProgress('Sťahujem databázu vzorov...', null);
+                  response = await fetch(VZOR_INDEX_URL);
+                  if (!response.ok) throw new Error('index.json HTTP ' + response.status);
+                  await cache.put(VZOR_INDEX_URL, response.clone());
+              }
+          } catch (e) {
+              if (!response) {
+                  response = await fetch(VZOR_INDEX_URL);
+                  if (!response.ok) throw new Error('index.json sa nepodarilo stiahnuť (HTTP ' + response.status + ')');
+              }
+          }
+          vzorIndex = await response.json();
+          if (!vzorIndex.items || vzorIndex.items.length === 0) throw new Error('index.json je prázdny');
+      }
+
+      async function loadVzorModel() {
+          setVzorStatus('Načítavam AI model...');
+          const cb = (d) => { if (d.status === 'progress' && d.total) vzorProgress('Sťahujem AI model...', (d.loaded / d.total) * 100); };
+          vzorProcessor = await AutoProcessor.from_pretrained(VZOR_MODEL_ID, { progress_callback: cb });
+          vzorModel = await CLIPVisionModelWithProjection.from_pretrained(VZOR_MODEL_ID, { quantized: true, progress_callback: cb });
+      }
+
+      window.vzorLazyInit = async function() {
+          if (vzorReady || vzorLoading) return;
+          vzorLoading = true;
+          try {
+              await loadVzorIndex();
+              await loadVzorModel();
+              vzorReady = true;
+              vEl('vzorFirstRun').classList.add('hidden');
+              vEl('btnVzorPhoto').disabled = false;
+              vEl('btnVzorPhotoText').innerText = 'ODFOTIŤ VZOR';
+              setVzorStatus('Pripravený • ' + vzorIndex.items.length + ' vzorov v databáze');
+          } catch (e) {
+              console.error(e);
+              vzorLoading = false;
+              setVzorStatus('Chyba pri štarte');
+              const eb = vEl('vzorError');
+              eb.innerText = 'Nepodarilo sa naštartovať Vzor Finder: ' + e.message + ' — skontroluj internet a skús záložku otvoriť znova.';
+              eb.classList.remove('hidden');
+          }
+      };
+
+      window.vzorHandlePhoto = async function(input) {
+          if (!vzorReady || !input.files || !input.files[0]) return;
+          const file = input.files[0];
+          const url = URL.createObjectURL(file);
+          vEl('vzorPreview').classList.remove('hidden');
+          vEl('vzorPreviewImg').src = url;
+          vEl('vzorSearchStatus').innerText = 'Analyzujem vzor...';
+          vEl('vzorResults').innerHTML = '';
+          vEl('vzorError').classList.add('hidden');
+          try {
+              const image = await RawImage.read(url);
+              const inputs = await vzorProcessor(image);
+              const { image_embeds } = await vzorModel(inputs);
+              const v = Array.from(image_embeds.data);
+              const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1;
+              const q = v.map(x => x / norm);
+              const scored = vzorIndex.items.map(item => {
+                  let dot = 0; const e = item.emb;
+                  for (let i = 0; i < q.length; i++) dot += q[i] * e[i];
+                  return { item, score: dot };
+              });
+              scored.sort((a, b) => b.score - a.score);
+              vEl('vzorSearchStatus').innerText = 'Hotovo ✓';
+              renderVzorResults(scored.slice(0, 5));
+              if (window.beep) beep('success');
+          } catch (e) {
+              console.error(e);
+              vEl('vzorSearchStatus').innerText = 'Chyba';
+              const eb = vEl('vzorError');
+              eb.innerText = 'Analýza zlyhala: ' + e.message;
+              eb.classList.remove('hidden');
+          } finally {
+              input.value = '';
+              setTimeout(() => URL.revokeObjectURL(url), 5000);
+          }
+      };
+
+      function vzorScoreBadge(score) {
+          const pct = Math.round(score * 100);
+          let cls = 'bg-red-100 text-red-800 border-red-200';
+          if (pct >= 80) cls = 'bg-green-100 text-green-800 border-green-200';
+          else if (pct >= 65) cls = 'bg-amber-100 text-amber-800 border-amber-200';
+          return '<span class="text-xs font-black px-2 py-1 rounded-lg border ' + cls + '">' + pct + ' %</span>';
+      }
+
+      function renderVzorResults(top) {
+          let html = '<div class="text-xs uppercase font-bold text-slate-400 tracking-widest px-1">Najpodobnejšie vzory</div>';
+          top.forEach((r, idx) => {
+              const it = r.item;
+              const safeName = (it.name || '').replace(/</g, '&lt;');
+              const naSklade = dbData.filter(d => d.id === it.sku || d.id.startsWith(it.sku + '_')).length;
+              const skladBadge = naSklade > 0
+                  ? '<span class="text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded">Na sklade: ' + naSklade + ' ks</span>'
+                  : '<span class="text-[10px] font-bold text-slate-400 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded">Nie je v sklade</span>';
+              html += '<div class="bg-white rounded-2xl shadow-md border ' + (idx === 0 ? 'border-pink-300 ring-2 ring-pink-100' : 'border-slate-200') + ' overflow-hidden animate-scale-in">'
+                  + '<div class="flex cursor-pointer tap-feedback" onclick="vzorOpen(\'' + it.sku + '\')">'
+                  + '<img src="' + it.img + '" loading="lazy" class="w-28 h-28 object-cover shrink-0 bg-slate-100" alt="">'
+                  + '<div class="p-3 flex-1 min-w-0">'
+                  + '<div class="flex justify-between items-start gap-2"><div class="font-black font-mono text-slate-900 text-lg leading-tight break-all">' + it.sku + '</div>' + vzorScoreBadge(r.score) + '</div>'
+                  + '<div class="text-xs text-slate-500 leading-snug mt-1">' + safeName + '</div>'
+                  + '<div class="mt-2">' + skladBadge + '</div>'
+                  + '</div></div>'
+                  + '<div class="border-t border-slate-100"><button onclick="vzorOpen(\'' + it.sku + '\')" class="w-full py-3 text-sm font-bold text-blue-600 active:bg-blue-50 flex items-center justify-center gap-1 tap-feedback"><span class="material-icons text-base">warehouse</span> Nájsť v sklade</button></div>'
+                  + '</div>';
+          });
+          html += '<button onclick="document.getElementById(\'vzorPhotoInput\').click()" class="w-full bg-slate-800 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 active:bg-black tap-feedback"><span class="material-icons">photo_camera</span> Odfotiť ďalší vzor</button>';
+          vEl('vzorResults').innerHTML = html;
+      }
+
+      window.vzorOpen = function(sku) {
+          switchView('scan');
+          processResult(sku);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
     </script>
   </body>
 </html>
