@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="sk">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0f172a">
+    <title>Gotana – Vyhľadávanie vzoru</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+      html, body { overscroll-behavior-y: contain; -webkit-tap-highlight-color: transparent; }
+      .loader { border-top-color: #3498db; animation: spinner 1.5s linear infinite; }
+      @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      .animate-scale-in { animation: scaleIn 0.2s ease-out forwards; }
+    </style>
+  </head>
+  <body class="bg-slate-100 min-h-screen font-sans text-slate-800 pb-16">
+
+    <!-- HLAVICKA -->
+    <div class="bg-slate-900 text-white sticky top-0 z-50 shadow-lg">
+      <div class="p-4 flex justify-between items-center max-w-lg mx-auto">
+        <div class="font-bold text-2xl flex items-center gap-2 tracking-tight">
+          <span class="material-icons text-pink-400 text-3xl">image_search</span> Vzor Finder
+        </div>
+        <a href="./index.html" class="bg-slate-800 text-xs font-bold px-3 py-2 rounded-full border border-slate-700 flex items-center gap-1">
+          <span class="material-icons text-sm text-blue-400">qr_code_scanner</span> Sklad
+        </a>
+      </div>
+      <div id="statusBar" class="bg-slate-800 text-slate-300 text-xs py-1 px-4 text-center border-t border-slate-700 font-mono">
+        Štartujem...
+      </div>
+    </div>
+
+    <div class="max-w-lg mx-auto p-4 space-y-4">
+
+      <!-- FOTENIE -->
+      <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200">
+        <button id="btnPhoto" onclick="document.getElementById('photoInput').click()" disabled
+          class="w-full bg-pink-600 active:bg-pink-800 disabled:bg-slate-300 text-white py-5 rounded-xl font-black text-xl flex items-center justify-center gap-3 shadow-lg active:scale-[0.98] transition-transform">
+          <span class="material-icons text-3xl">photo_camera</span>
+          <span id="btnPhotoText">PRIPRAVUJEM...</span>
+        </button>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" class="hidden" onchange="handlePhoto(this)">
+        <p class="text-xs text-slate-400 text-center mt-3 font-medium">
+          Foť kolmo a zblízka, nech vzor vyplní čo najväčšiu časť záberu.
+        </p>
+      </div>
+
+      <!-- NAHLAD FOTKY -->
+      <div id="previewBox" class="hidden bg-white p-3 rounded-2xl shadow-md border border-slate-200 animate-scale-in">
+        <div class="flex items-center gap-3">
+          <img id="previewImg" class="w-24 h-24 object-cover rounded-xl border border-slate-200" alt="fotka">
+          <div class="flex-1">
+            <div class="text-xs uppercase font-bold text-slate-400 mb-1">Tvoja fotka</div>
+            <div id="searchStatus" class="font-bold text-slate-700">Analyzujem...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VYSLEDKY -->
+      <div id="results" class="space-y-3"></div>
+
+      <!-- INFO PANEL PRI PRVOM SPUSTENI -->
+      <div id="firstRunInfo" class="hidden bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-slate-700 font-medium">
+        <div class="flex items-start gap-2">
+          <span class="material-icons text-blue-500">downloading</span>
+          <div>
+            Prvé spustenie sťahuje AI model a databázu vzorov (spolu ~60–80 MB).
+            Odporúčam byť na wifi. Potom už všetko beží z pamäte telefónu a je to rýchle.
+          </div>
+        </div>
+        <div class="mt-3 bg-white rounded-lg p-2 border border-blue-100">
+          <div class="flex justify-between text-xs font-bold text-slate-500 mb-1">
+            <span id="progressLabel">Sťahujem...</span><span id="progressPct"></span>
+          </div>
+          <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+            <div id="progressFill" class="bg-blue-500 h-2 rounded-full transition-all" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="errorBox" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 font-medium"></div>
+    </div>
+
+    <script type="module">
+      import { AutoProcessor, CLIPVisionModelWithProjection, RawImage, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+
+      env.allowLocalModels = false;
+
+      const MODEL_ID = 'Xenova/clip-vit-base-patch32';
+      const INDEX_URL = './index.json';
+
+      let processor = null;
+      let visionModel = null;
+      let indexData = null;
+      let ready = false;
+
+      const $ = (id) => document.getElementById(id);
+      const setStatus = (t) => $('statusBar').innerText = t;
+
+      function showError(msg) {
+        const box = $('errorBox');
+        box.innerText = msg;
+        box.classList.remove('hidden');
+      }
+
+      function setProgress(label, pct) {
+        $('firstRunInfo').classList.remove('hidden');
+        $('progressLabel').innerText = label;
+        $('progressPct').innerText = pct !== null ? Math.round(pct) + ' %' : '';
+        $('progressFill').style.width = (pct !== null ? pct : 30) + '%';
+      }
+
+      // ---------- NACITANIE INDEXU (s cache v telefone) ----------
+      async function loadIndex() {
+        setStatus('Načítavam databázu vzorov...');
+        let response = null;
+        try {
+          const cache = await caches.open('vzory-index-v1');
+          const cached = await cache.match(INDEX_URL);
+          if (cached) {
+            response = cached;
+            setStatus('Databáza vzorov z pamäte telefónu.');
+          } else {
+            setProgress('Sťahujem databázu vzorov...', null);
+            response = await fetch(INDEX_URL);
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            await cache.put(INDEX_URL, response.clone());
+          }
+        } catch (e) {
+          // Cache API nemusi byt dostupna (http, stary prehliadac) - ideme priamo
+          if (!response) {
+            response = await fetch(INDEX_URL);
+            if (!response.ok) throw new Error('index.json sa nepodarilo stiahnuť (HTTP ' + response.status + ')');
+          }
+        }
+        indexData = await response.json();
+        if (!indexData.items || indexData.items.length === 0) throw new Error('index.json je prázdny');
+      }
+
+      // ---------- NACITANIE MODELU ----------
+      async function loadModel() {
+        setStatus('Načítavam AI model...');
+        const progressCb = (data) => {
+          if (data.status === 'progress' && data.total) {
+            setProgress('Sťahujem AI model: ' + (data.file || ''), (data.loaded / data.total) * 100);
+          }
+        };
+        processor = await AutoProcessor.from_pretrained(MODEL_ID, { progress_callback: progressCb });
+        visionModel = await CLIPVisionModelWithProjection.from_pretrained(MODEL_ID, { quantized: true, progress_callback: progressCb });
+      }
+
+      async function init() {
+        try {
+          await loadIndex();
+          await loadModel();
+          ready = true;
+          $('firstRunInfo').classList.add('hidden');
+          $('btnPhoto').disabled = false;
+          $('btnPhotoText').innerText = 'ODFOTIŤ VZOR';
+          setStatus('Pripravený • ' + indexData.items.length + ' vzorov v databáze');
+        } catch (e) {
+          console.error(e);
+          setStatus('Chyba pri štarte');
+          showError('Nepodarilo sa naštartovať: ' + e.message + '\nSkontroluj internet a skús obnoviť stránku.');
+        }
+      }
+
+      // ---------- SPRACOVANIE FOTKY ----------
+      window.handlePhoto = async function(input) {
+        if (!ready || !input.files || !input.files[0]) return;
+        const file = input.files[0];
+        const url = URL.createObjectURL(file);
+
+        $('previewBox').classList.remove('hidden');
+        $('previewImg').src = url;
+        $('searchStatus').innerText = 'Analyzujem vzor...';
+        $('results').innerHTML = '';
+        $('errorBox').classList.add('hidden');
+
+        try {
+          const image = await RawImage.read(url);
+          const inputs = await processor(image);
+          const { image_embeds } = await visionModel(inputs);
+          const v = Array.from(image_embeds.data);
+          const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1;
+          const q = v.map(x => x / norm);
+
+          // Porovnanie so vsetkymi vzormi (skalarny sucin = kosinova podobnost)
+          const scored = indexData.items.map(item => {
+            let dot = 0;
+            const e = item.emb;
+            for (let i = 0; i < q.length; i++) dot += q[i] * e[i];
+            return { item, score: dot };
+          });
+          scored.sort((a, b) => b.score - a.score);
+          const top = scored.slice(0, 5);
+
+          $('searchStatus').innerText = 'Hotovo ✓';
+          renderResults(top);
+        } catch (e) {
+          console.error(e);
+          $('searchStatus').innerText = 'Chyba';
+          showError('Analýza zlyhala: ' + e.message);
+        } finally {
+          input.value = '';
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+        }
+      };
+
+      function scoreBadge(score) {
+        const pct = Math.round(score * 100);
+        let cls = 'bg-red-100 text-red-800 border-red-200';
+        if (pct >= 80) cls = 'bg-green-100 text-green-800 border-green-200';
+        else if (pct >= 65) cls = 'bg-amber-100 text-amber-800 border-amber-200';
+        return `<span class="text-xs font-black px-2 py-1 rounded-lg border ${cls}">${pct} %</span>`;
+      }
+
+      function renderResults(top) {
+        let html = '<div class="text-xs uppercase font-bold text-slate-400 tracking-widest px-1">Najpodobnejšie vzory</div>';
+        top.forEach((r, idx) => {
+          const it = r.item;
+          const safeName = (it.name || '').replace(/</g, '&lt;');
+          html += `
+          <div class="bg-white rounded-2xl shadow-md border ${idx === 0 ? 'border-pink-300 ring-2 ring-pink-100' : 'border-slate-200'} overflow-hidden animate-scale-in">
+            <div class="flex">
+              <img src="${it.img}" loading="lazy" class="w-28 h-28 object-cover shrink-0 bg-slate-100" alt="">
+              <div class="p-3 flex-1 min-w-0">
+                <div class="flex justify-between items-start gap-2">
+                  <div class="font-black font-mono text-slate-900 text-lg leading-tight break-all">${it.sku}</div>
+                  ${scoreBadge(r.score)}
+                </div>
+                <div class="text-xs text-slate-500 leading-snug mt-1">${safeName}</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 border-t border-slate-100">
+              <button onclick="copySku('${it.sku}', this)" class="py-3 text-sm font-bold text-slate-600 active:bg-slate-100 flex items-center justify-center gap-1 border-r border-slate-100">
+                <span class="material-icons text-base">content_copy</span> Kopírovať
+              </button>
+              <a href="./index.html?kod=${encodeURIComponent(it.sku)}" class="py-3 text-sm font-bold text-blue-600 active:bg-blue-50 flex items-center justify-center gap-1">
+                <span class="material-icons text-base">warehouse</span> Nájsť v sklade
+              </a>
+            </div>
+          </div>`;
+        });
+        html += '<button onclick="document.getElementById(\'photoInput\').click()" class="w-full bg-slate-800 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 active:bg-black"><span class="material-icons">photo_camera</span> Odfotiť ďalší</button>';
+        $('results').innerHTML = html;
+      }
+
+      window.copySku = function(sku, btn) {
+        navigator.clipboard.writeText(sku).then(() => {
+          btn.innerHTML = '<span class="material-icons text-base text-green-600">check</span> Skopírované';
+          setTimeout(() => btn.innerHTML = '<span class="material-icons text-base">content_copy</span> Kopírovať', 1500);
+        });
+      };
+
+      init();
+    </script>
+  </body>
+</html>
