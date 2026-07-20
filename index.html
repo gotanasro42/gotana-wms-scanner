@@ -691,6 +691,698 @@
           beep('success');
           document.getElementById('scanInput').value = locId; // Uchovanie kontextu pre automatický refresh
           const items = dbData.filter(i => String(i.location).toUpperCase() === locId);
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- PWA -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <title>Gotana Scanner (Standalone)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <style>
+      html, body { overscroll-behavior-y: contain; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; }
+      input { user-select: text; }
+      .loader { border-top-color: #3498db; -webkit-animation: spinner 1.5s linear infinite; animation: spinner 1.5s linear infinite; }
+      @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      #reader { width: 100%; border-radius: 12px; margin-bottom: 16px; border: 3px solid #334155; min-height: 250px; background: #000; overflow: hidden; }
+      .nav-item.active { border-bottom: 3px solid #60a5fa; color: white; background: rgba(255,255,255,0.1); }
+      .nav-item { border-bottom: 3px solid transparent; color: #94a3b8; }
+      
+      /* Animácie */
+      @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      .animate-scale-in { animation: scaleIn 0.2s ease-out forwards; }
+      
+      /* Checkbox štýl */
+      .custom-checkbox { width: 24px; height: 24px; border-radius: 6px; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+      .custom-checkbox.checked { background-color: #2563eb; border-color: #2563eb; }
+      .custom-checkbox span { display: none; color: white; font-size: 18px; }
+      .custom-checkbox.checked span { display: block; }
+
+      /* Vizuálne bliknutie */
+      .flash-success { animation: flashGreen 0.5s ease-out; }
+      .flash-error { animation: flashRed 0.5s ease-out; }
+      @keyframes flashGreen { 0% { background-color: #86efac; } 100% { background-color: #f1f5f9; } }
+      @keyframes flashRed { 0% { background-color: #fca5a5; } 100% { background-color: #f1f5f9; } }
+      
+      /* Badge count animation */
+      @keyframes pop { 50% { transform: scale(1.2); } }
+      .animate-pop { animation: pop 0.2s ease-in-out; }
+    </style>
+  </head>
+  <body id="appBody" class="bg-slate-100 min-h-screen font-sans text-slate-800 pb-32 transition-colors duration-300">
+
+    <!-- HLAVIČKA S OFFLINE INDIKÁTOROM -->
+    <div class="bg-slate-900 text-white sticky top-0 z-50 shadow-lg">
+      <div class="p-4 flex justify-between items-center max-w-lg mx-auto">
+        <div class="font-bold text-2xl flex items-center gap-2 tracking-tight">
+          <div id="networkStatus" class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] transition-colors duration-500"></div>
+          <span class="material-icons text-blue-400 text-3xl">qr_code_scanner</span> Gotana
+        </div>
+        <button onclick="changeUser()" id="userBadge" class="bg-slate-800 text-xs font-bold px-3 py-1 rounded-full border border-slate-700 hover:bg-slate-700 flex items-center gap-1 transition-colors">
+            <span class="material-icons text-sm text-yellow-400">person</span><span id="userNameDisplay">...</span>
+        </button>
+      </div>
+      <div class="flex max-w-lg mx-auto">
+        <button onclick="switchView('scan')" id="tab-scan" class="nav-item active flex-1 py-4 font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 transition-all">
+          <span class="material-icons">filter_center_focus</span> Skenovať
+        </button>
+        <button onclick="switchView('db')" id="tab-db" class="nav-item flex-1 py-4 font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 transition-all">
+          <span class="material-icons">storage</span> Zoznam
+        </button>
+        <button onclick="switchView('vzor')" id="tab-vzor" class="nav-item flex-1 py-4 font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 transition-all">
+          <span class="material-icons">image_search</span> Vzor
+        </button>
+      </div>
+      
+      <!-- LAST ACTION BAR -->
+      <div id="lastActionPanel" class="bg-slate-800 text-slate-300 text-xs py-1 px-4 text-center border-t border-slate-700 truncate font-mono block">
+          Posledná akcia: <span id="lastActionText" class="text-white font-bold">Pripravený...</span>
+      </div>
+    </div>
+
+    <div class="max-w-lg mx-auto p-4 relative">
+
+      <!-- GLOBAL SKENER -->
+      <div id="scanner-container" class="hidden relative z-[50] mb-6 bg-slate-900 rounded-2xl p-3 shadow-xl">
+          <div id="reader"></div>
+          
+          <div class="flex gap-2">
+            <button onclick="stopCamera()" class="flex-1 bg-slate-700 text-white py-4 font-bold uppercase rounded-xl tap-feedback">Zavrieť</button>
+            <button id="torchBtn" onclick="toggleTorch()" class="w-16 bg-slate-800 border border-slate-600 text-yellow-400 rounded-xl flex items-center justify-center hidden tap-feedback active:bg-slate-700">
+                <span class="material-icons">flashlight_on</span>
+            </button>
+          </div>
+      </div>
+
+      <!-- SKENER VIEW -->
+      <div id="view-scan">
+          <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200 mb-6 space-y-6">
+             
+             <!-- BLOK 1: PRODUKT (HLAVNÝ) -->
+             <div class="space-y-3">
+                 <button onclick="initCamera()" class="w-full bg-blue-600 active:bg-blue-800 text-white py-5 rounded-xl font-black text-xl flex items-center justify-center gap-3 shadow-lg active:scale-[0.98] transition-transform tap-feedback">
+                      <span class="material-icons text-3xl">qr_code_scanner</span> SKENOVAŤ PRODUKT
+                 </button>
+                 <div class="flex justify-center">
+                    <div class="relative w-3/4 sm:w-2/3">
+                        <input id="scanInput" type="text" autocapitalize="characters" class="w-full p-3 pl-4 pr-10 text-center border-2 border-slate-200 rounded-xl font-bold uppercase focus:border-blue-500 outline-none shadow-inner text-sm sm:text-base" placeholder="RUČNE KÓD..." oninput="handleInputChange(this)" onkeydown="if(event.key === 'Enter') handleScan()">
+                        <span class="material-icons absolute right-3 top-3.5 text-slate-400">keyboard</span>
+                    </div>
+                 </div>
+             </div>
+
+             <hr class="border-slate-100">
+
+             <!-- BLOK 2: VEDĽAJŠIE AKCIE (VEDĽA SEBA) -->
+             <div class="grid grid-cols-2 gap-3">
+                 <!-- POZÍCIA -->
+                 <div class="space-y-2">
+                     <button onclick="startLocationVerification()" class="w-full h-16 bg-teal-600 active:bg-teal-800 text-white rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-1 shadow-md active:scale-[0.98] transition-transform tap-feedback border-2 border-teal-500 border-dashed leading-tight px-1">
+                         <span class="material-icons">fact_check</span> POZÍCIA
+                     </button>
+                     <div class="relative">
+                        <input id="locInput" type="text" autocapitalize="characters" class="w-full p-2 pl-2 pr-8 text-center border-2 border-slate-200 rounded-xl font-bold uppercase focus:border-teal-500 outline-none shadow-inner text-xs sm:text-sm" placeholder="RUČNE..." onkeydown="if(event.key === 'Enter') handleLocScan(this)">
+                        <span class="material-icons absolute right-2 top-2 text-slate-400 text-sm sm:text-base">keyboard</span>
+                     </div>
+                 </div>
+
+                 <!-- HROMADNÝ PRÍJEM -->
+                 <div class="space-y-2">
+                     <button onclick="startBulkMode()" class="w-full h-16 bg-indigo-600 active:bg-indigo-800 text-white rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-1 shadow-md active:scale-[0.98] transition-transform tap-feedback border-2 border-indigo-500 border-dashed leading-tight px-1">
+                         <span class="material-icons">layers</span> PRÍJEM
+                     </button>
+                 </div>
+             </div>
+          </div>
+
+          <div id="resultArea" class="hidden space-y-6 animate-scale-in"></div>
+
+          <div id="dailyQuoteBox" class="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-center shadow-sm opacity-80">
+              <div class="text-[10px] uppercase font-bold text-yellow-600 tracking-widest mb-1">💡 Múdrosť na dnes</div>
+              <p id="dailyQuoteText" class="text-sm font-medium text-slate-700 italic">...</p>
+          </div>
+          <div class="mt-4 text-center">
+              <div id="status" onclick="resetApiUrl()" class="text-xs font-mono text-slate-400 cursor-pointer hover:text-red-500 tap-feedback">Zmazať pamäť prístupu</div>
+          </div>
+      </div>
+
+      <!-- BULK SCAN VIEW (PALETA) -->
+      <div id="view-bulk" class="hidden animate-scale-in">
+          <div class="sticky top-20 z-40 bg-slate-100 pb-2 -mt-2">
+              <div class="bg-indigo-600 text-white p-3 rounded-2xl shadow-lg flex justify-between items-center mb-2 transition-colors duration-300" id="bulkHeader">
+                  <div class="flex items-center gap-2">
+                      <button onclick="confirmExitBulk()" class="bg-indigo-700 p-2 rounded-full hover:bg-indigo-800"><span class="material-icons text-sm">arrow_back</span></button>
+                      <div>
+                          <h2 class="font-black text-lg flex items-center gap-1" id="bulkTitle">HROMADNÝ PRÍJEM</h2>
+                      </div>
+                  </div>
+                  <div class="bg-white text-indigo-700 w-10 h-10 rounded-full flex items-center justify-center font-black text-lg shadow-inner" id="bulkCount">0</div>
+              </div>
+              
+              <button id="btnResumeCamera" onclick="toggleBulkCamera(true)" class="hidden w-full bg-blue-600 active:bg-blue-800 text-white py-4 rounded-xl font-bold mb-2 shadow-md animate-scale-in flex items-center justify-center gap-2 tap-feedback">
+                  <span class="material-icons">videocam</span> OTVORIŤ SKENER
+              </button>
+          </div>
+
+          <div id="bulkList" class="space-y-2 pb-32 pt-2">
+              <div class="text-center text-slate-400 py-4 font-medium italic">Naskenuj prvú rolku...</div>
+          </div>
+
+          <div class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200 shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-50 flex flex-col gap-2">
+              <button onclick="finishBulkToLoc()" id="btnFinishBulk" class="w-full bg-green-600 active:bg-green-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale transition-all" disabled>
+                  <span class="material-icons">where_to_vote</span> DOKONČIŤ NA POZÍCIU
+              </button>
+          </div>
+      </div>
+
+      <!-- INVENTORY VIEW (PRIEBEŽNÁ INVENTÚRA) -->
+      <div id="view-inventory" class="hidden animate-scale-in">
+          <div class="sticky top-20 z-40 bg-slate-100 pb-2 -mt-2">
+              <div class="bg-teal-600 text-white p-3 rounded-2xl shadow-lg flex justify-between items-center mb-2 transition-colors duration-300">
+                  <div class="flex items-center gap-2">
+                      <button onclick="confirmExitInventory()" class="bg-teal-700 p-2 rounded-full hover:bg-teal-800"><span class="material-icons text-sm">arrow_back</span></button>
+                      <div>
+                          <div class="text-[10px] uppercase font-bold text-teal-200">Inventúra Pozície</div>
+                          <h2 class="font-black text-xl flex items-center gap-1" id="invTitleLoc">...</h2>
+                      </div>
+                  </div>
+                  <div class="bg-white text-teal-700 w-12 h-10 rounded-xl flex items-center justify-center font-black text-lg shadow-inner" id="invCount">0</div>
+              </div>
+              
+              <button id="btnResumeInvCamera" onclick="toggleInvCamera(true)" class="hidden w-full bg-teal-500 active:bg-teal-700 text-white py-4 rounded-xl font-bold mb-2 shadow-md animate-scale-in flex items-center justify-center gap-2 tap-feedback">
+                  <span class="material-icons">videocam</span> SKENOVAŤ ĎALŠIE
+              </button>
+          </div>
+
+          <div id="invList" class="space-y-2 pb-32 pt-2">
+              <div class="text-center text-slate-400 py-8 font-medium">Začni skenovať všetko, čo vidíš fyzicky v tomto regáli.</div>
+          </div>
+
+          <div class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200 shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-50 flex flex-col gap-2">
+              <button onclick="finishInventory()" id="btnFinishInv" class="w-full bg-slate-800 active:bg-black text-white py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all tap-feedback">
+                  <span class="material-icons">difference</span> POROVNAŤ S DATABÁZOU
+              </button>
+          </div>
+      </div>
+
+      <!-- ZOZNAM VIEW -->
+      <div id="view-db" class="hidden">
+          <!-- Zmenšené vyhľadávacie polia -->
+          <div class="sticky top-[138px] z-40 bg-slate-100 pb-2 -mx-4 px-4 shadow-sm" style="margin-top: -1rem; padding-top: 1rem;">
+             <div class="bg-white p-2 rounded-xl shadow-md border border-slate-200 space-y-2">
+                 <div class="relative">
+                    <input type="text" id="dbSearchCode" autocapitalize="characters" oninput="filterDb()" placeholder="KÓD / LOKÁCIA..." class="w-full pl-8 p-2 text-sm sm:text-base border-2 border-slate-100 rounded-lg focus:outline-none focus:border-blue-500 font-bold uppercase">
+                    <span class="material-icons absolute left-2 top-2.5 text-slate-400 text-lg">qr_code_2</span>
+                 </div>
+                 <div class="relative">
+                    <input type="text" id="dbSearchName" oninput="filterDb()" placeholder="NÁZOV LÁTKY..." class="w-full pl-8 p-2 text-sm sm:text-base border-2 border-slate-100 rounded-lg focus:outline-none focus:border-blue-500 font-bold uppercase">
+                    <span class="material-icons absolute left-2 top-2.5 text-slate-400 text-lg">search</span>
+                 </div>
+             </div>
+             <div id="dbStats" class="flex justify-between items-center mt-2 px-2 text-xs font-bold text-slate-500 uppercase tracking-wide bg-slate-200/50 p-2 rounded-lg"><span>Načítavam...</span></div>
+          </div>
+          
+          <div id="dbList" class="space-y-4 mt-4 pb-4"></div>
+          
+          <!-- Presunuté tlačidlá na zálohu a archív (úplne dole) -->
+          <div class="flex justify-center gap-4 pb-24 pt-6 border-t border-slate-200">
+             <button onclick="triggerBackup()" class="bg-slate-800 active:bg-slate-900 text-white px-5 py-3 rounded-xl shadow-md flex items-center justify-center tap-feedback text-sm font-bold gap-2"><span class="material-icons text-lg">shield</span> Zálohovať</button>
+             <button onclick="triggerArchive()" class="bg-amber-600 active:bg-amber-700 text-white px-5 py-3 rounded-xl shadow-md flex items-center justify-center tap-feedback text-sm font-bold gap-2"><span class="material-icons text-lg">inventory_2</span> Archivovať</button>
+          </div>
+      </div>
+      
+      <!-- VZOR FINDER VIEW -->
+      <div id="view-vzor" class="hidden">
+          <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200 mb-4">
+              <button id="btnVzorPhoto" onclick="document.getElementById('vzorPhotoInput').click()" disabled class="w-full bg-pink-600 active:bg-pink-800 disabled:bg-slate-300 text-white py-5 rounded-xl font-black text-xl flex items-center justify-center gap-3 shadow-lg active:scale-[0.98] transition-transform tap-feedback">
+                  <span class="material-icons text-3xl">photo_camera</span> <span id="btnVzorPhotoText">PRIPRAVUJEM...</span>
+              </button>
+              <input type="file" id="vzorPhotoInput" accept="image/*" capture="environment" class="hidden" onchange="window.vzorHandlePhoto(this)">
+              <p class="text-xs text-slate-400 text-center mt-3 font-medium">Odfoť látku kolmo a zblízka, nech vzor vyplní čo najväčšiu časť záberu. AI nájde najpodobnejšie grafiky.</p>
+              <div id="vzorStatus" class="text-[11px] font-mono text-slate-400 text-center mt-2">Čakám na prvé otvorenie...</div>
+          </div>
+          <div class="bg-white p-3 rounded-2xl shadow-md border border-slate-200 mb-4">
+              <div class="relative">
+                  <input id="vzorTextSearch" type="text" disabled placeholder="Načítava sa databáza..." class="w-full pl-10 p-3 border-2 border-slate-200 rounded-xl font-bold focus:border-pink-500 outline-none disabled:bg-slate-50" oninput="window.vzorTextHladaj(this.value)">
+                  <span class="material-icons absolute left-3 top-3.5 text-slate-400">search</span>
+              </div>
+          </div>
+          <div id="vzorFirstRun" class="hidden bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-slate-700 font-medium mb-4">
+              <div class="flex items-start gap-2"><span class="material-icons text-blue-500">downloading</span><div>Prvé spustenie sťahuje AI model a databázu vzorov (~60–80 MB). Ideálne na wifi. Potom už všetko beží z pamäte telefónu a je to rýchle.</div></div>
+              <div class="mt-3 bg-white rounded-lg p-2 border border-blue-100">
+                  <div class="flex justify-between text-xs font-bold text-slate-500 mb-1"><span id="vzorProgressLabel">Sťahujem...</span><span id="vzorProgressPct"></span></div>
+                  <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden"><div id="vzorProgressFill" class="bg-blue-500 h-2 rounded-full transition-all" style="width:0%"></div></div>
+              </div>
+          </div>
+          <div id="vzorPreview" class="hidden bg-white p-3 rounded-2xl shadow-md border border-slate-200 mb-4 animate-scale-in">
+              <div class="flex items-center gap-3">
+                  <img id="vzorPreviewImg" class="w-24 h-24 object-cover rounded-xl border border-slate-200" alt="">
+                  <div class="flex-1"><div class="text-xs uppercase font-bold text-slate-400 mb-1">Tvoja fotka</div><div id="vzorSearchStatus" class="font-bold text-slate-700">...</div></div>
+              </div>
+          </div>
+          <div id="vzorResults" class="space-y-3 pb-4"></div>
+          <div id="vzorError" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 font-medium"></div>
+      </div>
+
+
+      <!-- BULK ACTIONS PANEL (ZOZNAM) -->
+      <div id="bulkActionsPanel" class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-[0_-5px_20px_rgba(0,0,0,0.1)] p-4 z-[90] transform translate-y-full transition-transform duration-300 flex flex-col gap-3">
+           <div class="flex justify-between items-center mb-1">
+               <span class="font-bold text-slate-700 text-lg">Označené: <span id="selectedCount" class="text-blue-600">0</span> ks</span>
+               <button onclick="clearSelection()" class="text-slate-400 text-sm font-bold uppercase tap-feedback">Zrušiť</button>
+           </div>
+           <div class="flex gap-3">
+               <button onclick="bulkMove()" class="flex-1 bg-blue-600 active:bg-blue-700 text-white py-4 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 tap-feedback">
+                   <span class="material-icons">swap_horiz</span> Presunúť
+               </button>
+               <button onclick="bulkDelete()" class="flex-1 bg-red-50 active:bg-red-100 text-red-700 border-2 border-red-100 py-4 rounded-xl font-bold flex items-center justify-center gap-2 tap-feedback">
+                   <span class="material-icons">delete</span> Zmazať
+               </button>
+           </div>
+      </div>
+      
+      <button onclick="manualRefresh()" class="fixed bottom-24 right-6 bg-slate-900 text-white w-14 h-14 rounded-full shadow-2xl hover:bg-blue-600 z-50 active:scale-90 flex items-center justify-center border-4 border-slate-100 tap-feedback opacity-80 hover:opacity-100 transition-all"><span class="material-icons text-2xl">sync</span></button>
+      <div id="loading" class="hidden fixed inset-0 bg-slate-900/90 z-[100] flex flex-col items-center justify-center backdrop-blur-sm"><div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-600 h-16 w-16 mb-6"></div><p id="loadingText" class="text-lg font-bold text-white tracking-widest uppercase">Pracujem...</p></div>
+
+      <!-- API URL Setup Modal -->
+      <div id="apiSetupModal" class="hidden fixed inset-0 bg-slate-900 z-[120] flex flex-col items-center justify-center p-6 backdrop-blur-md">
+          <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center animate-scale-in">
+              <span class="material-icons text-blue-600 text-5xl mb-4">link</span>
+              <h2 class="text-2xl font-extrabold text-slate-800 mb-2">Prepojenie Skladu</h2>
+              <div class="text-left bg-blue-50 p-4 rounded-xl mb-6 border border-blue-100">
+                  <p class="text-sm text-slate-700 font-medium">
+                      Tu vlož <b>Web App URL</b> z tvojej Google Tabuľky. Odkaz musí končiť na <b>/exec</b>.<br><br>
+                      <span class="text-xs text-slate-500">Nájdeš ho v tabuľke: Rozšírenia &rarr; Apps Script &rarr; Nasadiť (Deploy) &rarr; Nové nasadenie &rarr; Webová aplikácia. (Kto má prístup: Ktokoľvek)</span>
+                  </p>
+              </div>
+              <input type="url" id="apiUrlInput" class="w-full p-4 border-2 border-slate-300 rounded-xl text-center font-mono text-[10px] sm:text-xs mb-4 focus:border-blue-500 outline-none" placeholder="https://script.google.com/macros/s/.../exec">
+              <button onclick="saveApiUrl()" class="w-full bg-blue-600 active:bg-blue-800 text-white py-4 rounded-xl font-bold text-lg shadow-lg tap-feedback transition-transform active:scale-95">ULOŽIŤ A SPUSTIŤ</button>
+          </div>
+      </div>
+
+      <!-- Identity Modal -->
+      <div id="identityModal" class="hidden fixed inset-0 bg-slate-900 z-[70] flex flex-col items-center justify-center p-6 backdrop-blur-md">
+          <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center animate-scale-in">
+              <h2 class="text-2xl font-extrabold text-slate-800 mb-2">Kto dnes pracuje?</h2>
+              <input type="text" id="identityInput" class="w-full p-4 border-2 border-slate-300 rounded-xl text-center font-bold text-xl mb-4 uppercase" oninput="this.value = this.value.toUpperCase()" placeholder="MENO">
+              <button onclick="saveIdentity()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg tap-feedback">POTVRDIŤ</button>
+          </div>
+      </div>
+      
+      <!-- ITEM DETAIL MODAL -->
+      <div id="itemDetailModal" class="hidden fixed inset-0 z-[80] bg-slate-900/80 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm">
+          <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
+              <div class="bg-slate-100 p-4 border-b border-slate-200 flex justify-between items-start">
+                  <div>
+                      <h3 id="modalItemTitle" class="text-xl font-black font-mono text-slate-800 break-all">SKU...</h3>
+                      <div id="modalItemSub" class="text-sm text-slate-500 mt-1 leading-snug hidden"></div>
+                  </div>
+                  <button onclick="closeDetailModal()" class="text-slate-500 hover:text-slate-800 p-2 bg-white rounded-full shadow-sm tap-feedback shrink-0 ml-4"><span class="material-icons">close</span></button>
+              </div>
+              <div class="p-6 space-y-5">
+                  <div class="flex justify-between items-center">
+                      <span class="text-xs uppercase font-bold text-slate-500">Lokácia</span>
+                      <div id="modalItemLoc" class="text-xl font-bold">...</div>
+                  </div>
+                  <div>
+                      <label class="text-xs uppercase font-bold text-slate-500 mb-1 block">Poznámka</label>
+                      <div class="flex gap-2">
+                          <input type="text" id="modalItemNote" class="flex-1 p-3 border-2 border-slate-300 rounded-xl font-medium focus:border-blue-500 outline-none transition-colors" placeholder="Napíš poznámku...">
+                          <button onclick="saveModalNote()" class="bg-blue-600 text-white px-4 rounded-xl shadow-md active:bg-blue-700 font-bold tap-feedback"><span class="material-icons">save</span></button>
+                      </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
+                      <button onclick="moveFromModal()" class="bg-white border-2 border-slate-200 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-50 flex items-center justify-center gap-2 tap-feedback"><span class="material-icons">swap_horiz</span> Presun</button>
+                      <button onclick="deleteFromModal()" class="bg-red-50 border-2 border-red-100 text-red-700 py-3 rounded-xl font-bold hover:bg-red-100 flex items-center justify-center gap-2 tap-feedback"><span class="material-icons">delete</span> Zmazať</button>
+                  </div>
+                  <input type="hidden" id="modalItemId">
+              </div>
+          </div>
+      </div>
+
+      <!-- CUSTOM ALERT/CONFIRM -->
+      <div id="customModal" class="hidden fixed inset-0 z-[100] bg-slate-900/90 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-scale-in border border-slate-200">
+              <h3 id="modalTitle" class="text-xl font-extrabold text-slate-800 mb-2 flex items-center gap-2"></h3>
+              <p id="modalMessage" class="text-slate-600 mb-6 text-lg leading-relaxed font-medium whitespace-pre-line overflow-y-auto max-h-[50vh]"></p>
+              <div id="modalButtons" class="flex gap-3"></div>
+          </div>
+      </div>
+      
+      <!-- INPUT MODAL -->
+      <div id="inputModal" class="hidden fixed inset-0 z-[110] bg-slate-900/90 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-scale-in border border-slate-200">
+              <h3 id="inputModalTitle" class="text-xl font-extrabold text-slate-800 mb-4 flex items-center gap-2">
+                  <span class="material-icons text-blue-500">edit_location</span> Zadaj údaj
+              </h3>
+              <div class="relative flex gap-2 mb-6">
+                <input type="text" id="inputModalValue" autocapitalize="characters" class="w-full p-4 border-2 border-slate-300 rounded-xl text-xl font-bold uppercase focus:border-blue-600 outline-none" oninput="this.value = this.value.toUpperCase()" placeholder="...">
+                <button onclick="startScanInput('inputModalValue')" class="bg-blue-100 text-blue-600 w-16 rounded-xl flex items-center justify-center border border-blue-200 tap-feedback active:bg-blue-200">
+                    <span class="material-icons">qr_code_scanner</span>
+                </button>
+              </div>
+              <div class="flex gap-3">
+                  <button onclick="closeInputModal(null)" class="flex-1 bg-white border-2 border-slate-200 text-slate-600 py-3 rounded-xl font-bold text-lg tap-feedback">Zrušiť</button>
+                  <button onclick="confirmInputModal()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-md tap-feedback">OK</button>
+              </div>
+          </div>
+      </div>
+    </div>
+
+    <script>
+      // =========================================================================
+      // --- DYNAMICKÉ API PREPOJENIE & OFFLINE OCHRANA ---
+      // =========================================================================
+      
+      const DEFAULT_API_URL = ""; 
+      let SCRIPT_URL = "";
+      let dbCatalog = {}; // Uložíský slovník názvov z Google Tabuľky
+      
+      // Sledovanie siete
+      let isOnline = navigator.onLine;
+      window.addEventListener('online', () => {
+          isOnline = true;
+          document.getElementById('networkStatus').className = "w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] transition-colors duration-500";
+          processOfflineQueue();
+      });
+      window.addEventListener('offline', () => {
+          isOnline = false;
+          document.getElementById('networkStatus').className = "w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] transition-colors duration-500";
+      });
+
+      function saveApiUrl() {
+          const val = document.getElementById('apiUrlInput').value.trim();
+          if (!val.startsWith("https://script.google.com/")) { alert("Neplatný odkaz!\nOdkaz musí začínať na: https://script.google.com/... a končiť na /exec"); return; }
+          if (!val.endsWith("/exec")) { alert("Pozor! Odkaz musí končiť presne na /exec"); return; }
+          localStorage.setItem('gotana_api_url', val);
+          SCRIPT_URL = val;
+          document.getElementById('apiSetupModal').classList.add('hidden');
+          finishInit(); 
+      }
+      
+      function resetApiUrl() {
+          if(confirm("Chceš zmazať prístupový odkaz do databázy?")) {
+              localStorage.removeItem('gotana_api_url');
+              if (DEFAULT_API_URL && DEFAULT_API_URL !== "") alert("Pozor: V kóde je natvrdo nastavený tvoj odkaz, takže sa appka znova načíta automaticky bez pýtania.");
+              location.reload();
+          }
+      }
+
+      async function apiCall(action, params = {}) {
+          if (!SCRIPT_URL) { throw new Error("Missing SCRIPT_URL"); }
+          
+          if (!isOnline) {
+              const allowedOffline = ['createItem', 'createBulkItems', 'syncInventory'];
+              if (allowedOffline.includes(action)) {
+                  let queue = JSON.parse(localStorage.getItem('gotana_offline_queue') || '[]');
+                  queue.push({ action, params, timestamp: new Date().getTime() });
+                  localStorage.setItem('gotana_offline_queue', JSON.stringify(queue));
+                  updateLastAction(`OFFLINE ULOŽENÉ: ${action}`);
+                  return { success: true, processed: params.items ? params.items.length : 1, offline: true };
+              } else {
+                  if (action === 'getCatalog') return {}; 
+                  showCustomAlert("Sklad je Offline", "Stratil sa internet. Akcie ako výdaj alebo presun nemožno robiť offline, aby sa nerozbila celofiremná databáza. Naskladňovať a robiť inventúru však môžeš aj naďalej.");
+                  throw new Error("Offline mód nedovoľuje túto akciu");
+              }
+          }
+
+          try {
+              const response = await fetch(SCRIPT_URL, {
+                  method: 'POST',
+                  body: JSON.stringify({ action, ...params }),
+                  headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
+              });
+              const data = await response.json();
+              if (data.error) throw new Error(data.error);
+              return data;
+          } catch (e) {
+              console.error("API Zlyhalo:", e);
+              throw e;
+          }
+      }
+      
+      let dbNahlady = {};
+      function loadNahlady() {
+          const stored = localStorage.getItem('gotana_nahlady');
+          if (stored) { try { dbNahlady = JSON.parse(stored); } catch(e){} }
+          fetch('./nahlady.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(data => {
+              if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+                  dbNahlady = data;
+                  try { localStorage.setItem('gotana_nahlady', JSON.stringify(data)); } catch(e) {}
+                  if (!document.getElementById('view-db').classList.contains('hidden')) renderDb(dbData);
+              }
+          }).catch(e => {});
+      }
+
+      function loadCatalog() {
+          const stored = localStorage.getItem('gotana_catalog');
+          if (stored) { try { dbCatalog = JSON.parse(stored); } catch(e){} }
+          apiCall('getCatalog').then(data => {
+              if (data && typeof data === 'object') {
+                  dbCatalog = data;
+                  localStorage.setItem('gotana_catalog', JSON.stringify(dbCatalog));
+              }
+          }).catch(e => console.log("Katalóg zatiaľ nie je na backende."));
+      }
+
+      async function processOfflineQueue() {
+          let queue = JSON.parse(localStorage.getItem('gotana_offline_queue') || '[]');
+          if (queue.length === 0) return;
+          setLoading(true, `Odosielam offline dáta (${queue.length} úloh)...`);
+          let remaining = [];
+          for (let task of queue) {
+              try {
+                  await fetch(SCRIPT_URL, {
+                      method: 'POST',
+                      body: JSON.stringify({ action: task.action, ...task.params }),
+                      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                  });
+              } catch(e) {
+                  remaining.push(task); 
+              }
+          }
+          localStorage.setItem('gotana_offline_queue', JSON.stringify(remaining));
+          setLoading(false);
+          
+          if(remaining.length === 0) {
+              showCustomAlert("Online", "Pripojenie obnovené. Všetky offline dáta boli úspešne odoslané do skladu.");
+              loadDb(false);
+          } else {
+              showCustomAlert("Upozornenie", "Pripojenie nabehlo, ale niektoré offline dáta sa nepodarilo odoslať. Skúsime to neskôr znova.");
+          }
+      }
+
+      // --- CORE SMART PARSER ---
+      function extractRealId(rawText) {
+          if(!rawText) return "";
+          let text = rawText.toUpperCase().trim();
+          if (text.includes('\n')) {
+              const lines = text.split('\n').map(l => l.trim());
+              const skuLine = lines.find(l => /^[A-Z]+-[0-9]+/.test(l));
+              if (skuLine) return skuLine;
+              return lines[0];
+          }
+          if (text.includes('|')) return text.split('|')[0].trim();
+          return text;
+      }
+
+      function getBaseCode(code) {
+          if (!code) return "";
+          return code.split('_')[0].trim().toUpperCase();
+      }
+
+      // --- UI HELPERS ---
+      function resetScanScreen() {
+          const area = document.getElementById('resultArea');
+          if (area) { area.classList.add('hidden'); area.innerHTML = ''; }
+          const input = document.getElementById('scanInput'); if (input) input.value = '';
+          const locInput = document.getElementById('locInput'); if (locInput) locInput.value = '';
+          const quoteBox = document.getElementById('dailyQuoteBox');
+          if (quoteBox) quoteBox.style.display = 'block';
+      }
+
+      function vibrate(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
+      document.addEventListener('click', (e) => { if(e.target.closest('.tap-feedback') || e.target.tagName === 'BUTTON') vibrate(20); });
+
+      function beep(type = 'success') {
+          if (type === 'success') vibrate(50); else vibrate([50, 50, 100]);
+          const body = document.getElementById('appBody');
+          const flashClass = type === 'success' ? 'flash-success' : 'flash-error';
+          body.classList.add(flashClass);
+          setTimeout(() => body.classList.remove(flashClass), 500);
+          try {
+              if(!window.audioCtx) window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+              if (window.audioCtx.state === 'suspended') window.audioCtx.resume();
+              const osc = window.audioCtx.createOscillator();
+              const gain = window.audioCtx.createGain();
+              osc.connect(gain); gain.connect(window.audioCtx.destination);
+              if (type === 'success') {
+                  osc.type = 'sine'; osc.frequency.setValueAtTime(1200, window.audioCtx.currentTime);
+                  osc.frequency.exponentialRampToValueAtTime(600, window.audioCtx.currentTime + 0.1);
+                  gain.gain.setValueAtTime(0.3, window.audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, window.audioCtx.currentTime + 0.1);
+                  osc.start(); osc.stop(window.audioCtx.currentTime + 0.1);
+              } else {
+                  osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, window.audioCtx.currentTime);
+                  gain.gain.setValueAtTime(0.5, window.audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.01, window.audioCtx.currentTime + 0.3);
+                  osc.start(); osc.stop(window.audioCtx.currentTime + 0.3);
+              }
+          } catch (e) {}
+      }
+
+      let wakeLock = null;
+      async function requestWakeLock() {
+        if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
+      }
+      document.addEventListener('visibilitychange', async () => { if (wakeLock !== null && document.visibilityState === 'visible') await requestWakeLock(); });
+      const initWakeLock = async () => { await requestWakeLock(); document.removeEventListener('click', initWakeLock); document.removeEventListener('touchstart', initWakeLock); };
+      document.addEventListener('click', initWakeLock); document.addEventListener('touchstart', initWakeLock);
+
+      // --- LIVE CAMERA LOGIC ---
+      let html5Qrcode = null;
+      let activeScanCallback = null;
+      let isContinuousScan = false;
+      let isProcessingBulk = false; 
+      let isTorchOn = false;
+      let hiddenModalForCamera = null;
+
+      function toggleTorch() {
+          if (!html5Qrcode) return;
+          try {
+              isTorchOn = !isTorchOn;
+              html5Qrcode.applyVideoConstraints({ advanced: [{ torch: isTorchOn }] }).then(() => {
+                  const btn = document.getElementById('torchBtn');
+                  if (isTorchOn) {
+                      btn.classList.add('bg-yellow-400', 'text-slate-900', 'border-yellow-500');
+                      btn.classList.remove('bg-slate-800', 'text-yellow-400', 'border-slate-600');
+                  } else {
+                      btn.classList.remove('bg-yellow-400', 'text-slate-900', 'border-yellow-500');
+                      btn.classList.add('bg-slate-800', 'text-yellow-400', 'border-slate-600');
+                  }
+              }).catch(err => {
+                  isTorchOn = !isTorchOn; 
+              });
+          } catch(e) {}
+      }
+
+      function showChromePermissionGuide() {
+          const modal = document.getElementById('customModal');
+          document.getElementById('modalTitle').innerHTML = `<span class="material-icons text-red-600 text-3xl">videocam_off</span> Kamera zablokovaná`;
+          document.getElementById('modalMessage').innerHTML = `
+              <div class="text-left text-sm text-slate-700 font-medium">
+                  Prehliadač odmietol prístup ku kamere. Zrejme to bolo v minulosti zakázané.<br><br>
+                  <strong class="text-slate-900">Ako to opraviť:</strong><br>
+                  1. Hore v riadku s adresou klikni na ikonku <strong>Nastavenia</strong>.<br>
+                  2. Vyber možnosť <strong>Povolenia</strong>.<br>
+                  3. Nájdi <strong>Kamera</strong> a zmeň na <strong>Povoliť</strong>.<br>
+                  4. Obnov túto stránku.
+              </div>
+          `;
+          const btns = document.getElementById('modalButtons');
+          btns.innerHTML = `<button onclick="closeCustomModal()" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold text-lg tap-feedback">Rozumiem</button>`;
+          modal.classList.remove('hidden');
+      }
+
+      async function initCamera(customCallback = null, isContinuous = false) {
+        document.getElementById('scanner-container').classList.remove('hidden');
+        if (document.getElementById('btnResumeCamera')) document.getElementById('btnResumeCamera').classList.add('hidden');
+        if (document.getElementById('btnResumeInvCamera')) document.getElementById('btnResumeInvCamera').classList.add('hidden');
+        document.getElementById('torchBtn').classList.remove('hidden');
+        isTorchOn = false;
+        document.getElementById('torchBtn').classList.remove('bg-yellow-400', 'text-slate-900'); 
+
+        activeScanCallback = customCallback;
+        isContinuousScan = isContinuous;
+        isProcessingBulk = false;
+        
+        if (html5Qrcode) { 
+            try{await html5Qrcode.stop();}catch(e){} 
+            try{html5Qrcode.clear();}catch(e){}
+            html5Qrcode = null; 
+        }
+        
+        document.getElementById('reader').innerHTML = '';
+        html5Qrcode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+
+        const successCb = async (decodedText) => {
+             if (isContinuousScan) {
+                 if (isProcessingBulk) return;
+                 isProcessingBulk = true;
+                 if(activeScanCallback) activeScanCallback(decodedText);
+                 const reader = document.getElementById('reader');
+                 let overlay = document.getElementById('scanOverlay');
+                 if(!overlay) {
+                     overlay = document.createElement('div');
+                     overlay.id = 'scanOverlay';
+                     overlay.className = "absolute inset-0 bg-slate-900/95 z-[60] flex flex-col items-center justify-center text-white rounded-xl";
+                     overlay.innerHTML = '<span class="material-icons text-6xl text-green-400 mb-2">check_circle</span><span class="font-bold text-2xl animate-pulse text-green-400">MÁM TO!</span><span class="text-sm mt-2 text-slate-300">Ďalší kód...</span>';
+                     reader.style.position = 'relative';
+                     reader.appendChild(overlay);
+                 }
+                 try { if(html5Qrcode) html5Qrcode.pause(); } catch(e){}
+                 setTimeout(() => {
+                     const ovr = document.getElementById('scanOverlay');
+                     if (ovr) ovr.remove();
+                     try { if(html5Qrcode) html5Qrcode.resume(); } catch(e){}
+                     isProcessingBulk = false;
+                 }, 1200);
+             } else {
+                 stopCamera(); 
+                 if(activeScanCallback) { activeScanCallback(decodedText); activeScanCallback = null; } 
+                 else { processResult(decodedText); }
+             }
+        };
+
+        try {
+            await html5Qrcode.start({ facingMode: "environment" }, config, successCb, () => {});
+        } catch (err) {
+            try { await html5Qrcode.start({ facingMode: "user" }, config, successCb, () => {}); } 
+            catch (fallbackErr) { document.getElementById('scanner-container').classList.add('hidden'); stopCamera(); showChromePermissionGuide(); }
+        }
+      }
+
+      async function stopCamera() { 
+        if(html5Qrcode){ try{await html5Qrcode.stop();}catch(e){} try{html5Qrcode.clear();}catch(e){} } 
+        html5Qrcode = null;
+        document.getElementById('scanner-container').classList.add('hidden'); 
+        const ovr = document.getElementById('scanOverlay');
+        if(ovr) ovr.remove();
+        activeScanCallback = null; isContinuousScan = false; isProcessingBulk = false;
+
+        if (hiddenModalForCamera) { hiddenModalForCamera.classList.remove('opacity-0', 'pointer-events-none'); hiddenModalForCamera = null; }
+        if (!document.getElementById('view-bulk').classList.contains('hidden') && document.getElementById('btnResumeCamera')) document.getElementById('btnResumeCamera').classList.remove('hidden');
+        if (!document.getElementById('view-inventory').classList.contains('hidden') && document.getElementById('btnResumeInvCamera')) document.getElementById('btnResumeInvCamera').classList.remove('hidden');
+      }
+
+      async function startScanInput(targetId) {
+          const modal = document.getElementById('inputModal');
+          if (!modal.classList.contains('hidden')) { hiddenModalForCamera = modal; modal.classList.add('opacity-0', 'pointer-events-none'); }
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          await initCamera((decodedText) => {
+              const val = decodedText.toUpperCase().trim();
+              const target = document.getElementById(targetId);
+              if(target) { target.value = val; target.classList.add('bg-green-100'); setTimeout(() => target.classList.remove('bg-green-100'), 500); }
+              stopCamera(); beep('success');
+          }, false);
+      }
+
+      function handleInputChange(el) { el.value = el.value.toUpperCase(); if(el.value.trim() === "") resetScanScreen(); }
+      
+      // Nová funkcia pre ručné zadanie pozície z domovskej obrazovky
+      function handleLocScan(el) {
+          let val = el.value.toUpperCase().trim();
+          if(!val) return;
+          el.value = ''; // Vymazať po stlačení Enter
+          let locId = extractRealId(val);
+          if(!locId) return;
+          beep('success');
+          document.getElementById('scanInput').value = locId; // Uchovanie kontextu pre automatický refresh
+          const items = dbData.filter(i => String(i.location).toUpperCase() === locId);
           renderLocationView(locId, items);
       }
 
@@ -1070,6 +1762,7 @@
                 ${displayName !== scannedId ? `<div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 leading-snug">${displayName}</div>` : ''}
                 ${dbNahlady[scannedId] ? `<img src="${dbNahlady[scannedId]}" loading="lazy" class="w-20 h-20 object-cover rounded-xl border border-slate-200 mb-2 shadow-sm" onerror="this.style.display='none'">` : ''}
                 <h2 class="text-3xl font-black font-mono text-slate-900 leading-tight mb-1 break-words tracking-tight">${scannedId}</h2>
+                <button onclick="vzorPodobne('${scannedId}')" class="mt-2 bg-pink-50 border border-pink-200 text-pink-700 px-3 py-2 rounded-lg text-xs font-bold inline-flex items-center gap-1 tap-feedback active:bg-pink-100"><span class="material-icons text-sm">image_search</span> Podobné vzory</button>
              </div>`;
          
          if (count > 0) {
@@ -1349,17 +2042,20 @@
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initApp); else initApp();
     </script>
     <script type="module">
-      // ================= VZOR FINDER v3 (CLIP v prehliadaci) =================
+      // ================= VZOR FINDER v4 (CLIP v prehliadaci) =================
       import { AutoProcessor, CLIPVisionModelWithProjection, RawImage, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
       env.allowLocalModels = false;
 
       const VZOR_INDEX_URL = './index.json';
       const VZOR_FALLBACK_MODEL = 'Xenova/clip-vit-base-patch32';
-      const VZOR_TOP = 20;
+      const VZOR_PAGE = 20;
+      const VZOR_MAX_GROUPS = 60;
       const VZOR_DUP = 0.985;
       let vzorProcessor = null, vzorModel = null, vzorIndex = null;
       let vzorQ = 1, vzorModelId = null;
       let vzorIndexReady = false, vzorReady = false, vzorLoading = false, vzorBusy = false;
+      let vzorGroups = [], vzorShown = VZOR_PAGE, vzorFinalne = true, vzorTitle = 'Najpodobnejšie vzory';
+      let vzorTextAll = [], vzorTextShown = 30;
 
       const vEl = (id) => document.getElementById(id);
       const setVzorStatus = (t) => { const el = vEl('vzorStatus'); if (el) el.innerText = t; };
@@ -1371,8 +2067,7 @@
           vEl('vzorProgressFill').style.width = (pct !== null ? pct : 30) + '%';
       }
 
-      async function loadVzorIndex() {
-          setVzorStatus('Načítavam databázu vzorov...');
+      async function loadVzorIndexRaw() {
           let response = null;
           try {
               vzorProgress('Kontrolujem databázu vzorov...', null);
@@ -1393,6 +2088,15 @@
           vzorModelId = vzorIndex.model || VZOR_FALLBACK_MODEL;
       }
 
+      async function ensureVzorIndex() {
+          if (vzorIndexReady) return;
+          setVzorStatus('Načítavam databázu vzorov...');
+          await loadVzorIndexRaw();
+          vzorIndexReady = true;
+          const ts = vEl('vzorTextSearch');
+          if (ts) { ts.disabled = false; ts.placeholder = 'Hľadať vzor podľa názvu alebo kódu...'; }
+      }
+
       async function loadVzorModel() {
           setVzorStatus('Sťahujem AI model...');
           const cb = (d) => { if (d.status === 'progress' && d.total) vzorProgress('Sťahujem AI model...', (d.loaded / d.total) * 100); };
@@ -1404,10 +2108,7 @@
           if (vzorReady || vzorLoading) return;
           vzorLoading = true;
           try {
-              await loadVzorIndex();
-              vzorIndexReady = true;
-              const ts = vEl('vzorTextSearch');
-              if (ts) { ts.disabled = false; ts.placeholder = 'Hľadať vzor podľa názvu alebo kódu...'; }
+              await ensureVzorIndex();
               setVzorStatus('Databáza OK (' + vzorIndex.items.length + ' vzorov) • pripravujem AI model...');
               await loadVzorModel();
               vzorReady = true;
@@ -1425,7 +2126,6 @@
           }
       };
 
-      // ---------- SPOLOCNE ----------
       function vzorNorm(v) { const n = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1; return v.map(x => x / n); }
       function vzorCos(a, b) { let d = 0; for (let i = 0; i < a.length; i++) d += a[i] * b[i]; return d / (vzorQ * vzorQ); }
       function vzorSkuNaSklade(sku) { return dbData.filter(d => d.id === sku || d.id.startsWith(sku + '_')).length; }
@@ -1459,9 +2159,48 @@
               + '</div></div></div>';
       }
 
-      // ---------- TEXTOVE VYHLADAVANIE ----------
+      function buildGroups(items, best) {
+          const order = Array.from(best.keys()).sort((a, b) => best[b] - best[a]).slice(0, 600);
+          const groups = [];
+          for (const i of order) {
+              if (best[i] <= 0) break;
+              const it = items[i];
+              const g = groups.find(x => vzorCos(x.emb, it.emb) >= VZOR_DUP);
+              if (g) { if (g.variants.length < 6) g.variants.push(it); }
+              else if (groups.length < VZOR_MAX_GROUPS) { groups.push({ it: it, emb: it.emb, score: best[i], variants: [] }); }
+              else break;
+          }
+          return groups;
+      }
+
+      function renderGroupsSlice() {
+          let html = '<div class="text-xs uppercase font-bold text-slate-400 tracking-widest px-1">' + vzorTitle + (vzorFinalne ? ' (' + vzorGroups.length + ')' : ' • spresňujem...') + '</div>';
+          vzorGroups.slice(0, vzorShown).forEach((g, idx) => {
+              const variantHtml = g.variants.length
+                  ? '<div class="text-[11px] text-slate-500 mt-1">Ďalšie kódy: ' + g.variants.map(v => '<span class="underline font-mono" onclick="event.stopPropagation();vzorOpen(\'' + v.sku + '\')">' + v.sku + '</span>').join(', ') + '</div>'
+                  : '';
+              html += vzorCardHtml(g.it, vzorScoreBadge(g.score), variantHtml, idx === 0);
+          });
+          if (vzorGroups.length > vzorShown) {
+              html += '<button onclick="vzorViacPodobnych()" class="w-full bg-white border-2 border-slate-200 text-slate-600 py-3 rounded-xl font-bold flex items-center justify-center gap-1 tap-feedback active:bg-slate-50"><span class="material-icons">expand_more</span> Načítať ďalšie podobné</button>';
+          }
+          html += '<button onclick="document.getElementById(\'vzorPhotoInput\').click()" class="w-full bg-slate-800 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 active:bg-black tap-feedback"><span class="material-icons">photo_camera</span> Odfotiť ďalší vzor</button>';
+          vEl('vzorResults').innerHTML = html;
+      }
+      window.vzorViacPodobnych = function() { vzorShown += VZOR_PAGE; renderGroupsSlice(); };
+
       const vzorNormTxt = (x) => (x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
       let vzorSearchTimer = null;
+      function renderTextSlice() {
+          let html = '<div class="text-xs uppercase font-bold text-slate-400 tracking-widest px-1">Výsledky hľadania (' + vzorTextAll.length + (vzorTextAll.length >= 300 ? '+' : '') + ')</div>';
+          if (vzorTextAll.length === 0) html += '<div class="text-center text-slate-400 py-6 font-medium">Nič sa nenašlo. Skús kratší výraz.</div>';
+          vzorTextAll.slice(0, vzorTextShown).forEach((it) => { html += vzorCardHtml(it, '', '', false); });
+          if (vzorTextAll.length > vzorTextShown) {
+              html += '<button onclick="vzorViacTextu()" class="w-full bg-white border-2 border-slate-200 text-slate-600 py-3 rounded-xl font-bold flex items-center justify-center gap-1 tap-feedback active:bg-slate-50"><span class="material-icons">expand_more</span> Zobraziť viac</button>';
+          }
+          vEl('vzorResults').innerHTML = html;
+      }
+      window.vzorViacTextu = function() { vzorTextShown += 30; renderTextSlice(); };
       window.vzorTextHladaj = function(q) {
           clearTimeout(vzorSearchTimer);
           vzorSearchTimer = setTimeout(() => {
@@ -1469,19 +2208,41 @@
               const nq = vzorNormTxt(q.trim());
               if (!nq) { vEl('vzorResults').innerHTML = ''; return; }
               const terms = nq.split(/\s+/);
-              const hits = [];
+              vzorTextAll = [];
               for (const it of vzorIndex.items) {
                   const hay = vzorNormTxt(it.sku + ' ' + (it.name || ''));
-                  if (terms.every(t => hay.includes(t))) { hits.push(it); if (hits.length >= 30) break; }
+                  if (terms.every(t => hay.includes(t))) { vzorTextAll.push(it); if (vzorTextAll.length >= 300) break; }
               }
-              let html = '<div class="text-xs uppercase font-bold text-slate-400 tracking-widest px-1">Výsledky hľadania (' + hits.length + (hits.length >= 30 ? '+' : '') + ')</div>';
-              if (hits.length === 0) html += '<div class="text-center text-slate-400 py-6 font-medium">Nič sa nenašlo. Skús kratší výraz.</div>';
-              hits.forEach((it, idx) => { html += vzorCardHtml(it, '', '', false); });
-              vEl('vzorResults').innerHTML = html;
+              vzorTextShown = 30;
+              renderTextSlice();
           }, 250);
       };
 
-      // ---------- FOTKA: EXIF-bezpecne vyrezy + MAX zhoda + postupne vysledky ----------
+      window.vzorPodobne = async function(sku) {
+          switchView('vzor');
+          try { await ensureVzorIndex(); } catch (e) {
+              vEl('vzorResults').innerHTML = '<div class="text-center text-slate-400 py-6 font-medium">Databázu vzorov sa nepodarilo načítať: ' + e.message + '</div>';
+              return;
+          }
+          const base = (typeof getBaseCode === 'function') ? getBaseCode(sku) : sku;
+          const target = vzorIndex.items.find(i => i.sku === base || i.sku === sku.toUpperCase());
+          if (!target) {
+              vEl('vzorResults').innerHTML = '<div class="text-center text-slate-400 py-6 font-medium">Vzor ' + base + ' nie je v databáze grafík, podobné neviem porovnať.</div>';
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              return;
+          }
+          const items = vzorIndex.items;
+          const best = new Float64Array(items.length);
+          for (let i = 0; i < items.length; i++) {
+              best[i] = (items[i] === target) ? -1 : vzorCos(target.emb, items[i].emb);
+          }
+          vzorGroups = buildGroups(items, best);
+          vzorShown = VZOR_PAGE; vzorFinalne = true; vzorTitle = 'Podobné k ' + target.sku;
+          const ts = vEl('vzorTextSearch'); if (ts) ts.value = '';
+          renderGroupsSlice();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
       async function vzorEmbedUrl(url) {
           const image = await RawImage.read(url);
           const inputs = await vzorProcessor(image);
@@ -1516,6 +2277,7 @@
               const items = vzorIndex.items;
               const best = new Float64Array(items.length);
               const crops = [0.7, 1.0, 0.45];
+              vzorTitle = 'Najpodobnejšie vzory'; vzorShown = VZOR_PAGE;
               for (let c = 0; c < crops.length; c++) {
                   vEl('vzorSearchStatus').innerText = 'Analyzujem... pohľad ' + (c + 1) + '/' + crops.length;
                   const q = await vzorCanvasVec(img, crops[c]);
@@ -1525,7 +2287,9 @@
                       dot /= vzorQ;
                       if (dot > best[i]) best[i] = dot;
                   }
-                  renderVzorPhotoResults(items, best, c === crops.length - 1);
+                  vzorGroups = buildGroups(items, best);
+                  vzorFinalne = (c === crops.length - 1);
+                  renderGroupsSlice();
                   await new Promise(r => setTimeout(r, 30));
               }
               vEl('vzorSearchStatus').innerText = 'Hotovo ✓';
@@ -1542,27 +2306,6 @@
               setTimeout(() => URL.revokeObjectURL(url), 8000);
           }
       };
-
-      function renderVzorPhotoResults(items, best, finalne) {
-          const order = Array.from(best.keys()).sort((a, b) => best[b] - best[a]).slice(0, 400);
-          const groups = [];
-          for (const i of order) {
-              const it = items[i];
-              const g = groups.find(x => vzorCos(x.emb, it.emb) >= VZOR_DUP);
-              if (g) { if (g.variants.length < 6) g.variants.push(it); }
-              else if (groups.length < VZOR_TOP) { groups.push({ it: it, emb: it.emb, score: best[i], variants: [] }); }
-              else break;
-          }
-          let html = '<div class="text-xs uppercase font-bold text-slate-400 tracking-widest px-1">Najpodobnejšie vzory' + (finalne ? ' (' + groups.length + ')' : ' • spresňujem...') + '</div>';
-          groups.forEach((g, idx) => {
-              const variantHtml = g.variants.length
-                  ? '<div class="text-[11px] text-slate-500 mt-1">Ďalšie kódy: ' + g.variants.map(v => '<span class="underline font-mono" onclick="event.stopPropagation();vzorOpen(\'' + v.sku + '\')">' + v.sku + '</span>').join(', ') + '</div>'
-                  : '';
-              html += vzorCardHtml(g.it, vzorScoreBadge(g.score), variantHtml, idx === 0);
-          });
-          html += '<button onclick="document.getElementById(\'vzorPhotoInput\').click()" class="w-full bg-slate-800 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 active:bg-black tap-feedback"><span class="material-icons">photo_camera</span> Odfotiť ďalší vzor</button>';
-          vEl('vzorResults').innerHTML = html;
-      }
 
       window.vzorOpen = function(sku) {
           switchView('scan');
