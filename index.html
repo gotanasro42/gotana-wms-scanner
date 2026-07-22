@@ -436,6 +436,7 @@
       }
       
       let dbNahlady = {};
+      let dbPodprac = {};
       function loadNahlady() {
           const stored = localStorage.getItem('gotana_nahlady');
           if (stored) { try { dbNahlady = JSON.parse(stored); } catch(e){} }
@@ -444,6 +445,14 @@
                   dbNahlady = data;
                   try { localStorage.setItem('gotana_nahlady', JSON.stringify(data)); } catch(e) {}
                   if (!document.getElementById('view-db').classList.contains('hidden')) renderDb(dbData);
+              }
+          }).catch(e => {});
+          const sp = localStorage.getItem('gotana_podprac');
+          if (sp) { try { dbPodprac = JSON.parse(sp); } catch(e){} }
+          fetch('./podpracoviska.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(data => {
+              if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+                  dbPodprac = data;
+                  try { localStorage.setItem('gotana_podprac', JSON.stringify(data)); } catch(e) {}
               }
           }).catch(e => {});
       }
@@ -1071,7 +1080,7 @@
                 ${displayName !== scannedId ? `<div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 leading-snug">${displayName}</div>` : ''}
                 ${dbNahlady[scannedId] ? `<img src="${dbNahlady[scannedId]}" loading="lazy" class="w-20 h-20 object-cover rounded-xl border border-slate-200 mb-2 shadow-sm" onerror="this.style.display='none'">` : ''}
                 <h2 class="text-3xl font-black font-mono text-slate-900 leading-tight mb-1 break-words tracking-tight">${scannedId}</h2>
-                <button onclick="vzorPodobne('${scannedId}')" class="mt-2 bg-pink-50 border border-pink-200 text-pink-700 px-3 py-2 rounded-lg text-xs font-bold inline-flex items-center gap-1 tap-feedback active:bg-pink-100"><span class="material-icons text-sm">image_search</span> Podobné vzory</button>
+                <button onclick="vzorPodobne('${scannedId}')" class="mt-2 bg-pink-50 border border-pink-200 text-pink-700 px-3 py-2 rounded-lg text-xs font-bold inline-flex items-center gap-1 tap-feedback active:bg-pink-100"><span class="material-icons text-sm">image_search</span> Podobné vzory</button>${(dbPodprac[scannedId] || dbPodprac[getBaseCode(scannedId)]) ? `<div class="mt-2"><span class="text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-1 rounded-lg inline-flex items-center gap-1"><span class="material-icons text-sm">factory</span> Podpracovisko: ${dbPodprac[scannedId] || dbPodprac[getBaseCode(scannedId)]}</span></div>` : ''}
              </div>`;
          
          if (count > 0) {
