@@ -1070,6 +1070,7 @@
                 ${displayName !== scannedId ? `<div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 leading-snug">${displayName}</div>` : ''}
                 ${dbNahlady[scannedId] ? `<img src="${dbNahlady[scannedId]}" loading="lazy" class="w-20 h-20 object-cover rounded-xl border border-slate-200 mb-2 shadow-sm" onerror="this.style.display='none'">` : ''}
                 <h2 class="text-3xl font-black font-mono text-slate-900 leading-tight mb-1 break-words tracking-tight">${scannedId}</h2>
+                <button onclick="vzorPodobne('${scannedId}')" class="mt-2 bg-pink-50 border border-pink-200 text-pink-700 px-3 py-2 rounded-lg text-xs font-bold inline-flex items-center gap-1 tap-feedback active:bg-pink-100"><span class="material-icons text-sm">image_search</span> Podobné vzory</button>
              </div>`;
          
          if (count > 0) {
@@ -1349,17 +1350,20 @@
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initApp); else initApp();
     </script>
     <script type="module">
-      // ================= VZOR FINDER v3 (CLIP v prehliadaci) =================
+      // ================= VZOR FINDER v4 (CLIP v prehliadaci) =================
       import { AutoProcessor, CLIPVisionModelWithProjection, RawImage, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
       env.allowLocalModels = false;
 
       const VZOR_INDEX_URL = './index.json';
       const VZOR_FALLBACK_MODEL = 'Xenova/clip-vit-base-patch32';
-      const VZOR_TOP = 20;
+      const VZOR_PAGE = 20;
+      const VZOR_MAX_GROUPS = 60;
       const VZOR_DUP = 0.985;
       let vzorProcessor = null, vzorModel = null, vzorIndex = null;
       let vzorQ = 1, vzorModelId = null;
       let vzorIndexReady = false, vzorReady = false, vzorLoading = false, vzorBusy = false;
+      let vzorGroups = [], vzorShown = VZOR_PAGE, vzorFinalne = true, vzorTitle = 'Najpodobnejšie vzory';
+      let vzorTextAll = [], vzorTextShown = 30;
 
       const vEl = (id) => document.getElementById(id);
       const setVzorStatus = (t) => { const el = vEl('vzorStatus'); if (el) el.innerText = t; };
@@ -1371,8 +1375,7 @@
           vEl('vzorProgressFill').style.width = (pct !== null ? pct : 30) + '%';
       }
 
-      async function loadVzorIndex() {
-          setVzorStatus('Načítavam databázu vzorov...');
+      async function loadVzorIndexRaw() {
           let response = null;
           try {
               vzorProgress('Kontrolujem databázu vzorov...', null);
@@ -1393,6 +1396,15 @@
           vzorModelId = vzorIndex.model || VZOR_FALLBACK_MODEL;
       }
 
+      async function ensureVzorIndex() {
+          if (vzorIndexReady) return;
+          setVzorStatus('Načítavam databázu vzorov...');
+          await loadVzorIndexRaw();
+          vzorIndexReady = true;
+          const ts = vEl('vzorTextSearch');
+          if (ts) { ts.disabled = false; ts.placeholder = 'Hľadať vzor podľa názvu alebo kódu...'; }
+      }
+
       async function loadVzorModel() {
           setVzorStatus('Sťahujem AI model...');
           const cb = (d) => { if (d.status === 'progress' && d.total) vzorProgress('Sťahujem AI model...', (d.loaded / d.total) * 100); };
@@ -1404,10 +1416,7 @@
           if (vzorReady || vzorLoading) return;
           vzorLoading = true;
           try {
-              await loadVzorIndex();
-              vzorIndexReady = true;
-              const ts = vEl('vzorTextSearch');
-              if (ts) { ts.disabled = false; ts.placeholder = 'Hľadať vzor podľa názvu alebo kódu...'; }
+              await ensureVzorIndex();
               setVzorStatus('Databáza OK (' + vzorIndex.items.length + ' vzorov) • pripravujem AI model...');
               await loadVzorModel();
               vzorReady = true;
@@ -1459,9 +1468,49 @@
               + '</div></div></div>';
       }
 
+      function buildGroups(items, best) {
+          const order = Array.from(best.keys()).sort((a, b) => best[b] - best[a]).slice(0, 600);
+          const groups = [];
+          for (const i of order) {
+              if (best[i] <= 0) break;
+              const it = items[i];
+              const g = groups.find(x => vzorCos(x.emb, it.emb) >= VZOR_DUP);
+              if (g) { if (g.variants.length < 6) g.variants.push(it); }
+              else if (groups.length < VZOR_MAX_GROUPS) { groups.push({ it: it, emb: it.emb, score: best[i], variants: [] }); }
+              else break;
+          }
+          return groups;
+      }
+
+      function renderGroupsSlice() {
+          let html = '<div class="text-xs uppercase font-bold text-slate-400 tracking-widest px-1">' + vzorTitle + (vzorFinalne ? ' (' + vzorGroups.length + ')' : ' • spresňujem...') + '</div>';
+          vzorGroups.slice(0, vzorShown).forEach((g, idx) => {
+              const variantHtml = g.variants.length
+                  ? '<div class="text-[11px] text-slate-500 mt-1">Ďalšie kódy: ' + g.variants.map(v => '<span class="underline font-mono" onclick="event.stopPropagation();vzorOpen(\'' + v.sku + '\')">' + v.sku + '</span>').join(', ') + '</div>'
+                  : '';
+              html += vzorCardHtml(g.it, vzorScoreBadge(g.score), variantHtml, idx === 0);
+          });
+          if (vzorGroups.length > vzorShown) {
+              html += '<button onclick="vzorViacPodobnych()" class="w-full bg-white border-2 border-slate-200 text-slate-600 py-3 rounded-xl font-bold flex items-center justify-center gap-1 tap-feedback active:bg-slate-50"><span class="material-icons">expand_more</span> Načítať ďalšie podobné</button>';
+          }
+          html += '<button onclick="document.getElementById(\'vzorPhotoInput\').click()" class="w-full bg-slate-800 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 active:bg-black tap-feedback"><span class="material-icons">photo_camera</span> Odfotiť ďalší vzor</button>';
+          vEl('vzorResults').innerHTML = html;
+      }
+      window.vzorViacPodobnych = function() { vzorShown += VZOR_PAGE; renderGroupsSlice(); };
+
       // ---------- TEXTOVE VYHLADAVANIE ----------
       const vzorNormTxt = (x) => (x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
       let vzorSearchTimer = null;
+      function renderTextSlice() {
+          let html = '<div class="text-xs uppercase font-bold text-slate-400 tracking-widest px-1">Výsledky hľadania (' + vzorTextAll.length + (vzorTextAll.length >= 300 ? '+' : '') + ')</div>';
+          if (vzorTextAll.length === 0) html += '<div class="text-center text-slate-400 py-6 font-medium">Nič sa nenašlo. Skús kratší výraz.</div>';
+          vzorTextAll.slice(0, vzorTextShown).forEach((it) => { html += vzorCardHtml(it, '', '', false); });
+          if (vzorTextAll.length > vzorTextShown) {
+              html += '<button onclick="vzorViacTextu()" class="w-full bg-white border-2 border-slate-200 text-slate-600 py-3 rounded-xl font-bold flex items-center justify-center gap-1 tap-feedback active:bg-slate-50"><span class="material-icons">expand_more</span> Zobraziť viac</button>';
+          }
+          vEl('vzorResults').innerHTML = html;
+      }
+      window.vzorViacTextu = function() { vzorTextShown += 30; renderTextSlice(); };
       window.vzorTextHladaj = function(q) {
           clearTimeout(vzorSearchTimer);
           vzorSearchTimer = setTimeout(() => {
@@ -1469,19 +1518,43 @@
               const nq = vzorNormTxt(q.trim());
               if (!nq) { vEl('vzorResults').innerHTML = ''; return; }
               const terms = nq.split(/\s+/);
-              const hits = [];
+              vzorTextAll = [];
               for (const it of vzorIndex.items) {
                   const hay = vzorNormTxt(it.sku + ' ' + (it.name || ''));
-                  if (terms.every(t => hay.includes(t))) { hits.push(it); if (hits.length >= 30) break; }
+                  if (terms.every(t => hay.includes(t))) { vzorTextAll.push(it); if (vzorTextAll.length >= 300) break; }
               }
-              let html = '<div class="text-xs uppercase font-bold text-slate-400 tracking-widest px-1">Výsledky hľadania (' + hits.length + (hits.length >= 30 ? '+' : '') + ')</div>';
-              if (hits.length === 0) html += '<div class="text-center text-slate-400 py-6 font-medium">Nič sa nenašlo. Skús kratší výraz.</div>';
-              hits.forEach((it, idx) => { html += vzorCardHtml(it, '', '', false); });
-              vEl('vzorResults').innerHTML = html;
+              vzorTextShown = 30;
+              renderTextSlice();
           }, 250);
       };
 
-      // ---------- FOTKA: EXIF-bezpecne vyrezy + MAX zhoda + postupne vysledky ----------
+      // ---------- PODOBNE VZORY K PRODUKTU (bez fotenia) ----------
+      window.vzorPodobne = async function(sku) {
+          switchView('vzor');
+          try { await ensureVzorIndex(); } catch (e) {
+              vEl('vzorResults').innerHTML = '<div class="text-center text-slate-400 py-6 font-medium">Databázu vzorov sa nepodarilo načítať: ' + e.message + '</div>';
+              return;
+          }
+          const base = (typeof getBaseCode === 'function') ? getBaseCode(sku) : sku;
+          const target = vzorIndex.items.find(i => i.sku === base || i.sku === sku.toUpperCase());
+          if (!target) {
+              vEl('vzorResults').innerHTML = '<div class="text-center text-slate-400 py-6 font-medium">Vzor ' + base + ' nie je v databáze grafík, podobné neviem porovnať.</div>';
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              return;
+          }
+          const items = vzorIndex.items;
+          const best = new Float64Array(items.length);
+          for (let i = 0; i < items.length; i++) {
+              best[i] = (items[i] === target) ? -1 : vzorCos(target.emb, items[i].emb);
+          }
+          vzorGroups = buildGroups(items, best);
+          vzorShown = VZOR_PAGE; vzorFinalne = true; vzorTitle = 'Podobné k ' + target.sku;
+          const ts = vEl('vzorTextSearch'); if (ts) ts.value = '';
+          renderGroupsSlice();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      // ---------- FOTKA ----------
       async function vzorEmbedUrl(url) {
           const image = await RawImage.read(url);
           const inputs = await vzorProcessor(image);
@@ -1494,7 +1567,9 @@
           const sx = (img.naturalWidth - side) / 2, sy = (img.naturalHeight - side) / 2;
           const canvas = document.createElement('canvas');
           canvas.width = 384; canvas.height = 384;
-          canvas.getContext('2d').drawImage(img, sx, sy, side, side, 0, 0, 384, 384);
+          const cx = canvas.getContext('2d');
+          if (f < 0.4) cx.filter = 'contrast(1.6) saturate(1.4)';
+          cx.drawImage(img, sx, sy, side, side, 0, 0, 384, 384);
           const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.92));
           const u = URL.createObjectURL(blob);
           try { return vzorNorm(await vzorEmbedUrl(u)); }
@@ -1515,7 +1590,8 @@
               const img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('Fotku sa nepodarilo načítať')); im.src = url; });
               const items = vzorIndex.items;
               const best = new Float64Array(items.length);
-              const crops = [0.7, 1.0, 0.45];
+              const crops = [0.7, 1.0, 0.45, 0.28];
+              vzorTitle = 'Najpodobnejšie vzory'; vzorShown = VZOR_PAGE;
               for (let c = 0; c < crops.length; c++) {
                   vEl('vzorSearchStatus').innerText = 'Analyzujem... pohľad ' + (c + 1) + '/' + crops.length;
                   const q = await vzorCanvasVec(img, crops[c]);
@@ -1525,7 +1601,9 @@
                       dot /= vzorQ;
                       if (dot > best[i]) best[i] = dot;
                   }
-                  renderVzorPhotoResults(items, best, c === crops.length - 1);
+                  vzorGroups = buildGroups(items, best);
+                  vzorFinalne = (c === crops.length - 1);
+                  renderGroupsSlice();
                   await new Promise(r => setTimeout(r, 30));
               }
               vEl('vzorSearchStatus').innerText = 'Hotovo ✓';
@@ -1542,27 +1620,6 @@
               setTimeout(() => URL.revokeObjectURL(url), 8000);
           }
       };
-
-      function renderVzorPhotoResults(items, best, finalne) {
-          const order = Array.from(best.keys()).sort((a, b) => best[b] - best[a]).slice(0, 400);
-          const groups = [];
-          for (const i of order) {
-              const it = items[i];
-              const g = groups.find(x => vzorCos(x.emb, it.emb) >= VZOR_DUP);
-              if (g) { if (g.variants.length < 6) g.variants.push(it); }
-              else if (groups.length < VZOR_TOP) { groups.push({ it: it, emb: it.emb, score: best[i], variants: [] }); }
-              else break;
-          }
-          let html = '<div class="text-xs uppercase font-bold text-slate-400 tracking-widest px-1">Najpodobnejšie vzory' + (finalne ? ' (' + groups.length + ')' : ' • spresňujem...') + '</div>';
-          groups.forEach((g, idx) => {
-              const variantHtml = g.variants.length
-                  ? '<div class="text-[11px] text-slate-500 mt-1">Ďalšie kódy: ' + g.variants.map(v => '<span class="underline font-mono" onclick="event.stopPropagation();vzorOpen(\'' + v.sku + '\')">' + v.sku + '</span>').join(', ') + '</div>'
-                  : '';
-              html += vzorCardHtml(g.it, vzorScoreBadge(g.score), variantHtml, idx === 0);
-          });
-          html += '<button onclick="document.getElementById(\'vzorPhotoInput\').click()" class="w-full bg-slate-800 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 active:bg-black tap-feedback"><span class="material-icons">photo_camera</span> Odfotiť ďalší vzor</button>';
-          vEl('vzorResults').innerHTML = html;
-      }
 
       window.vzorOpen = function(sku) {
           switchView('scan');
