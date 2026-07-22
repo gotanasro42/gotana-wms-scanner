@@ -251,6 +251,7 @@
               <div class="flex items-center gap-3">
                   <img id="vzorPreviewImg" class="w-24 h-24 object-cover rounded-xl border border-slate-200" alt="">
                   <div class="flex-1"><div class="text-xs uppercase font-bold text-slate-400 mb-1">Tvoja fotka</div><div id="vzorSearchStatus" class="font-bold text-slate-700">...</div></div>
+                  <button onclick="vzorZrus()" class="shrink-0 w-9 h-9 rounded-full bg-slate-100 border border-slate-300 text-slate-500 flex items-center justify-center tap-feedback active:bg-slate-200" title="Zrušiť"><span class="material-icons text-lg">close</span></button>
               </div>
           </div>
           <div id="vzorResults" class="space-y-3 pb-4"></div>
@@ -1106,19 +1107,22 @@
               : `background-color: hsl(${h}, 85%, 92%); color: hsl(${h}, 100%, 15%); border-left-color: hsl(${h}, 60%, 80%);`; 
       }
 
+      let renderGen = 0;
       function renderDb(items) {
+         const gen = ++renderGen;
          const list = document.getElementById('dbList');
          document.getElementById('dbStats').innerHTML = `<span class="text-slate-700">Počet: ${items.length} ks</span>`;
          list.innerHTML = "";
          if(items.length === 0) { list.innerHTML = `<div class="text-center text-slate-400 py-10 font-bold">Žiadne záznamy.</div>`; return; }
          const allItems = [...items].reverse(); const firstBatch = allItems.slice(0, 50); let html = "";
          firstBatch.forEach(i => html += createRowHtml(i)); list.innerHTML = html; updateBulkUI();
-         if(allItems.length > 50) { renderRemaining(allItems.slice(50)); }
+         if(allItems.length > 50) { renderRemaining(allItems.slice(50), gen); }
       }
 
-      function renderRemaining(items) {
+      function renderRemaining(items, gen) {
           const list = document.getElementById('dbList'); const chunkSize = 100; let index = 0;
           function nextChunk() {
+              if (gen !== renderGen) return;
               const limit = Math.min(index + chunkSize, items.length); let html = "";
               for (let i = index; i < limit; i++) { html += createRowHtml(items[i]); }
               list.insertAdjacentHTML('beforeend', html); updateBulkUI(); index += chunkSize;
@@ -1619,6 +1623,14 @@
               input.value = '';
               setTimeout(() => URL.revokeObjectURL(url), 8000);
           }
+      };
+
+      window.vzorZrus = function() {
+          vEl('vzorPreview').classList.add('hidden');
+          vEl('vzorPreviewImg').src = '';
+          vEl('vzorResults').innerHTML = '';
+          vEl('vzorError').classList.add('hidden');
+          const ts = vEl('vzorTextSearch'); if (ts) ts.value = '';
       };
 
       window.vzorOpen = function(sku) {
