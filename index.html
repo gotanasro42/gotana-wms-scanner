@@ -457,12 +457,23 @@
           }).catch(e => {});
       }
 
+      function normalizujKatalog() {
+          Object.keys(dbCatalog).forEach(function(k){
+              var v = dbCatalog[k];
+              if (v && typeof v === 'object') {
+                  var p = v.p || v.podpracovisko || v.Podpracovisko || '';
+                  if (p) dbPodprac[String(k).toUpperCase()] = String(p);
+                  dbCatalog[k] = v.n || v.name || v.nazov || '';
+              }
+          });
+      }
+
       function loadCatalog() {
           const stored = localStorage.getItem('gotana_catalog');
-          if (stored) { try { dbCatalog = JSON.parse(stored); } catch(e){} }
+          if (stored) { try { dbCatalog = JSON.parse(stored); normalizujKatalog(); } catch(e){} }
           apiCall('getCatalog').then(data => {
               if (data && typeof data === 'object') {
-                  dbCatalog = data;
+                  dbCatalog = data; normalizujKatalog();
                   localStorage.setItem('gotana_catalog', JSON.stringify(dbCatalog));
               }
           }).catch(e => console.log("Katalóg zatiaľ nie je na backende."));
