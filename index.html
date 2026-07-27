@@ -1151,6 +1151,31 @@
           setTimeout(nextChunk, 10);
       }
       
+      function zobrazVelkyNahlad(src, kod) {
+          var o = document.createElement('div');
+          o.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.93);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;';
+          o.onclick = function(e){ if (e.target === o) o.remove(); };
+          var img = document.createElement('img');
+          img.src = src;
+          img.style.cssText = 'max-width:100%;max-height:68vh;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.5);background:#fff;';
+          var kodEl = document.createElement('div');
+          kodEl.textContent = kod;
+          kodEl.style.cssText = 'color:#fff;font-weight:800;font-family:monospace;margin-top:14px;font-size:18px;text-align:center;word-break:break-all;';
+          var btns = document.createElement('div');
+          btns.style.cssText = 'display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;justify-content:center;';
+          var b1 = document.createElement('button');
+          b1.textContent = 'Otvoriť produkt';
+          b1.style.cssText = 'background:#2563eb;color:#fff;border:0;padding:12px 22px;border-radius:12px;font-weight:700;font-size:15px;';
+          b1.onclick = function(){ o.remove(); openDetailModal(kod); };
+          var b2 = document.createElement('button');
+          b2.textContent = 'Zavrieť';
+          b2.style.cssText = 'background:#334155;color:#fff;border:0;padding:12px 22px;border-radius:12px;font-weight:700;font-size:15px;';
+          b2.onclick = function(){ o.remove(); };
+          btns.appendChild(b1); btns.appendChild(b2);
+          o.appendChild(img); o.appendChild(kodEl); o.appendChild(btns);
+          document.body.appendChild(o);
+      }
+
       function createRowHtml(i) {
          let locStyle = ''; let locText = ''; let locClasses = '';
          if (i.location) {
@@ -1177,7 +1202,7 @@
             <div class="flex items-center justify-center px-2 cursor-pointer" onclick="toggleSelection('${i.id}')">
                 <div class="custom-checkbox ${isSelected} item-checkbox" data-id="${i.id}">${checkHtml}</div>
             </div>
-            ${dbNahlady[i.sku || getBaseCode(i.id)] ? `<img src="${dbNahlady[i.sku || getBaseCode(i.id)]}" loading="lazy" class="w-14 h-14 object-cover rounded-lg self-center ml-2 mr-3 shrink-0 border border-slate-200 cursor-pointer" onclick="openDetailModal('${i.id}')" onerror="this.style.display='none'">` : ''}
+            ${dbNahlady[i.sku || getBaseCode(i.id)] ? `<img src="${dbNahlady[i.sku || getBaseCode(i.id)]}" loading="lazy" class="w-14 h-14 object-cover rounded-lg self-center ml-2 mr-3 shrink-0 border border-slate-200 cursor-pointer" onclick="event.stopPropagation(); zobrazVelkyNahlad('${dbNahlady[i.sku || getBaseCode(i.id)]}','${i.id}')" onerror="this.style.display='none'">` : ''}
             <div class="flex-1 py-2 pr-2 active:scale-[0.99] transition-transform cursor-pointer" onclick="openDetailModal('${i.id}')">
                 ${titleHtml}
                 ${subtitleHtml}
