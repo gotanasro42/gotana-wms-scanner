@@ -1057,7 +1057,7 @@
                  
                  html += `
                  <div class="bg-white p-3 rounded-xl border border-slate-200 flex justify-between items-center active:scale-[0.98] transition-transform cursor-pointer tap-feedback shadow-sm" onclick="openDetailModal('${item.id}')">
-                     ${dbNahlady[sku] ? `<img src="${dbNahlady[sku]}" loading="lazy" class="w-12 h-12 object-cover rounded-lg mr-3 shrink-0 border border-slate-200" onerror="this.style.display='none'">` : ''}
+                     ${dbNahlady[sku] ? `<img src="${dbNahlady[sku]}" loading="lazy" onclick="event.stopPropagation();zobrazVelkyNahlad('${dbNahlady[sku]}','${item.id}')" class="w-12 h-12 object-cover rounded-lg mr-3 shrink-0 border border-slate-200 cursor-pointer" onerror="this.style.display='none'">` : ''}
                      <div class="flex-1 pr-2">
                          <div class="font-bold font-mono text-slate-800 text-lg leading-tight break-all">${item.id}</div>
                          ${subtitleHtml}
@@ -1089,7 +1089,7 @@
              <button onclick="resetScanScreen()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-white p-2 rounded-full shadow-md tap-feedback z-10 border border-slate-200"><span class="material-icons">close</span></button>
              <div class="bg-slate-50 p-6 border-b border-slate-200 pr-16">
                 ${displayName !== scannedId ? `<div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 leading-snug">${displayName}</div>` : ''}
-                ${dbNahlady[scannedId] ? `<img src="${dbNahlady[scannedId]}" loading="lazy" class="w-20 h-20 object-cover rounded-xl border border-slate-200 mb-2 shadow-sm" onerror="this.style.display='none'">` : ''}
+                ${dbNahlady[scannedId] ? `<img src="${dbNahlady[scannedId]}" loading="lazy" onclick="zobrazVelkyNahlad('${dbNahlady[scannedId]}','${scannedId}','ziadna')" class="w-20 h-20 object-cover rounded-xl border border-slate-200 mb-2 shadow-sm cursor-pointer" onerror="this.style.display='none'">` : ''}
                 <h2 class="text-3xl font-black font-mono text-slate-900 leading-tight mb-1 break-words tracking-tight">${scannedId}</h2>
                 <button onclick="vzorPodobne('${scannedId}')" class="mt-2 bg-pink-50 border border-pink-200 text-pink-700 px-3 py-2 rounded-lg text-xs font-bold inline-flex items-center gap-1 tap-feedback active:bg-pink-100"><span class="material-icons text-sm">image_search</span> Podobné vzory</button>${(dbPodprac[scannedId] || dbPodprac[getBaseCode(scannedId)]) ? `<div class="mt-2"><span class="text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-1 rounded-lg inline-flex items-center gap-1"><span class="material-icons text-sm">factory</span> Podpracovisko: ${dbPodprac[scannedId] || dbPodprac[getBaseCode(scannedId)]}</span></div>` : ''}
              </div>`;
@@ -1151,7 +1151,7 @@
           setTimeout(nextChunk, 10);
       }
       
-      function zobrazVelkyNahlad(src, kod) {
+      function zobrazVelkyNahlad(src, kod, rezim) {
           var o = document.createElement('div');
           o.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.93);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;';
           o.onclick = function(e){ if (e.target === o) o.remove(); };
@@ -1166,12 +1166,12 @@
           var b1 = document.createElement('button');
           b1.textContent = 'Otvoriť produkt';
           b1.style.cssText = 'background:#2563eb;color:#fff;border:0;padding:12px 22px;border-radius:12px;font-weight:700;font-size:15px;';
-          b1.onclick = function(){ o.remove(); openDetailModal(kod); };
+          b1.onclick = function(){ o.remove(); if (rezim === 'produkt') { switchView('scan'); processResult(kod); } else { openDetailModal(kod); } };
           var b2 = document.createElement('button');
           b2.textContent = 'Zavrieť';
           b2.style.cssText = 'background:#334155;color:#fff;border:0;padding:12px 22px;border-radius:12px;font-weight:700;font-size:15px;';
           b2.onclick = function(){ o.remove(); };
-          btns.appendChild(b1); btns.appendChild(b2);
+          if (rezim !== 'ziadna') btns.appendChild(b1); btns.appendChild(b2);
           o.appendChild(img); o.appendChild(kodEl); o.appendChild(btns);
           document.body.appendChild(o);
       }
@@ -1508,7 +1508,7 @@
               : '<span class="text-[10px] font-bold text-slate-400 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded">Nie je v sklade</span>';
           return '<div class="bg-white rounded-2xl shadow-md border ' + (prvy ? 'border-pink-300 ring-2 ring-pink-100' : 'border-slate-200') + ' overflow-hidden animate-scale-in">'
               + '<div class="flex cursor-pointer tap-feedback" onclick="vzorOpen(\'' + it.sku + '\')">'
-              + '<img src="' + it.img + '" loading="lazy" class="w-24 h-24 object-cover shrink-0 bg-slate-100" alt="">'
+              + '<img src="' + it.img + '" loading="lazy" onclick="event.stopPropagation();zobrazVelkyNahlad(\'' + it.img + '\',\'' + it.sku + '\',\'produkt\')" class="w-24 h-24 object-cover shrink-0 bg-slate-100 cursor-pointer" alt="">'
               + '<div class="p-3 flex-1 min-w-0">'
               + '<div class="flex justify-between items-start gap-2"><div class="font-black font-mono text-slate-900 text-base leading-tight break-all">' + it.sku + '</div>' + badgeHtml + '</div>'
               + '<div class="text-xs text-slate-500 leading-snug mt-1">' + safeName + '</div>'
