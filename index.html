@@ -1712,15 +1712,65 @@
           return Array.from(image_embeds.data);
       }
 
-      async function vzorCanvasVec(img, f) {
+      function vzorVyvazBielu(ctx2, w, h) {
+          try {
+              const d = ctx2.getImageData(0, 0, w, h);
+              const p = d.data; let r = 0, g = 0, b = 0, n = 0;
+              for (let i = 0; i < p.length; i += 16) { r += p[i]; g += p[i + 1]; b += p[i + 2]; n++; }
+              r /= n; g /= n; b /= n;
+              if (!r || !g || !b) return;
+              const s = (r + g + b) / 3, kr = s / r, kg = s / g, kb = s / b;
+              for (let i = 0; i < p.length; i += 4) {
+                  p[i] = Math.min(255, p[i] * kr);
+                  p[i + 1] = Math.min(255, p[i + 1] * kg);
+                  p[i + 2] = Math.min(255, p[i + 2] * kb);
+              }
+              ctx2.putImageData(d, 0, 0);
+          } catch (e) {}
+      }
+
+      function vzorNajdiOblast(img) {
+          try {
+              const N = 96, K = 3, cell = N / K;
+              const c = document.createElement("canvas"); c.width = N; c.height = N;
+              const x = c.getContext("2d", { willReadFrequently: true });
+              x.drawImage(img, 0, 0, N, N);
+              const p = x.getImageData(0, 0, N, N).data;
+              let best = -1, bx = 0.5, by = 0.5;
+              for (let gy = 0; gy < K; gy++) {
+                  for (let gx = 0; gx < K; gx++) {
+                      let s = 0, s2 = 0, n = 0;
+                      for (let y = Math.floor(gy * cell); y < Math.floor((gy + 1) * cell); y++) {
+                          for (let xx = Math.floor(gx * cell); xx < Math.floor((gx + 1) * cell); xx++) {
+                              const i = (y * N + xx) * 4;
+                              const l = p[i] * 0.299 + p[i + 1] * 0.587 + p[i + 2] * 0.114;
+                              s += l; s2 += l * l; n++;
+                          }
+                      }
+                      const v = s2 / n - (s / n) * (s / n);
+                      if (v > best) { best = v; bx = (gx + 0.5) / K; by = (gy + 0.5) / K; }
+                  }
+              }
+              return { cx: bx, cy: by };
+          } catch (e) { return { cx: 0.5, cy: 0.5 }; }
+      }
+
+      async function vzorCanvasVec(img, f, cx, cy) {
           const side = Math.min(img.naturalWidth, img.naturalHeight) * f;
-          const sx = (img.naturalWidth - side) / 2, sy = (img.naturalHeight - side) / 2;
-          const canvas = document.createElement('canvas');
+          const px = (typeof cx === "number") ? cx : 0.5;
+          const py = (typeof cy === "number") ? cy : 0.5;
+          let sx = img.naturalWidth * px - side / 2;
+          let sy = img.naturalHeight * py - side / 2;
+          sx = Math.max(0, Math.min(img.naturalWidth - side, sx));
+          sy = Math.max(0, Math.min(img.naturalHeight - side, sy));
+          const canvas = document.createElement("canvas");
           canvas.width = 384; canvas.height = 384;
-          const cx = canvas.getContext('2d');
-          if (f < 0.4) cx.filter = 'contrast(1.6) saturate(1.4)';
-          cx.drawImage(img, sx, sy, side, side, 0, 0, 384, 384);
-          const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.92));
+          const ctx = canvas.getContext("2d", { willReadFrequently: true });
+          if (f < 0.4) ctx.filter = "contrast(1.5) saturate(1.3)";
+          ctx.drawImage(img, sx, sy, side, side, 0, 0, 384, 384);
+          ctx.filter = "none";
+          vzorVyvazBielu(ctx, 384, 384);
+          const blob = await new Promise(rr => canvas.toBlob(rr, "image/jpeg", 0.92));
           const u = URL.createObjectURL(blob);
           try { return vzorNorm(await vzorEmbedUrl(u)); }
           finally { setTimeout(() => URL.revokeObjectURL(u), 2000); }
@@ -1740,11 +1790,12 @@
               const img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('Fotku sa nepodarilo načítať')); im.src = url; });
               const items = vzorIndex.items;
               const best = new Float64Array(items.length);
-              const crops = [0.7, 1.0, 0.45, 0.28];
+              const oblast = vzorNajdiOblast(img);
+              const crops = [{ f: 0.7 }, { f: 1.0 }, { f: 0.45 }, { f: 0.28 }, { f: 0.45, cx: oblast.cx, cy: oblast.cy }, { f: 0.28, cx: oblast.cx, cy: oblast.cy }];
               vzorTitle = 'Najpodobnejšie vzory'; vzorShown = VZOR_PAGE;
               for (let c = 0; c < crops.length; c++) {
                   vEl('vzorSearchStatus').innerText = 'Analyzujem... pohľad ' + (c + 1) + '/' + crops.length;
-                  const q = await vzorCanvasVec(img, crops[c]);
+                  const q = await vzorCanvasVec(img, crops[c].f, crops[c].cx, crops[c].cy);
                   for (let i = 0; i < items.length; i++) {
                       let dot = 0; const e = items[i].emb;
                       for (let j = 0; j < q.length; j++) dot += q[j] * e[j];
