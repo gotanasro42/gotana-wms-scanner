@@ -46,16 +46,16 @@
 
     <!-- HLAVIČKA S OFFLINE INDIKÁTOROM -->
     <div class="bg-slate-900 text-white sticky top-0 z-50 shadow-lg">
-      <div class="p-4 flex justify-between items-center max-w-lg lg:max-w-4xl xl:max-w-6xl mx-auto">
-        <div class="font-bold text-2xl flex items-center gap-2 tracking-tight">
+      <div class="px-4 py-2 flex justify-between items-center max-w-lg xl:max-w-2xl mx-auto">
+        <div class="font-bold text-lg flex items-center gap-2 tracking-tight">
           <div id="networkStatus" class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] transition-colors duration-500"></div>
-          <span class="material-icons text-blue-400 text-3xl">qr_code_scanner</span> Gotana
+          <span class="material-icons text-blue-400 text-xl">qr_code_scanner</span> Gotana
         </div>
         <button onclick="changeUser()" id="userBadge" class="bg-slate-800 text-xs font-bold px-3 py-1 rounded-full border border-slate-700 hover:bg-slate-700 flex items-center gap-1 transition-colors">
             <span class="material-icons text-sm text-yellow-400">person</span><span id="userNameDisplay">...</span>
         </button>
       </div>
-      <div class="flex max-w-lg lg:max-w-4xl xl:max-w-6xl mx-auto">
+      <div class="flex max-w-lg xl:max-w-2xl mx-auto">
         <button onclick="switchView('scan')" id="tab-scan" class="nav-item active flex-1 py-4 font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 transition-all">
           <span class="material-icons">filter_center_focus</span> Skenovať
         </button>
@@ -73,7 +73,7 @@
       </div>
     </div>
 
-    <div class="max-w-lg lg:max-w-4xl xl:max-w-6xl mx-auto p-4 relative">
+    <div class="max-w-lg xl:max-w-2xl mx-auto p-4 relative">
 
       <!-- GLOBAL SKENER -->
       <div id="scanner-container" class="hidden relative z-[50] mb-6 bg-slate-900 rounded-2xl p-3 shadow-xl">
@@ -93,8 +93,8 @@
              
              <!-- BLOK 1: PRODUKT (HLAVNÝ) -->
              <div class="space-y-3">
-                 <button onclick="initCamera()" class="w-full bg-blue-600 active:bg-blue-800 text-white py-5 rounded-xl font-black text-xl flex items-center justify-center gap-3 shadow-lg active:scale-[0.98] transition-transform tap-feedback">
-                      <span class="material-icons text-3xl">qr_code_scanner</span> SKENOVAŤ PRODUKT
+                 <button onclick="initCamera()" class="w-full h-16 bg-blue-600 active:bg-blue-800 text-white rounded-xl font-black text-base sm:text-lg flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform tap-feedback">
+                      <span class="material-icons">qr_code_scanner</span> SKENOVAŤ PRODUKT
                  </button>
                  <div class="flex justify-center">
                     <div class="relative w-3/4 sm:w-2/3">
@@ -110,7 +110,7 @@
              <div class="grid grid-cols-1 gap-3">
                  <!-- POZÍCIA -->
                  <div class="space-y-2">
-                     <button onclick="startLocationVerification()" class="w-full h-16 bg-teal-600 active:bg-teal-800 text-white rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-1 shadow-md active:scale-[0.98] transition-transform tap-feedback border-2 border-teal-500 border-dashed leading-tight px-1">
+                     <button onclick="startLocationVerification()" class="w-full h-16 bg-teal-600 active:bg-teal-800 text-white rounded-xl font-black text-base sm:text-lg flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-transform tap-feedback border-2 border-teal-500 border-dashed leading-tight px-1">
                          <span class="material-icons">fact_check</span> SKENOVAŤ POZÍCIU
                      </button>
                      <div class="relative">
@@ -215,7 +215,7 @@
              <div id="dbStats" class="flex justify-between items-center mt-2 px-2 text-xs font-bold text-slate-500 uppercase tracking-wide bg-slate-200/50 p-2 rounded-lg"><span>Načítavam...</span></div>
           </div>
           
-          <div id="dbList" class="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3 2xl:grid-cols-3 mt-4 pb-4"></div>
+          <div id="dbList" class="space-y-2 mt-4 pb-4"></div>
           
           <!-- Presunuté tlačidlá na zálohu a archív (úplne dole) -->
           <div class="flex justify-center gap-4 pb-24 pt-6 border-t border-slate-200">
@@ -984,7 +984,53 @@
           if (kodParam) { setTimeout(() => processResult(kodParam.toUpperCase()), 2000); }
       }
       
-      const quotes = ["Logistika je Tetris s 20kg kockami.", "Skladník nemešká, kamión je skoro.", "Chaos je iný druh poriadku.", "Najlepšia paleta je tá, čo netreba prekladať.", "Dobrý systém šetrí nohy.", "V logistike je jediná istota zmena."];
+      const quotes = [
+          'Poriadok v sklade je ako čerstvá káva – vydrží presne do obeda.',
+          'Každá látka má svoje miesto. Najčastejšie to, kde ju nikto nehľadá.',
+          'Sklad nikdy neklame. Klame len tabuľka.',
+          'Kto skenuje hneď, nehľadá potom.',
+          'Regál nie je odkladací priestor. Je to sľub, že to nájdeš.',
+          'Najkratšia cesta k tovaru vedie cez správnu pozíciu.',
+          'Inventúra je test pamäte, ktorý vždy vyhrá papír.',
+          'Dvakrát meraj, raz strihaj. V sklade: raz naskenuj, dvakrát nehľadaj.',
+          'Zle uložený meter látky ťa bude stáť hodinu.',
+          'Sklad má len dva stavy: pred inventúrou a po nej.',
+          'Kto má poriadok v regáloch, má poriadok v hlave. A naopak.',
+          'Neexistuje stratený tovar. Existuje len tovar na nečakanom mieste.',
+          'Najlepší systém je ten, ktorý používajú aj v piatok popoludňí.',
+          'Rýchlosť je fajn, presnosť je lepšia. Obe naraz sú majstrovstvo.',
+          'Každý balík, čo ide včas, je tichý úspech.',
+          'Prázdny regál je príležitosť. Preplnený je varovanie.',
+          'Etiketa, ktorá sa nedá prečítať, je len ozdoba.',
+          'Kto šetrí na značení, platí hľadaním.',
+          'V logistike je jediná istota zmena.',
+          'Dobrý skladník vie, kde to je. Skvelý to má zapísané.',
+          'Papír znesie všetko. Regál len to, čo unesie.',
+          'Nie je hanba spýtať sa. Hanba je hľadať tri hodiny.',
+          'Poriadok nie je stav, je to zvyk.',
+          'Chaos sa nikdy nenasťahuje naraz. Vždy po jednom kuse.',
+          'Keď nevieš, kde to je, sklad ti to nepovie. Aplikácia áno.',
+          'Malé veci sa strácajú najrýchlejšie. Preto majú svoje krabice.',
+          'Sklad je zrkadlo firmy. Občas krivé, ale úprimné.',
+          'Najdrahší meter látky je ten, ktorý máš a nevieš o ňom.',
+          'Kto ráno naskenuje, ten večer nehľadá.',
+          'Dnešný poriadok je zajtrajší ušetrený čas.',
+          'Vzor sa nájde ľahšie, keď je odfotený zblízka.',
+          'Tovar bez pozície je ako kniha bez poličky.',
+          'Dvakrát skontrolované je raz vybavené.',
+          'Zákazník nevidí sklad. Vidí len to, či prišlo správne.',
+          'Aj najlepší systém potrebuje človeka, ktorý ho použije.',
+          'V sklade sa neponáhľaj. Ponáhľaj sa pripraviť.',
+          'Prijať tovar trvá minútu. Zle prijať tovar trvá týždeň.',
+          'Poriadok je nuda, kým niečo nehľadáš.',
+          'Kto pozná svoje regály, pozná svoju firmu.',
+          'Najlepšia inventúra je tá, pri ktorej sa nič neprekvapí.',
+          'Sklad odpúšťa všetko okrem zlej pozície.',
+          'Keď má všetko svoje miesto, aj piatok je pokojný.',
+          'Meter navyše nikdy nezavádza. Meter chýbajúci vždy.',
+          'Napísaná pozícia je lepšia ako dobrá pamäť.',
+          'Kto robí poriadok priebežne, nerobí ho cez víkend.'
+      ];
       function initDailyQuote() {
          const now = new Date(); const start = new Date(now.getFullYear(), 0, 0); const diff = now - start; const oneDay = 1000 * 60 * 60 * 24; const dayOfYear = Math.floor(diff / oneDay);
          document.getElementById('dailyQuoteText').innerText = '"' + quotes[dayOfYear % quotes.length] + '"';
@@ -1195,16 +1241,16 @@
 
          let displayTitle = (i.name && i.name.trim() !== "") ? i.name : (dbCatalog[i.sku || getBaseCode(i.id)] || "");
          // Zmenšené písmo a odstránenie mena pre kompaktnejší vzhľad
-         let titleHtml = `<div class="font-black text-slate-900 text-lg sm:text-xl font-mono leading-tight break-words tracking-tight">${i.id}</div>`;
-         let subtitleHtml = (displayTitle && displayTitle !== i.id) ? `<div class="font-bold text-slate-700 text-base sm:text-lg leading-snug mt-0.5">${displayTitle}</div>` : '';
+         let titleHtml = `<div class="font-black text-slate-900 text-base font-mono leading-tight break-words tracking-tight">${i.id}</div>`;
+         let subtitleHtml = (displayTitle && displayTitle !== i.id) ? `<div class="font-bold text-slate-700 text-sm leading-snug mt-0.5">${displayTitle}</div>` : '';
 
          return `
          <div class="${bgClass} rounded-xl shadow-sm border mb-2 transition-colors flex overflow-hidden">
             <div class="flex items-center justify-center px-2 cursor-pointer" onclick="toggleSelection('${i.id}')">
                 <div class="custom-checkbox ${isSelected} item-checkbox" data-id="${i.id}">${checkHtml}</div>
             </div>
-            ${dbNahlady[i.sku || getBaseCode(i.id)] ? `<img src="${dbNahlady[i.sku || getBaseCode(i.id)]}" loading="lazy" class="w-14 h-14 object-cover rounded-lg self-center ml-2 mr-3 shrink-0 border border-slate-200 cursor-pointer" onclick="event.stopPropagation(); zobrazVelkyNahlad('${dbNahlady[i.sku || getBaseCode(i.id)]}','${i.id}')" onerror="this.style.display='none'">` : ''}
-            <div class="flex-1 py-2 pr-2 active:scale-[0.99] transition-transform cursor-pointer" onclick="openDetailModal('${i.id}')">
+            ${dbNahlady[i.sku || getBaseCode(i.id)] ? `<img src="${dbNahlady[i.sku || getBaseCode(i.id)]}" loading="lazy" class="w-12 h-12 object-cover rounded-lg self-center ml-2 mr-2.5 shrink-0 border border-slate-200 cursor-pointer" onclick="event.stopPropagation(); zobrazVelkyNahlad('${dbNahlady[i.sku || getBaseCode(i.id)]}','${i.id}')" onerror="this.style.display='none'">` : ''}
+            <div class="flex-1 py-1.5 pr-2 active:scale-[0.99] transition-transform cursor-pointer" onclick="openDetailModal('${i.id}')">
                 ${titleHtml}
                 ${subtitleHtml}
                 <div class="text-[10px] text-slate-400 mt-1 font-medium flex items-center gap-1">
@@ -1689,7 +1735,7 @@
           window.scrollTo({ top: 0, behavior: 'smooth' });
       };
     </script>
-  <div id="skrolTlacidla" class="hidden fixed right-3 bottom-24 z-40 flex flex-col gap-2">
+  <div id="skrolTlacidla" class="hidden fixed right-7 bottom-44 z-40 flex flex-col gap-2">
   <button onclick="window.scrollTo({top:0,behavior:'smooth'})" class="w-11 h-11 rounded-full bg-slate-800 text-white shadow-lg flex items-center justify-center active:bg-black opacity-80"><span class="material-icons">keyboard_arrow_up</span></button>
   <button onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})" class="w-11 h-11 rounded-full bg-slate-800 text-white shadow-lg flex items-center justify-center active:bg-black opacity-80"><span class="material-icons">keyboard_arrow_down</span></button>
 </div>
