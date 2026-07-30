@@ -46,7 +46,7 @@
 
     <!-- HLAVIČKA S OFFLINE INDIKÁTOROM -->
     <div class="bg-slate-900 text-white sticky top-0 z-50 shadow-lg">
-      <div class="p-4 flex justify-between items-center max-w-lg mx-auto">
+      <div class="p-4 flex justify-between items-center max-w-lg xl:max-w-5xl mx-auto">
         <div class="font-bold text-2xl flex items-center gap-2 tracking-tight">
           <div id="networkStatus" class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] transition-colors duration-500"></div>
           <span class="material-icons text-blue-400 text-3xl">qr_code_scanner</span> Gotana
@@ -55,7 +55,7 @@
             <span class="material-icons text-sm text-yellow-400">person</span><span id="userNameDisplay">...</span>
         </button>
       </div>
-      <div class="flex max-w-lg mx-auto">
+      <div class="flex max-w-lg xl:max-w-5xl mx-auto">
         <button onclick="switchView('scan')" id="tab-scan" class="nav-item active flex-1 py-4 font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 transition-all">
           <span class="material-icons">filter_center_focus</span> Skenovať
         </button>
@@ -73,7 +73,7 @@
       </div>
     </div>
 
-    <div class="max-w-lg mx-auto p-4 relative">
+    <div class="max-w-lg xl:max-w-5xl mx-auto p-4 relative">
 
       <!-- GLOBAL SKENER -->
       <div id="scanner-container" class="hidden relative z-[50] mb-6 bg-slate-900 rounded-2xl p-3 shadow-xl">
@@ -107,11 +107,11 @@
              <hr class="border-slate-100">
 
              <!-- BLOK 2: VEDĽAJŠIE AKCIE (VEDĽA SEBA) -->
-             <div class="grid grid-cols-2 gap-3">
+             <div class="grid grid-cols-1 gap-3">
                  <!-- POZÍCIA -->
                  <div class="space-y-2">
                      <button onclick="startLocationVerification()" class="w-full h-16 bg-teal-600 active:bg-teal-800 text-white rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-1 shadow-md active:scale-[0.98] transition-transform tap-feedback border-2 border-teal-500 border-dashed leading-tight px-1">
-                         <span class="material-icons">fact_check</span> POZÍCIA
+                         <span class="material-icons">fact_check</span> SKENOVAŤ POZÍCIU
                      </button>
                      <div class="relative">
                         <input id="locInput" type="text" autocapitalize="characters" class="w-full p-2 pl-2 pr-8 text-center border-2 border-slate-200 rounded-xl font-bold uppercase focus:border-teal-500 outline-none shadow-inner text-xs sm:text-sm" placeholder="RUČNE..." onkeydown="if(event.key === 'Enter') handleLocScan(this)">
@@ -122,7 +122,7 @@
                  <!-- HROMADNÝ PRÍJEM -->
                  <div class="space-y-2">
                      <button onclick="startBulkMode()" class="w-full h-16 bg-indigo-600 active:bg-indigo-800 text-white rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-1 shadow-md active:scale-[0.98] transition-transform tap-feedback border-2 border-indigo-500 border-dashed leading-tight px-1">
-                         <span class="material-icons">layers</span> PRÍJEM
+                         <span class="material-icons">layers</span> HROMADNÝ PRÍJEM
                      </button>
                  </div>
              </div>
@@ -215,7 +215,7 @@
              <div id="dbStats" class="flex justify-between items-center mt-2 px-2 text-xs font-bold text-slate-500 uppercase tracking-wide bg-slate-200/50 p-2 rounded-lg"><span>Načítavam...</span></div>
           </div>
           
-          <div id="dbList" class="space-y-4 mt-4 pb-4"></div>
+          <div id="dbList" class="space-y-4 xl:space-y-0 xl:grid xl:grid-cols-2 xl:gap-3 mt-4 pb-4"></div>
           
           <!-- Presunuté tlačidlá na zálohu a archív (úplne dole) -->
           <div class="flex justify-center gap-4 pb-24 pt-6 border-t border-slate-200">
@@ -227,18 +227,19 @@
       <!-- VZOR FINDER VIEW -->
       <div id="view-vzor" class="hidden">
           <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200 mb-4">
-              <button id="btnVzorPhoto" onclick="document.getElementById('vzorPhotoInput').click()" disabled class="w-full bg-pink-600 active:bg-pink-800 disabled:bg-slate-300 text-white py-5 rounded-xl font-black text-xl flex items-center justify-center gap-3 shadow-lg active:scale-[0.98] transition-transform tap-feedback">
+              <button id="btnVzorPhoto" onclick="document.getElementById('vzorPhotoInput').click()" disabled class="w-full bg-pink-600 active:bg-pink-800 disabled:bg-slate-300 text-white py-3 rounded-xl font-black text-base flex items-center justify-center gap-3 shadow-lg active:scale-[0.98] transition-transform tap-feedback">
                   <span class="material-icons text-3xl">photo_camera</span> <span id="btnVzorPhotoText">PRIPRAVUJEM...</span>
               </button>
               <input type="file" id="vzorPhotoInput" accept="image/*" capture="environment" class="hidden" onchange="window.vzorHandlePhoto(this)">
               <p class="text-xs text-slate-400 text-center mt-3 font-medium">Odfoť látku kolmo a zblízka, nech vzor vyplní čo najväčšiu časť záberu. AI nájde najpodobnejšie grafiky.</p>
               <div id="vzorStatus" class="text-[11px] font-mono text-slate-400 text-center mt-2">Čakám na prvé otvorenie...</div>
           </div>
-          <div class="bg-white p-3 rounded-2xl shadow-md border border-slate-200 mb-4">
+          <div class="bg-white p-3 rounded-2xl shadow-md border border-slate-200 mb-4 sticky top-[138px] z-30">
               <div class="relative">
                   <input id="vzorTextSearch" type="text" disabled placeholder="Načítava sa databáza..." class="w-full pl-10 p-3 border-2 border-slate-200 rounded-xl font-bold focus:border-pink-500 outline-none disabled:bg-slate-50" oninput="window.vzorTextHladaj(this.value)">
                   <span class="material-icons absolute left-3 top-3.5 text-slate-400">search</span>
               </div>
+                  <label class="flex items-center gap-2 mt-2 px-1 text-xs font-bold text-slate-600 select-none cursor-pointer"><input type="checkbox" onchange="window.vzorPrepniSklad(this.checked)" class="w-4 h-4 accent-pink-600"> Len čo máme na sklade</label>
           </div>
           <div id="vzorFirstRun" class="hidden bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-slate-700 font-medium mb-4">
               <div class="flex items-start gap-2"><span class="material-icons text-blue-500">downloading</span><div>Prvé spustenie sťahuje AI model a databázu vzorov (~60–80 MB). Ideálne na wifi. Potom už všetko beží z pamäte telefónu a je to rýchle.</div></div>
@@ -1413,6 +1414,8 @@
       let vzorIndexReady = false, vzorReady = false, vzorLoading = false, vzorBusy = false;
       let vzorGroups = [], vzorShown = VZOR_PAGE, vzorFinalne = true, vzorTitle = 'Najpodobnejšie vzory';
       let vzorTextAll = [], vzorTextShown = 30;
+      let vzorLenSklad = false;
+      window.vzorPrepniSklad = function(v){ vzorLenSklad = !!v; if (vzorTextAll.length) renderTextSlice(); else renderGroupsSlice(); };
 
       const vEl = (id) => document.getElementById(id);
       const setVzorStatus = (t) => { const el = vEl('vzorStatus'); if (el) el.innerText = t; };
@@ -1532,14 +1535,15 @@
       }
 
       function renderGroupsSlice() {
-          let html = '<div class="text-xs uppercase font-bold text-slate-400 tracking-widest px-1">' + vzorTitle + (vzorFinalne ? ' (' + vzorGroups.length + ')' : ' • spresňujem...') + '</div>';
-          vzorGroups.slice(0, vzorShown).forEach((g, idx) => {
+          const vzorZoznam = vzorLenSklad ? vzorGroups.filter(function(g){ return vzorSkuNaSklade(g.it.sku) > 0; }) : vzorGroups;
+          let html = '<div class="text-xs uppercase font-bold text-slate-400 tracking-widest px-1">' + vzorTitle + (vzorFinalne ? ' (' + vzorZoznam.length + ')' : ' • spresňujem...') + '</div>';
+          vzorZoznam.slice(0, vzorShown).forEach((g, idx) => {
               const variantHtml = g.variants.length
                   ? '<div class="text-[11px] text-slate-500 mt-1">Ďalšie kódy: ' + g.variants.map(v => '<span class="underline font-mono" onclick="event.stopPropagation();vzorOpen(\'' + v.sku + '\')">' + v.sku + '</span>').join(', ') + '</div>'
                   : '';
               html += vzorCardHtml(g.it, vzorScoreBadge(g.score), variantHtml, idx === 0);
           });
-          if (vzorGroups.length > vzorShown) {
+          if (vzorZoznam.length > vzorShown) {
               html += '<button onclick="vzorViacPodobnych()" class="w-full bg-white border-2 border-slate-200 text-slate-600 py-3 rounded-xl font-bold flex items-center justify-center gap-1 tap-feedback active:bg-slate-50"><span class="material-icons">expand_more</span> Načítať ďalšie podobné</button>';
           }
           html += '<button onclick="document.getElementById(\'vzorPhotoInput\').click()" class="w-full bg-slate-800 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 active:bg-black tap-feedback"><span class="material-icons">photo_camera</span> Odfotiť ďalší vzor</button>';
@@ -1551,10 +1555,11 @@
       const vzorNormTxt = (x) => (x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
       let vzorSearchTimer = null;
       function renderTextSlice() {
-          let html = '<div class="text-xs uppercase font-bold text-slate-400 tracking-widest px-1">Výsledky hľadania (' + vzorTextAll.length + (vzorTextAll.length >= 300 ? '+' : '') + ')</div>';
-          if (vzorTextAll.length === 0) html += '<div class="text-center text-slate-400 py-6 font-medium">Nič sa nenašlo. Skús kratší výraz.</div>';
-          vzorTextAll.slice(0, vzorTextShown).forEach((it) => { html += vzorCardHtml(it, '', '', false); });
-          if (vzorTextAll.length > vzorTextShown) {
+          const vzorTxt = vzorLenSklad ? vzorTextAll.filter(function(it){ return vzorSkuNaSklade(it.sku) > 0; }) : vzorTextAll;
+          let html = '<div class="text-xs uppercase font-bold text-slate-400 tracking-widest px-1">Výsledky hľadania (' + vzorTxt.length + (vzorTextAll.length >= 300 ? '+' : '') + ')</div>';
+          if (vzorTxt.length === 0) html += '<div class="text-center text-slate-400 py-6 font-medium">Nič sa nenašlo. Skús kratší výraz.</div>';
+          vzorTxt.slice(0, vzorTextShown).forEach((it) => { html += vzorCardHtml(it, '', '', false); });
+          if (vzorTxt.length > vzorTextShown) {
               html += '<button onclick="vzorViacTextu()" class="w-full bg-white border-2 border-slate-200 text-slate-600 py-3 rounded-xl font-bold flex items-center justify-center gap-1 tap-feedback active:bg-slate-50"><span class="material-icons">expand_more</span> Zobraziť viac</button>';
           }
           vEl('vzorResults').innerHTML = html;
@@ -1684,5 +1689,18 @@
           window.scrollTo({ top: 0, behavior: 'smooth' });
       };
     </script>
-  </body>
+  <div id="skrolTlacidla" class="hidden fixed right-3 bottom-24 z-40 flex flex-col gap-2">
+  <button onclick="window.scrollTo({top:0,behavior:'smooth'})" class="w-11 h-11 rounded-full bg-slate-800 text-white shadow-lg flex items-center justify-center active:bg-black opacity-80"><span class="material-icons">keyboard_arrow_up</span></button>
+  <button onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})" class="w-11 h-11 rounded-full bg-slate-800 text-white shadow-lg flex items-center justify-center active:bg-black opacity-80"><span class="material-icons">keyboard_arrow_down</span></button>
+</div>
+<script>
+  setInterval(function(){
+    var el=document.getElementById("skrolTlacidla"); if(!el) return;
+    var db=document.getElementById("view-db"), vz=document.getElementById("view-vzor");
+    var akt=(db&&!db.classList.contains("hidden"))||(vz&&!vz.classList.contains("hidden"));
+    var dlha=document.body.scrollHeight>window.innerHeight*1.6;
+    el.classList.toggle("hidden", !(akt&&dlha));
+  }, 700);
+</script>
+</body>
 </html>
