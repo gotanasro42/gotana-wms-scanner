@@ -201,7 +201,7 @@
       <!-- ZOZNAM VIEW -->
       <div id="view-db" class="hidden">
           <!-- Zmenšené vyhľadávacie polia -->
-          <div class="sticky top-[138px] z-40 bg-slate-100 pb-2 -mx-4 px-4 shadow-sm" style="margin-top: -1rem; padding-top: 1rem;">
+          <div class="sticky z-40 bg-slate-100 pb-2 -mx-4 px-4 shadow-sm" style="top:var(--hlavicka,120px)" style="margin-top: -1rem; padding-top: 1rem;">
              <div class="bg-white p-2 rounded-xl shadow-md border border-slate-200 space-y-2">
                  <div class="relative">
                     <input type="text" id="dbSearchCode" autocapitalize="characters" oninput="filterDb()" placeholder="KÓD / LOKÁCIA..." class="w-full pl-8 p-2 text-sm sm:text-base border-2 border-slate-100 rounded-lg focus:outline-none focus:border-blue-500 font-bold uppercase">
@@ -234,7 +234,7 @@
               <p class="text-xs text-slate-400 text-center mt-3 font-medium">Odfoť látku kolmo a zblízka, nech vzor vyplní čo najväčšiu časť záberu. AI nájde najpodobnejšie grafiky.</p>
               <div id="vzorStatus" class="text-[11px] font-mono text-slate-400 text-center mt-2">Čakám na prvé otvorenie...</div>
           </div>
-          <div class="bg-white p-3 rounded-2xl shadow-md border border-slate-200 mb-4 sticky top-[138px] z-30">
+          <div class="bg-white p-3 rounded-2xl shadow-md border border-slate-200 mb-4 sticky z-30" style="top:var(--hlavicka,120px)">
               <div class="relative">
                   <input id="vzorTextSearch" type="text" disabled placeholder="Načítava sa databáza..." class="w-full pl-10 p-3 border-2 border-slate-200 rounded-xl font-bold focus:border-pink-500 outline-none disabled:bg-slate-50" oninput="window.vzorTextHladaj(this.value)">
                   <span class="material-icons absolute left-3 top-3.5 text-slate-400">search</span>
@@ -1798,5 +1798,19 @@
     el.classList.toggle("hidden", !(akt&&dlha));
   }, 700);
 </script>
+  <script>
+    (function(){
+      function nastavHlavicku(){
+        var h = document.querySelector(".sticky.top-0");
+        if (h) document.documentElement.style.setProperty("--hlavicka", h.offsetHeight + "px");
+      }
+      window.addEventListener("load", nastavHlavicku);
+      window.addEventListener("resize", nastavHlavicku);
+      window.addEventListener("orientationchange", nastavHlavicku);
+      setTimeout(nastavHlavicku, 200);
+      setTimeout(nastavHlavicku, 1200);
+      if (window.ResizeObserver) { setTimeout(function(){ var h=document.querySelector(".sticky.top-0"); if(h) new ResizeObserver(nastavHlavicku).observe(h); }, 500); }
+    })();
+  </script>
 </body>
 </html>
