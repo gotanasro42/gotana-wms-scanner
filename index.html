@@ -491,15 +491,58 @@
           });
       }
 
-      function loadCatalog() {
-          const stored = localStorage.getItem('gotana_catalog');
-          if (stored) { try { dbCatalog = JSON.parse(stored); normalizujKatalog(); } catch(e){} }
-          apiCall('getCatalog').then(data => {
-              if (data && typeof data === 'object') {
-                  dbCatalog = data; normalizujKatalog();
-                  localStorage.setItem('gotana_catalog', JSON.stringify(dbCatalog));
+      // Katalog (~6 MB) sa nezmesti do beznej pamate prehliadaca, preto pouzivame
+      // IndexedDB - vdaka tomu sa nesahuje pri kazdom otvoreni appky.
+      function katalogDB() {
+          return new Promise(function (ok, nie) {
+              const req = indexedDB.open('gotana_db', 1);
+              req.onupgradeneeded = function () { req.result.createObjectStore('kv'); };
+              req.onsuccess = function () { ok(req.result); };
+              req.onerror = function () { nie(req.error); };
+          });
+      }
+      
+      function katalogUloz(data) {
+          return katalogDB().then(function (db) {
+              return new Promise(function (ok) {
+                  const tx = db.transaction('kv', 'readwrite');
+                  tx.objectStore('kv').put({ cas: Date.now(), data: data }, 'catalog');
+                  tx.oncomplete = function () { ok(true); };
+                  tx.onerror = function () { ok(false); };
+              });
+          }).catch(function () { return false; });
+      }
+      
+      function katalogNacitaj() {
+          return katalogDB().then(function (db) {
+              return new Promise(function (ok) {
+                  const req = db.transaction('kv', 'readonly').objectStore('kv').get('catalog');
+                  req.onsuccess = function () { ok(req.result || null); };
+                  req.onerror = function () { ok(null); };
+              });
+          }).catch(function () { return null; });
+      }
+      
+      async function loadCatalog() {
+          const ulozeny = await katalogNacitaj();
+          let mameData = false;
+          if (ulozeny && ulozeny.data) {
+              dbCatalog = ulozeny.data;
+              normalizujKatalog();
+              mameData = true;
+          }
+          // Cerstvy katalog stahujeme len raz za 12 hodin (alebo ked ziadny nemame)
+          const stary = !ulozeny || (Date.now() - (ulozeny.cas || 0)) > 12 * 60 * 60 * 1000;
+          if (!stary) return;
+          try {
+              const data = await apiCall('getCatalog');
+              if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+                  dbCatalog = data;
+                  normalizujKatalog();
+                  katalogUloz(data);
+                  if (mameData && !document.getElementById('view-db').classList.contains('hidden')) renderDb(dbData);
               }
-          }).catch(e => console.log("Katalóg zatiaľ nie je na backende."));
+          } catch (e) { console.warn('Katalog sa nepodarilo obnovit:', e); }
       }
 
       async function processOfflineQueue() {
