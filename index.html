@@ -51,7 +51,7 @@
           <div id="networkStatus" class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] transition-colors duration-500"></div>
           <span class="material-icons text-blue-400 text-lg">qr_code_scanner</span> Gotana
         </div>
-        <button onclick="prepniZdroj()" title="Prepnut zdroj dat" class="bg-slate-800 text-slate-400 px-2 py-1 rounded-full border border-slate-700 hover:bg-slate-700 hover:text-white flex items-center transition-colors mr-1.5"><span class="material-icons text-sm">storage</span></button><button onclick="zmenApiAdresu()" title="Zmenit API adresu" class="bg-slate-800 text-slate-400 px-2 py-1 rounded-full border border-slate-700 hover:bg-slate-700 hover:text-white flex items-center transition-colors mr-1.5"><span class="material-icons text-sm">settings</span></button><button onclick="changeUser()" id="userBadge" class="bg-slate-800 text-xs font-bold px-3 py-1 rounded-full border border-slate-700 hover:bg-slate-700 flex items-center gap-1 transition-colors">
+        <button onclick="synchronizujKatalog()" title="Aktualizovat katalog z Magenta" class="bg-slate-800 text-slate-400 px-2 py-1 rounded-full border border-slate-700 hover:bg-slate-700 hover:text-white flex items-center transition-colors mr-1.5"><span class="material-icons text-sm">cloud_sync</span></button><button onclick="prepniZdroj()" title="Prepnut zdroj dat" class="bg-slate-800 text-slate-400 px-2 py-1 rounded-full border border-slate-700 hover:bg-slate-700 hover:text-white flex items-center transition-colors mr-1.5"><span class="material-icons text-sm">storage</span></button><button onclick="zmenApiAdresu()" title="Zmenit API adresu" class="bg-slate-800 text-slate-400 px-2 py-1 rounded-full border border-slate-700 hover:bg-slate-700 hover:text-white flex items-center transition-colors mr-1.5"><span class="material-icons text-sm">settings</span></button><button onclick="changeUser()" id="userBadge" class="bg-slate-800 text-xs font-bold px-3 py-1 rounded-full border border-slate-700 hover:bg-slate-700 flex items-center gap-1 transition-colors">
             <span class="material-icons text-sm text-yellow-400">person</span><span id="gotanaVerzia" class="mr-1 text-[9px] font-normal opacity-70"></span><span id="userNameDisplay">...</span>
         </button>
       </div>
@@ -2031,6 +2031,38 @@
         let vsetko = prvaCast;
         for (const c of casti) if (c && c.length) vsetko = vsetko.concat(c);
         return vsetko;
+    }
+
+    async function synchronizujKatalog() {
+        if (!(await showCustomConfirm("Aktualizovat katalog", "Stiahne nazvy a podpracoviska vsetkych produktov priamo z Magenta.\n\nTrva to asi 1-2 minuty. Pokracovat?"))) return;
+        try {
+            setLoading(true, "Aktualizujem katalog...");
+            let strana = 1, spolu = 0, kolo = 0;
+            while (kolo < 15) {
+                kolo++;
+                updateLastAction("Katalog: davka " + kolo + "...");
+                const r = await fetch(SB_URL + "/functions/v1/sync-katalog", {
+                    method: "POST",
+                    headers: { Authorization: "Bearer " + SB_KEY, "Content-Type": "application/json" },
+                    body: JSON.stringify({ page: strana }),
+                });
+                const d = await r.json();
+                if (d.chyba) throw new Error(d.chyba);
+                spolu += d.ulozene || 0;
+                if (d.hotovo) break;
+                strana = d.dalsiaStrana;
+            }
+            try {
+                const db = await katalogDB();
+                db.transaction("kv", "readwrite").objectStore("kv").delete("catalog");
+            } catch (e) {}
+            setLoading(false);
+            showCustomAlert("Katalog aktualizovany", "Spracovanych " + spolu + " produktov. Appka sa teraz nacita znova.");
+            setTimeout(function () { location.reload(); }, 1500);
+        } catch (e) {
+            setLoading(false);
+            showCustomAlert("Nepodarilo sa", "Katalog sa nepodarilo aktualizovat: " + e.message);
+        }
     }
 
     async function supabaseCall(action, params) {
