@@ -1033,7 +1033,8 @@
           if (naSupabase) {
               try {
                   const skuska = await supabaseCall("getAllData", {});
-                  if (!skuska || !skuska.data) throw new Error("prazdna odpoved");
+                  const pocet = Array.isArray(skuska) ? skuska.length : ((skuska && skuska.data) ? skuska.data.length : -1);
+            if (pocet < 0) throw new Error("neznamy format odpovede");
               } catch (e) {
                   showCustomAlert("Nepodarilo sa", "Nova databaza neodpovedala: " + e.message);
                   return;
