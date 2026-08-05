@@ -2187,6 +2187,37 @@
     }
 
     // Prepnutie appky na Supabase bez zasahu do povodneho kodu
+    // Raz denne (na pozadi) obnovi katalog z Magenta - nikto nemusi nic klikat
+    async function dennaSynchronizacia() {
+        try {
+            if (zdrojDat() !== "supabase") return;
+            const posledna = Number(localStorage.getItem("gotana_sync_katalog") || 0);
+            if (Date.now() - posledna < 20 * 60 * 60 * 1000) return;
+            localStorage.setItem("gotana_sync_katalog", String(Date.now()));
+            let strana = 1, kolo = 0;
+            while (kolo < 15) {
+                kolo++;
+                const r = await fetch(SB_URL + "/functions/v1/sync-katalog", {
+                    method: "POST",
+                    headers: { Authorization: "Bearer " + SB_KEY, "Content-Type": "application/json" },
+                    body: JSON.stringify({ page: strana }),
+                });
+                const d = await r.json();
+                if (d.chyba) { console.warn("denna synchronizacia:", d.chyba); return; }
+                if (d.hotovo) break;
+                strana = d.dalsiaStrana;
+            }
+            try {
+                const db = await katalogDB();
+                db.transaction("kv", "readwrite").objectStore("kv").delete("catalog");
+            } catch (e) {}
+            console.log("Katalog automaticky obnoveny z Magenta.");
+        } catch (e) {
+            console.warn("denna synchronizacia zlyhala:", e);
+        }
+    }
+    setTimeout(dennaSynchronizacia, 20000);
+
     const povodneApiCall = apiCall;
     apiCall = async function (action, params) {
         if (zdrojDat() === "supabase") return await supabaseCall(action, params || {});
