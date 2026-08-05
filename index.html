@@ -2014,7 +2014,7 @@
 
     async function sbVsetkyPolozky() {
         const VYBER = "id,name,sku,length,location,date,note";
-        const prvy = await fetch(SB_URL + "/rest/v1/polozky?select=" + VYBER + "&order=date.desc,id", {
+        const prvy = await fetch(SB_URL + "/rest/v1/polozky?select=" + VYBER + "&order=date.asc,id", {
             headers: { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY, Prefer: "count=exact", Range: "0-999" },
         });
         if (!prvy.ok) throw new Error("DB " + prvy.status);
@@ -2025,7 +2025,7 @@
 
         const ulohy = [];
         for (let od = 1000; od < celkom; od += 1000) {
-            ulohy.push(sbFetch("polozky?select=" + VYBER + "&order=date.desc,id", { headers: { Range: od + "-" + (od + 999) } }));
+            ulohy.push(sbFetch("polozky?select=" + VYBER + "&order=date.asc,id", { headers: { Range: od + "-" + (od + 999) } }));
         }
         const casti = await Promise.all(ulohy);
         let vsetko = prvaCast;
