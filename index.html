@@ -1956,5 +1956,176 @@
       if (window.ResizeObserver) { setTimeout(function(){ var h=document.querySelector(".sticky.top-0"); if(h) new ResizeObserver(nastavHlavicku).observe(h); }, 500); }
     })();
   </script>
+  <script>
+    // ====== SUPABASE (rychla databaza) ======
+    const SB_URL = "https://gduarwvhxlffrasuuxqw.supabase.co";
+    const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkdWFyd3ZoeGxmZnJhc3V1eHF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDUxMTMsImV4cCI6MjEwMTQ4MTExM30.xGnlwd5XPVSIkd9X1PlsxlTldiwuul410B8EX-VftLQ";
+
+    function zdrojDat() { return localStorage.getItem("gotana_zdroj") || "sheets"; }
+    function nastavZdroj(z) { localStorage.setItem("gotana_zdroj", z); }
+
+    async function sbFetch(cesta, opts) {
+        opts = opts || {};
+        opts.headers = Object.assign({ apikey: SB_KEY, Authorization: "Bearer " + SB_KEY, "Content-Type": "application/json" }, opts.headers || {});
+        const r = await fetch(SB_URL + "/rest/v1/" + cesta, opts);
+        if (r.status < 200 || r.status >= 300) {
+            const t = await r.text();
+            throw new Error("DB " + r.status + ": " + t.slice(0, 140));
+        }
+        if (r.status === 204) return null;
+        const txt = await r.text();
+        return txt ? JSON.parse(txt) : null;
+    }
+
+    function sbLog(zaznamy) {
+        if (!zaznamy || !zaznamy.length) return Promise.resolve();
+        return sbFetch("historia", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify(zaznamy) })
+            .catch(function (e) { console.warn("historia:", e); });
+    }
+
+    function sbZoznamIds(ids) {
+        return "(" + ids.map(function (x) { return '"' + String(x).replace(/"/g, "") + '"'; }).join(",") + ")";
+    }
+
+    async function sbVsetkyPolozky() {
+        let vsetko = [], od = 0, krok = 1000;
+        while (true) {
+            const cast = await sbFetch("polozky?select=id,name,sku,length,location,date,note&order=id", { headers: { Range: od + "-" + (od + krok - 1) } });
+            if (!cast || !cast.length) break;
+            vsetko = vsetko.concat(cast);
+            if (cast.length < krok) break;
+            od += krok;
+        }
+        return vsetko;
+    }
+
+    async function supabaseCall(action, params) {
+        const P = params || {};
+        const kto = P.user || "Neznamy";
+        const teraz = new Date().toISOString();
+
+        if (action === "getAllData") {
+            const d = await sbVsetkyPolozky();
+            return { success: true, data: d };
+        }
+
+        if (action === "getCatalog") {
+            const r = await fetch(SB_URL + "/rest/v1/rpc/katalog_cely", {
+                method: "POST",
+                headers: { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY, "Content-Type": "application/json" },
+                body: "{}"
+            });
+            if (!r.ok) throw new Error("katalog " + r.status);
+            return await r.json();
+        }
+
+        if (action === "createItem") {
+            const id = String(P.id).trim().toUpperCase();
+            try {
+                await sbFetch("polozky", {
+                    method: "POST",
+                    headers: { Prefer: "return=minimal" },
+                    body: JSON.stringify([{ id: id, name: P.name || "", sku: P.sku || "", length: Number(P.len) || 0, location: P.loc || "", date: teraz, note: P.note || "" }])
+                });
+            } catch (e) {
+                if (/23505|duplicate/i.test(e.message)) return { success: false, error: "ID uz existuje" };
+                throw e;
+            }
+            sbLog([{ akcia: "PRIJEM", pouzivatel: kto, polozka_id: id, nazov: P.name || id, dlzka: Number(P.len) || 0, pozicia: P.loc || "", popis: P.note || "Nova rolka" }]);
+            return { success: true };
+        }
+
+        if (action === "updateItem") {
+            const id = String(P.id).trim().toUpperCase();
+            const stare = await sbFetch("polozky?select=*&id=eq." + encodeURIComponent(id));
+            if (!stare || !stare.length) return { success: false, error: "Nenaslo sa" };
+            const s = stare[0];
+            const zmena = { date: teraz };
+            if (P.len !== null && P.len !== undefined) zmena.length = Number(P.len) || 0;
+            if (P.loc !== null && P.loc !== undefined) zmena.location = P.loc;
+            if (P.note !== null && P.note !== undefined) zmena.note = P.note;
+            await sbFetch("polozky?id=eq." + encodeURIComponent(id), { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify(zmena) });
+            const novaLoc = (zmena.location !== undefined) ? zmena.location : s.location;
+            let popis = P.note || "";
+            if (P.act && String(P.act).indexOf("PRESUN") !== -1) popis = "z pozicie " + (s.location || "NEZNAMA") + " do " + novaLoc;
+            else if (!popis) popis = "Uprava";
+            sbLog([{ akcia: P.act || "UPRAVA", pouzivatel: kto, polozka_id: id, nazov: s.name || id, dlzka: (zmena.length !== undefined) ? zmena.length : s.length, pozicia: novaLoc, popis: popis }]);
+            return { success: true };
+        }
+
+        if (action === "deleteItem") {
+            const id = String(P.id).trim().toUpperCase();
+            const stare = await sbFetch("polozky?select=*&id=eq." + encodeURIComponent(id));
+            await sbFetch("polozky?id=eq." + encodeURIComponent(id), { method: "DELETE", headers: { Prefer: "return=minimal" } });
+            const s = (stare && stare[0]) || {};
+            sbLog([{ akcia: "VYMAZANIE", pouzivatel: kto, polozka_id: id, nazov: s.name || id, dlzka: s.length || 0, pozicia: s.location || "", popis: "Vymazane z appky" }]);
+            return { success: true };
+        }
+
+        if (action === "createBulkItems") {
+            const polozky = P.items || [];
+            const existujuce = await sbFetch("polozky?select=id");
+            const set = {};
+            (existujuce || []).forEach(function (x) { set[String(x.id).toUpperCase()] = 1; });
+            const nove = [], zaznamy = [];
+            polozky.forEach(function (it) {
+                let fin = String(it.code || "").trim().toUpperCase();
+                const zaklad = String(it.baseCode || fin).trim().toUpperCase();
+                if (set[fin]) { let n = 1; while (set[zaklad + "_" + n]) n++; fin = zaklad + "_" + n; }
+                set[fin] = 1;
+                nove.push({ id: fin, name: "", sku: zaklad, length: 0, location: P.loc || "", date: teraz, note: "HROMADNY PRIJEM" });
+                zaznamy.push({ akcia: "PRIJEM", pouzivatel: kto, polozka_id: fin, nazov: fin, dlzka: 0, pozicia: P.loc || "", popis: "Hromadny prijem" });
+            });
+            if (nove.length) {
+                await sbFetch("polozky?on_conflict=id", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify(nove) });
+            }
+            sbLog(zaznamy);
+            return { success: true, processed: nove.length };
+        }
+
+        if (action === "updateBulkItems") {
+            const ids = (P.ids || []).map(function (x) { return String(x).trim().toUpperCase(); });
+            if (!ids.length) return { success: true, processed: 0 };
+            await sbFetch("polozky?id=in." + encodeURIComponent(sbZoznamIds(ids)), { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ location: P.loc, date: teraz }) });
+            sbLog(ids.map(function (id) { return { akcia: P.act || "PRESUN", pouzivatel: kto, polozka_id: id, nazov: id, pozicia: P.loc, popis: "Hromadny presun" }; }));
+            return { success: true, processed: ids.length };
+        }
+
+        if (action === "deleteBulkItems") {
+            const ids = (P.ids || []).map(function (x) { return String(x).trim().toUpperCase(); });
+            if (!ids.length) return { success: true, processed: 0 };
+            await sbFetch("polozky?id=in." + encodeURIComponent(sbZoznamIds(ids)), { method: "DELETE", headers: { Prefer: "return=minimal" } });
+            sbLog(ids.map(function (id) { return { akcia: "VYMAZANIE", pouzivatel: kto, polozka_id: id, nazov: id, popis: "Hromadne vymazanie" }; }));
+            return { success: true, processed: ids.length };
+        }
+
+        if (action === "syncInventory") {
+            let odstranene = 0, pridane = 0;
+            const kto2 = kto + " (INVENTURA)";
+            if (P.missingIds && P.missingIds.length) {
+                const r1 = await supabaseCall("deleteBulkItems", { ids: P.missingIds, user: kto2 });
+                odstranene = r1.processed;
+            }
+            if (P.extraItems && P.extraItems.length) {
+                const r2 = await supabaseCall("createBulkItems", { items: P.extraItems, loc: P.location, user: kto2 });
+                pridane = r2.processed;
+            }
+            return { success: true, removed: odstranene, added: pridane };
+        }
+
+        if (action === "performBackup" || action === "archiveOldData") {
+            return { success: true, message: "Supabase zalohuje automaticky" };
+        }
+
+        throw new Error("Neznama akcia: " + action);
+    }
+
+    // Prepnutie appky na Supabase bez zasahu do povodneho kodu
+    const povodneApiCall = apiCall;
+    apiCall = async function (action, params) {
+        if (zdrojDat() === "supabase") return await supabaseCall(action, params || {});
+        return await povodneApiCall(action, params || {});
+    };
+  </script>
 </body>
 </html>
