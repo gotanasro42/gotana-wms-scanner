@@ -2029,7 +2029,7 @@
 
         if (action === "getAllData") {
             const d = await sbVsetkyPolozky();
-            return { success: true, data: d };
+            return d;
         }
 
         if (action === "getCatalog") {
