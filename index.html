@@ -51,7 +51,7 @@
           <div id="networkStatus" class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] transition-colors duration-500"></div>
           <span class="material-icons text-blue-400 text-lg">qr_code_scanner</span> Gotana
         </div>
-        <button onclick="zmenApiAdresu()" title="Zmenit API adresu" class="bg-slate-800 text-slate-400 px-2 py-1 rounded-full border border-slate-700 hover:bg-slate-700 hover:text-white flex items-center transition-colors mr-1.5"><span class="material-icons text-sm">settings</span></button><button onclick="changeUser()" id="userBadge" class="bg-slate-800 text-xs font-bold px-3 py-1 rounded-full border border-slate-700 hover:bg-slate-700 flex items-center gap-1 transition-colors">
+        <button onclick="prepniZdroj()" title="Prepnut zdroj dat" class="bg-slate-800 text-slate-400 px-2 py-1 rounded-full border border-slate-700 hover:bg-slate-700 hover:text-white flex items-center transition-colors mr-1.5"><span class="material-icons text-sm">storage</span></button><button onclick="zmenApiAdresu()" title="Zmenit API adresu" class="bg-slate-800 text-slate-400 px-2 py-1 rounded-full border border-slate-700 hover:bg-slate-700 hover:text-white flex items-center transition-colors mr-1.5"><span class="material-icons text-sm">settings</span></button><button onclick="changeUser()" id="userBadge" class="bg-slate-800 text-xs font-bold px-3 py-1 rounded-full border border-slate-700 hover:bg-slate-700 flex items-center gap-1 transition-colors">
             <span class="material-icons text-sm text-yellow-400">person</span><span id="userNameDisplay">...</span>
         </button>
       </div>
@@ -1023,6 +1023,29 @@
           document.getElementById('identityModal').classList.add('hidden');
           document.getElementById('userNameDisplay').innerText = currentUser;
       }
+            async function prepniZdroj() {
+          const teraz = (typeof zdrojDat === "function") ? zdrojDat() : "sheets";
+          const naSupabase = (teraz !== "supabase");
+          const otazka = naSupabase
+              ? "Prepnut na NOVU databazu (Supabase)?\n\nJe podstatne rychlejsia a zvlada sucasne skenovanie viacerych ludi."
+              : "Prepnut spat na STARY system (Google Sheets)?";
+          if (!(await showCustomConfirm("Zdroj dat", otazka))) return;
+          if (naSupabase) {
+              try {
+                  const skuska = await supabaseCall("getAllData", {});
+                  if (!skuska || !skuska.data) throw new Error("prazdna odpoved");
+              } catch (e) {
+                  showCustomAlert("Nepodarilo sa", "Nova databaza neodpovedala: " + e.message);
+                  return;
+              }
+          }
+          nastavZdroj(naSupabase ? "supabase" : "sheets");
+          try { localStorage.removeItem("gotana_catalog"); } catch (e) {}
+          try { const db = await katalogDB(); db.transaction("kv", "readwrite").objectStore("kv").delete("catalog"); } catch (e) {}
+          showCustomAlert("Prepnute", naSupabase ? "Appka teraz pouziva novu databazu." : "Appka je spat na starom systeme.");
+          setTimeout(function () { location.reload(); }, 1200);
+      }
+      
       async function zmenApiAdresu() {
           const teraz = localStorage.getItem("gotana_api_url") || "";
           const nova = prompt("Adresa Apps Script (konci na /exec).\n\nAk ju nechces menit, daj Zrusit.", teraz);
