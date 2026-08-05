@@ -2012,14 +2012,23 @@
     }
 
     async function sbVsetkyPolozky() {
-        let vsetko = [], od = 0, krok = 1000;
-        while (true) {
-            const cast = await sbFetch("polozky?select=id,name,sku,length,location,date,note&order=id", { headers: { Range: od + "-" + (od + krok - 1) } });
-            if (!cast || !cast.length) break;
-            vsetko = vsetko.concat(cast);
-            if (cast.length < krok) break;
-            od += krok;
+        const VYBER = "id,name,sku,length,location,date,note";
+        const prvy = await fetch(SB_URL + "/rest/v1/polozky?select=" + VYBER + "&order=id", {
+            headers: { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY, Prefer: "count=exact", Range: "0-999" },
+        });
+        if (!prvy.ok) throw new Error("DB " + prvy.status);
+        const prvaCast = await prvy.json();
+        const rozsah = prvy.headers.get("content-range") || "";
+        const celkom = Number(String(rozsah).split("/")[1]) || prvaCast.length;
+        if (celkom <= 1000) return prvaCast;
+
+        const ulohy = [];
+        for (let od = 1000; od < celkom; od += 1000) {
+            ulohy.push(sbFetch("polozky?select=" + VYBER + "&order=id", { headers: { Range: od + "-" + (od + 999) } }));
         }
+        const casti = await Promise.all(ulohy);
+        let vsetko = prvaCast;
+        for (const c of casti) if (c && c.length) vsetko = vsetko.concat(c);
         return vsetko;
     }
 
