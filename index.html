@@ -52,7 +52,7 @@
           <span class="material-icons text-blue-400 text-lg">qr_code_scanner</span> Gotana
         </div>
         <button onclick="prepniZdroj()" title="Prepnut zdroj dat" class="bg-slate-800 text-slate-400 px-2 py-1 rounded-full border border-slate-700 hover:bg-slate-700 hover:text-white flex items-center transition-colors mr-1.5"><span class="material-icons text-sm">storage</span></button><button onclick="zmenApiAdresu()" title="Zmenit API adresu" class="bg-slate-800 text-slate-400 px-2 py-1 rounded-full border border-slate-700 hover:bg-slate-700 hover:text-white flex items-center transition-colors mr-1.5"><span class="material-icons text-sm">settings</span></button><button onclick="changeUser()" id="userBadge" class="bg-slate-800 text-xs font-bold px-3 py-1 rounded-full border border-slate-700 hover:bg-slate-700 flex items-center gap-1 transition-colors">
-            <span class="material-icons text-sm text-yellow-400">person</span><span id="userNameDisplay">...</span>
+            <span class="material-icons text-sm text-yellow-400">person</span><span id="gotanaVerzia" class="mr-1 text-[9px] font-normal opacity-70"></span><span id="userNameDisplay">...</span>
         </button>
       </div>
       <div class="flex max-w-lg xl:max-w-2xl mx-auto">
@@ -2159,6 +2159,9 @@
         if (zdrojDat() === "supabase") return await supabaseCall(action, params || {});
         return await povodneApiCall(action, params || {});
     };
+  </script>
+  <script>
+    (function(){ function ozn(){ var e=document.getElementById("gotanaVerzia"); if(!e) return; var novy=(typeof zdrojDat==="function" && zdrojDat()==="supabase"); e.textContent = novy ? "DB" : ""; e.title = novy ? "Nova databaza (Supabase)" : "Stary system (Sheets)"; } window.addEventListener("load", ozn); setTimeout(ozn, 1500); })();
   </script>
 </body>
 </html>
