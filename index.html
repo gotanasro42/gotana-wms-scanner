@@ -538,9 +538,12 @@
           try {
               const data = await apiCall('getCatalog');
               if (data && typeof data === 'object' && Object.keys(data).length > 0) {
-                  dbCatalog = data;
+                  katalogUloz(JSON.parse(JSON.stringify(data)));
+            dbCatalog = data;
+
                   normalizujKatalog();
-                  katalogUloz(data);
+
+                  
                   if (mameData && !document.getElementById('view-db').classList.contains('hidden')) renderDb(dbData);
               }
           } catch (e) { console.warn('Katalog sa nepodarilo obnovit:', e); }
