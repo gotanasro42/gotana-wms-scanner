@@ -2221,6 +2221,41 @@
     }
     setTimeout(dennaSynchronizacia, 20000);
 
+    // Nahlady pre skladove kusy - berie sa z tabulky katalog (obrazky z Magenta)
+    async function nacitajNahladyZDB() {
+        try {
+            if (zdrojDat() !== "supabase") return;
+            if (!Array.isArray(dbData) || !dbData.length) return;
+
+            const potrebne = {};
+            dbData.forEach(function (d) {
+                const s = String(d.sku || (typeof getBaseCode === "function" ? getBaseCode(d.id) : d.id) || "").toUpperCase();
+                if (s && !dbNahlady[s]) potrebne[s] = 1;
+            });
+            const zoznam = Object.keys(potrebne);
+            if (!zoznam.length) return;
+
+            let pridane = 0;
+            for (let i = 0; i < zoznam.length; i += 200) {
+                const cast = zoznam.slice(i, i + 200);
+                const filtr = "(" + cast.map(function (x) { return '"' + x.replace(/"/g, "") + '"'; }).join(",") + ")";
+                const r = await sbFetch("katalog?select=sku,obrazok&obrazok=neq.&sku=in." + encodeURIComponent(filtr));
+                (r || []).forEach(function (x) {
+                    if (x.obrazok) { dbNahlady[String(x.sku).toUpperCase()] = x.obrazok; pridane++; }
+                });
+            }
+            if (pridane > 0) {
+                try { localStorage.setItem("gotana_nahlady", JSON.stringify(dbNahlady)); } catch (e) {}
+                const v = document.getElementById("view-db");
+                if (v && !v.classList.contains("hidden")) renderDb(dbData);
+                console.log("Nahlady z databazy: " + pridane);
+            }
+        } catch (e) {
+            console.warn("nahlady z DB zlyhali:", e);
+        }
+    }
+    setTimeout(nacitajNahladyZDB, 6000);
+
     const povodneApiCall = apiCall;
     apiCall = async function (action, params) {
         if (zdrojDat() === "supabase") return await supabaseCall(action, params || {});
