@@ -98,6 +98,8 @@ header{
   line-height:.92;letter-spacing:-.035em;
 }
 .hlavne-cislo .jednotka{font-size:16px;color:var(--safran);font-weight:600;padding-bottom:5px}
+.hlavne-cislo .vedlajsie{margin-left:auto;padding-bottom:5px;font-size:12px;color:#9FB0CE;white-space:nowrap}
+.hlavne-cislo .vedlajsie b{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:var(--platno);letter-spacing:-.02em;margin-right:2px}
 .hlavne-popis{
   font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:#9FB0CE;
   margin-top:5px;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:600;
@@ -142,6 +144,14 @@ h2:first-child{margin-top:2px}
 .riadok .detail{font-size:10.5px;color:var(--sedy);grid-column:1;font-family:'IBM Plex Mono',monospace}
 .riadok .hod{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;grid-row:1/3;text-align:right;white-space:nowrap}
 .riadok.bezdetailu .hod{grid-row:1}
+
+/* Podpracoviská: metre aj kusy zvýraznené vedľa seba */
+.riadok.prac{grid-template-columns:1fr auto}
+.riadok.prac .nazov{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13.5px}
+.riadok.prac .detail{grid-column:1}
+.dvojcislo{grid-row:1/3;text-align:right;display:flex;gap:10px;align-items:baseline;white-space:nowrap}
+.dvojcislo span{font-size:10.5px;color:var(--sedy)}
+.dvojcislo b{font-size:16px;font-weight:600;color:var(--atrament);margin-right:1px}
 
 /* ---------- Produkty ---------- */
 .produkt{
@@ -239,8 +249,9 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
   <div class="hlavne-cislo">
     <span class="hodnota cislo" id="hlavnaHodnota">—</span>
     <span class="jednotka">m</span>
+    <span class="vedlajsie"><b class="cislo" id="hlavneKusy">—</b> ks</span>
   </div>
-  <div class="hlavne-popis">Metrov látky predaných</div>
+  <div class="hlavne-popis">Metrov látky a kusov tovaru predaných</div>
   <div class="meter"><svg id="stupnica" preserveAspectRatio="none"></svg></div>
 </div>
 
@@ -473,15 +484,28 @@ function vykresliRekordy(){
 }
 
 function vykresliPracoviska(){
-  riadky(data.pracoviska, '#pracoviska',
-    x => x.pracovisko,
-    x => x.metre,
-    x => `${cis(x.kusy)} ks · ${cis(x.vyberov)} výberov · ${cis(x.druhov)} druhov`);
+  const p = data.pracoviska || [];
+  const ciel = $('#pracoviska');
+  if(!ciel) return;
+  if(!p.length){ ciel.innerHTML = '<div class="prazdne">Za toto obdobie zatiaľ nič.</div>'; return; }
+  const max = Math.max(...p.map(x => Number(x.metre)||0), 1);
+  ciel.innerHTML = p.map(x => {
+    const sirka = Math.max(1,((Number(x.metre)||0)/max)*100).toFixed(1);
+    return `<div class="riadok prac" style="--w:${sirka}%">
+      <div class="nazov">${esc(x.pracovisko)}</div>
+      <div class="dvojcislo">
+        <span><b class="cislo">${cis(x.metre,1)}</b> m</span>
+        <span><b class="cislo">${cis(x.kusy)}</b> ks</span>
+      </div>
+      <div class="detail">${cis(x.obj)} objednávok · ${cis(x.poloziek)} položiek · ${cis(x.druhov)} druhov</div>
+    </div>`;
+  }).join('');
 }
 
 function vykresli(){
   const s = data.suhrn || {}, i = data.inestavy || {};
   $('#hlavnaHodnota').textContent = cis(s.metre,1);
+  $('#hlavneKusy').textContent = cis(s.kusy);
   $('#kObj').textContent = cis(s.objednavok);
   $('#kKusy').textContent = cis(s.kusy);
   $('#kPol').textContent = cis(s.poloziek);
