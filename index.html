@@ -2270,3 +2270,24 @@
   </script>
 </body>
 </html>
+
+<script>
+  /* Zalozka Statistiky - otvara statistiky.html */
+  (function(){
+    function pridajStatistiky(){
+      try{
+        var vzor = document.getElementById('tab-vzor');
+        if(!vzor || document.getElementById('tab-stat')) return;
+        var b = document.createElement('button');
+        b.id = 'tab-stat';
+        b.className = vzor.className;
+        b.title = 'Statistiky skladu';
+        b.onclick = function(){ location.href = 'statistiky.html'; };
+        b.innerHTML = '<span class="material-icons">insights<\/span> \u0160tatistiky';
+        vzor.parentNode.appendChild(b);
+      }catch(e){ console.warn('Zalozka statistiky sa nepridala:', e); }
+    }
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pridajStatistiky);
+    else pridajStatistiky();
+  })();
+</script>
