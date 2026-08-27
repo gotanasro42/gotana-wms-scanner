@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14213D">
+<title>Gotana — Štatistiky skladu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --atrament:#14213D;
+  --atrament-svetly:#2B3F63;
+  --platno:#FAF7F2;
+  --platno-tmavsi:#F0EAE0;
+  --safran:#E8A33D;
+  --mach:#2F6B4F;
+  --tehla:#A63D40;
+  --linka:#DED8CE;
+  --sedy:#6B6660;
+  --r:10px;
+  --hlavicka:0px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--platno);
+  color:var(--atrament);
+  font-family:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+  font-size:15px;line-height:1.45;
+  padding-bottom:calc(76px + env(safe-area-inset-bottom));
+  -webkit-font-smoothing:antialiased;
+}
+.cislo{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.zhustene{font-family:'IBM Plex Sans Condensed','IBM Plex Sans',sans-serif}
+
+/* ---------- Hlavička ---------- */
+header{
+  position:sticky;top:0;z-index:50;
+  background:var(--atrament);color:var(--platno);
+  padding:calc(8px + env(safe-area-inset-top)) 12px 0;
+}
+.znacka{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.znacka h1{
+  margin:0;font-size:13px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;
+  font-family:'IBM Plex Sans Condensed',sans-serif;
+}
+.stav-syn{font-size:10px;color:#9FB0CE;font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+.obdobia{
+  display:flex;gap:5px;overflow-x:auto;padding:8px 0;margin:0 -12px;
+  padding-left:12px;padding-right:12px;scrollbar-width:none;
+}
+.obdobia::-webkit-scrollbar{display:none}
+.chip{
+  flex:0 0 auto;border:1px solid rgba(250,247,242,.28);background:transparent;
+  color:var(--platno);padding:7px 12px;border-radius:999px;font-size:12.5px;
+  font-weight:500;cursor:pointer;min-height:34px;white-space:nowrap;
+  font-family:'IBM Plex Sans',sans-serif;
+}
+.chip[aria-pressed="true"]{background:var(--safran);border-color:var(--safran);color:var(--atrament);font-weight:600}
+.vlastne{display:none;gap:6px;padding:0 0 9px;align-items:center;flex-wrap:wrap}
+.vlastne.zobraz{display:flex}
+.vlastne input{
+  background:rgba(250,247,242,.1);border:1px solid rgba(250,247,242,.3);color:var(--platno);
+  padding:7px 9px;border-radius:7px;font-size:12.5px;min-height:36px;
+  font-family:'IBM Plex Mono',monospace;
+}
+.vlastne button{
+  background:var(--safran);border:0;color:var(--atrament);padding:8px 14px;border-radius:7px;
+  font-weight:600;font-size:12.5px;min-height:36px;cursor:pointer;
+}
+.rozsah{font-size:10px;color:#9FB0CE;padding-bottom:7px;font-family:'IBM Plex Mono',monospace}
+
+/* ---------- Rekordy ---------- */
+.rekord{
+  background:#fff;border:1px solid var(--linka);border-radius:8px;
+  padding:9px 10px;margin-bottom:6px;border-left:3px solid var(--safran);
+}
+.rekord .stitok{
+  font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--sedy);
+  font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;
+}
+.rekord .cifry{display:flex;gap:12px;align-items:baseline;margin-top:3px;flex-wrap:wrap}
+.rekord .cifry b{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600;letter-spacing:-.02em}
+.rekord .cifry span{font-size:10.5px;color:var(--sedy)}
+.rekord .spodok{
+  font-size:10px;color:var(--sedy);margin-top:4px;padding-top:4px;
+  border-top:1px solid var(--platno-tmavsi);font-family:'IBM Plex Mono',monospace;
+}
+.stred{background:var(--platno-tmavsi);border-left-color:var(--atrament-svetly)}
+
+/* ---------- Signature: krajčírsky meter ---------- */
+.hlavne{background:var(--atrament);color:var(--platno);padding:2px 12px 0}
+.hlavne-cislo{display:flex;align-items:flex-end;gap:7px}
+.hlavne-cislo .hodnota{
+  font-family:'IBM Plex Mono',monospace;font-size:44px;font-weight:600;
+  line-height:.92;letter-spacing:-.035em;
+}
+.hlavne-cislo .jednotka{font-size:16px;color:var(--safran);font-weight:600;padding-bottom:5px}
+.hlavne-popis{
+  font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:#9FB0CE;
+  margin-top:5px;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:600;
+}
+.meter{height:18px;margin:6px -12px 0;position:relative;overflow:hidden;background:var(--safran)}
+.meter svg{display:block;width:100%;height:100%}
+
+/* ---------- Obsah ---------- */
+main{padding:12px 12px 0}
+.sekcia{display:none}
+.sekcia.aktivna{display:block}
+h2{
+  font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--sedy);
+  margin:16px 0 7px;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;
+}
+h2:first-child{margin-top:2px}
+
+.mriezka{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.karta{
+  background:#fff;border:1px solid var(--linka);border-radius:8px;padding:9px 8px;
+}
+.karta .hod{font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;line-height:1.05;letter-spacing:-.03em}
+.karta .pop{font-size:10px;color:var(--sedy);margin-top:2px;line-height:1.25}
+.karta.zvyraznena{background:var(--atrament);color:var(--platno);border-color:var(--atrament)}
+.karta.zvyraznena .pop{color:#9FB0CE}
+.karta .hod.dobre{color:var(--mach)}
+.karta .hod.zle{color:var(--tehla)}
+
+/* ---------- Riadky: pruh je pozadie, nie samostatny prvok ---------- */
+.riadok{
+  position:relative;display:grid;grid-template-columns:1fr auto;
+  gap:0 8px;align-items:center;padding:7px 8px;
+  border-bottom:1px solid var(--linka);overflow:hidden;
+}
+.riadok::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:var(--w,0%);
+  background:var(--safran);opacity:.13;pointer-events:none;
+}
+.riadok:last-child{border-bottom:0}
+.riadok > *{position:relative}
+.riadok .nazov{font-size:13px;font-weight:500;min-width:0;line-height:1.25}
+.riadok .detail{font-size:10.5px;color:var(--sedy);grid-column:1;font-family:'IBM Plex Mono',monospace}
+.riadok .hod{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;grid-row:1/3;text-align:right;white-space:nowrap}
+.riadok.bezdetailu .hod{grid-row:1}
+
+/* ---------- Produkty ---------- */
+.produkt{
+  display:grid;grid-template-columns:40px 1fr auto;gap:9px;align-items:center;
+  padding:7px 0;border-bottom:1px solid var(--linka);
+}
+.produkt:last-child{border-bottom:0}
+.produkt img{
+  width:40px;height:40px;object-fit:cover;border-radius:6px;background:var(--platno-tmavsi);
+  border:1px solid var(--linka);
+}
+.produkt .nazov{font-size:12.5px;font-weight:500;line-height:1.25;margin-bottom:1px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.produkt .meta{font-size:10px;color:var(--sedy);font-family:'IBM Plex Mono',monospace}
+.produkt .hod{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;text-align:right;white-space:nowrap}
+.produkt .hod small{display:block;font-size:9.5px;color:var(--sedy);font-weight:400}
+.miesto{
+  display:inline-block;background:var(--atrament);color:var(--platno);
+  padding:0 5px;border-radius:3px;font-size:9.5px;font-weight:600;
+  font-family:'IBM Plex Mono',monospace;margin-left:4px;
+}
+.prepinac{display:flex;gap:6px;margin-bottom:2px}
+.prepinac button{
+  flex:1;padding:8px;border:1px solid var(--linka);background:#fff;border-radius:7px;
+  font-size:12.5px;font-weight:500;cursor:pointer;min-height:38px;color:var(--atrament);
+  font-family:'IBM Plex Sans',sans-serif;
+}
+.prepinac button[aria-pressed="true"]{background:var(--atrament);color:var(--platno);border-color:var(--atrament);font-weight:600}
+
+/* ---------- Trend ---------- */
+.trend{display:flex;align-items:flex-end;gap:2px;height:64px;padding-top:4px}
+.trend div{flex:1;background:var(--atrament-svetly);border-radius:2px 2px 0 0;min-height:2px;position:relative}
+.trend div:last-child{background:var(--safran)}
+.trend-popis{display:flex;justify-content:space-between;font-size:10px;color:var(--sedy);margin-top:4px;font-family:'IBM Plex Mono',monospace}
+
+/* ---------- Spodná navigácia ---------- */
+nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:60;
+  background:#fff;border-top:1px solid var(--linka);
+  display:grid;grid-template-columns:repeat(4,1fr);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+nav button{
+  background:none;border:0;padding:7px 4px 6px;cursor:pointer;color:var(--sedy);
+  display:flex;flex-direction:column;align-items:center;gap:2px;min-height:50px;
+  font-family:'IBM Plex Sans Condensed',sans-serif;
+}
+nav button span{font-size:9.5px;font-weight:600;letter-spacing:.04em}
+nav button svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8}
+nav button[aria-pressed="true"]{color:var(--atrament)}
+nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
+
+/* ---------- Stavy ---------- */
+.info{padding:34px 14px;text-align:center;color:var(--sedy);font-size:14px}
+.chyba{
+  background:#fff;border:1px solid var(--tehla);border-left-width:3px;
+  border-radius:var(--r);padding:13px;color:var(--tehla);font-size:13.5px;margin-top:12px;
+}
+.kostra{background:var(--platno-tmavsi);border-radius:var(--r);height:70px;animation:puls 1.4s ease-in-out infinite}
+@keyframes puls{0%,100%{opacity:1}50%{opacity:.5}}
+.prazdne{color:var(--sedy);font-size:13px;padding:18px 0;text-align:center}
+:focus-visible{outline:2px solid var(--safran);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (min-width:640px){
+  body{max-width:720px;margin:0 auto;box-shadow:0 0 0 1px var(--linka)}
+  .mriezka{grid-template-columns:repeat(4,1fr)}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="znacka">
+    <h1>Gotana · Štatistiky</h1>
+    <span class="stav-syn" id="stavSyn"></span>
+  </div>
+  <div class="obdobia" id="obdobia">
+    <button class="chip" data-o="dnes">Dnes</button>
+    <button class="chip" data-o="vcera" aria-pressed="true">Včera</button>
+    <button class="chip" data-o="7">7 dní</button>
+    <button class="chip" data-o="30">30 dní</button>
+    <button class="chip" data-o="mesiac">Tento mesiac</button>
+    <button class="chip" data-o="rok">Tento rok</button>
+    <button class="chip" data-o="vlastne">Vlastné…</button>
+  </div>
+  <div class="vlastne" id="vlastne">
+    <input type="date" id="datOd" aria-label="Od dátumu">
+    <input type="date" id="datDo" aria-label="Do dátumu">
+    <button id="pouzi">Zobraziť</button>
+  </div>
+  <div class="rozsah" id="rozsah"></div>
+</header>
+
+<div class="hlavne">
+  <div class="hlavne-cislo">
+    <span class="hodnota cislo" id="hlavnaHodnota">—</span>
+    <span class="jednotka">m</span>
+  </div>
+  <div class="hlavne-popis">Metrov látky predaných</div>
+  <div class="meter"><svg id="stupnica" preserveAspectRatio="none"></svg></div>
+</div>
+
+<main>
+  <div id="chyba"></div>
+
+  <!-- PREHĽAD -->
+  <section class="sekcia aktivna" id="s-prehlad">
+    <h2>Súhrn obdobia</h2>
+    <div class="mriezka">
+      <div class="karta zvyraznena"><div class="hod cislo" id="kObj">—</div><div class="pop">Objednávok</div></div>
+      <div class="karta"><div class="hod cislo" id="kKusy">—</div><div class="pop">Kusov</div></div>
+      <div class="karta"><div class="hod cislo" id="kPol">—</div><div class="pop">Položiek</div></div>
+      <div class="karta"><div class="hod cislo" id="kMetreObj">—</div><div class="pop">Metrov / obj.</div></div>
+      <div class="karta"><div class="hod cislo" id="kPolObj">—</div><div class="pop">Položiek / obj.</div></div>
+      <div class="karta"><div class="hod cislo" id="kKrajin">—</div><div class="pop">Krajín</div></div>
+      <div class="karta"><div class="hod cislo" id="kHmot">—</div><div class="pop">Kg (orient.)</div></div>
+      <div class="karta"><div class="hod cislo zle" id="kStorno">—</div><div class="pop">Stornovaných</div></div>
+      <div class="karta"><div class="hod cislo" id="kCaka">—</div><div class="pop">Čaká na platbu</div></div>
+    </div>
+
+    <h2>Denný priebeh</h2>
+    <div class="trend" id="trend"></div>
+    <div class="trend-popis"><span id="trendOd"></span><span id="trendDo"></span></div>
+
+    <h2>Rekordy obdobia</h2>
+    <div id="extremy"></div>
+
+    <h2>Veľkosť objednávok</h2>
+    <div id="velkosti"></div>
+  </section>
+
+  <!-- PRODUKTY -->
+  <section class="sekcia" id="s-produkty">
+    <h2>Najpredávanejšie</h2>
+    <div class="prepinac">
+      <button data-p="metre" aria-pressed="true">Na metre</button>
+      <button data-p="kusy" aria-pressed="false">Na kusy</button>
+    </div>
+    <div id="topProdukty"></div>
+  </section>
+
+  <!-- KRAJINY -->
+  <section class="sekcia" id="s-odbyt">
+    <h2>Krajiny</h2>
+    <div id="krajiny"></div>
+  </section>
+
+  <!-- SKLAD -->
+  <section class="sekcia" id="s-sklad">
+    <h2>Vyťaženie podpracovísk</h2>
+    <div id="pracoviska"></div>
+    <h2>Kam sa doručovalo</h2>
+    <div class="mriezka">
+      <div class="karta"><div class="hod cislo" id="kVydajne">—</div><div class="pop">Výdajné miesto</div></div>
+      <div class="karta"><div class="hod cislo" id="kNaAdresu">—</div><div class="pop">Na adresu</div></div>
+    </div>
+  </section>
+</main>
+
+<nav id="nav">
+  <button data-s="prehlad" aria-pressed="true">
+    <svg viewBox="0 0 24 24"><path d="M3 13h6V3H3zM15 21h6V11h-6zM3 21h6v-5H3zM15 8h6V3h-6z"/></svg><span>PREHĽAD</span>
+  </button>
+  <button data-s="produkty" aria-pressed="false">
+    <svg viewBox="0 0 24 24"><path d="M4 7l8-4 8 4v10l-8 4-8-4z"/><path d="M4 7l8 4 8-4M12 11v10"/></svg><span>PRODUKTY</span>
+  </button>
+  <button data-s="odbyt" aria-pressed="false">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15 0 18M12 3c-2.5 2.7-2.5 15 0 18"/></svg><span>KRAJINY</span>
+  </button>
+  <button data-s="sklad" aria-pressed="false">
+    <svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-7h6v7"/></svg><span>SKLAD</span>
+  </button>
+</nav>
+
+<script>
+const URL_SUP = 'https://gduarwvhxlffrasuuxqw.supabase.co';
+const KLUC = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkdWFyd3ZoeGxmZnJhc3V1eHF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDUxMTMsImV4cCI6MjEwMTQ4MTExM30.xGnlwd5XPVSIkd9X1PlsxlTldiwuul410B8EX-VftLQ';
+
+const KRAJINY = {SK:'Slovensko',CZ:'Česko',HU:'Maďarsko',PL:'Poľsko',AT:'Rakúsko',DE:'Nemecko',RO:'Rumunsko',
+ FR:'Francúzsko',IT:'Taliansko',ES:'Španielsko',SE:'Švédsko',NO:'Nórsko',DK:'Dánsko',FI:'Fínsko',NL:'Holandsko',
+ BE:'Belgicko',HR:'Chorvátsko',SI:'Slovinsko',BG:'Bulharsko',GR:'Grécko',PT:'Portugalsko',IE:'Írsko',LT:'Litva',
+ LV:'Lotyšsko',EE:'Estónsko',CH:'Švajčiarsko',RS:'Srbsko',BA:'Bosna',UA:'Ukrajina',GB:'Británia',LU:'Luxembursko'};
+
+const $ = s => document.querySelector(s);
+const cis = (n,d=0) => Number(n||0).toLocaleString('sk-SK',{minimumFractionDigits:d,maximumFractionDigits:d});
+const esc = s => String(s??'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const den = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+let obdobie = {od:null, do:null};
+let data = null;
+let zobrazUdaj = 'metre';
+
+/* ---- Signature: stupnica krajčírskeho metra ---- */
+function kresliStupnicu(){
+  const svg = $('#stupnica');
+  const sirka = 600, vyska = 26;
+  svg.setAttribute('viewBox', `0 0 ${sirka} ${vyska}`);
+  let d = '';
+  for (let i = 0; i <= 60; i++){
+    const x = i * (sirka/60);
+    const h = i % 10 === 0 ? 15 : (i % 5 === 0 ? 10 : 6);
+    d += `M${x.toFixed(1)} 0 L${x.toFixed(1)} ${h} `;
+  }
+  svg.innerHTML = `<path d="${d}" stroke="#14213D" stroke-width="1.4" opacity=".55"/>`;
+}
+
+function nastavObdobie(typ){
+  const dnes = new Date();
+  const d0 = new Date(dnes); d0.setHours(0,0,0,0);
+  let od = new Date(d0), doD = new Date(d0);
+  if (typ === 'dnes'){}
+  else if (typ === 'vcera'){ od.setDate(od.getDate()-1); doD.setDate(doD.getDate()-1); }
+  else if (typ === '7'){ od.setDate(od.getDate()-6); }
+  else if (typ === '30'){ od.setDate(od.getDate()-29); }
+  else if (typ === 'mesiac'){ od = new Date(d0.getFullYear(), d0.getMonth(), 1); }
+  else if (typ === 'rok'){ od = new Date(d0.getFullYear(), 0, 1); }
+  obdobie = {od:den(od), do:den(doD)};
+}
+
+async function nacitaj(){
+  $('#chyba').innerHTML = '';
+  $('#hlavnaHodnota').textContent = '···';
+  const dl = ['#velkosti','#krajiny','#topProdukty','#pracoviska','#extremy'];
+  dl.forEach(s => { const e = $(s); if (e) e.innerHTML = '<div class="kostra"></div>'; });
+
+  const format = new Intl.DateTimeFormat('sk-SK',{day:'numeric',month:'long',year:'numeric'});
+  const a = format.format(new Date(obdobie.od+'T12:00')), b = format.format(new Date(obdobie.do+'T12:00'));
+  $('#rozsah').textContent = obdobie.od === obdobie.do ? a : a + ' — ' + b;
+
+  try{
+    const r = await fetch(`${URL_SUP}/rest/v1/rpc/dash_prehlad`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json', apikey:KLUC, Authorization:'Bearer '+KLUC},
+      body: JSON.stringify({p_od:obdobie.od, p_do:obdobie.do})
+    });
+    if(!r.ok){
+      let d = null; try { d = await r.json(); } catch(_e){}
+      if(d && d.code === '57014') throw new Error('CAS');
+      throw new Error('Databáza odpovedala chybou ' + r.status);
+    }
+    data = await r.json();
+    vykresli();
+  }catch(e){
+    $('#hlavnaHodnota').textContent = '—';
+    dl.forEach(s => { const el = $(s); if (el) el.innerHTML = ''; });
+    const text = e.message === 'CAS'
+      ? '<b>Toto obdobie sa nestihlo spočítať.</b><br>Skús kratší rozsah, alebo to zopakuj o chvíľu.'
+      : `<b>Údaje sa nenačítali.</b><br>${esc(e.message)}<br><br>Skús to o chvíľu znova. Ak to potrvá, daj vedieť.`;
+    $('#chyba').innerHTML = `<div class="chyba">${text}</div>`;
+  }
+}
+
+function riadky(pole, cielSel, kluc, hodnota, popis){
+  const ciel = $(cielSel);
+  if(!ciel) return;
+  if(!pole || !pole.length){ ciel.innerHTML = '<div class="prazdne">Za toto obdobie zatiaľ nič.</div>'; return; }
+  const max = Math.max(...pole.map(x => Number(hodnota(x))||0), 1);
+  ciel.innerHTML = pole.map(x => {
+    const h = Number(hodnota(x))||0;
+    const dop = popis ? popis(x) : '';
+    const sirka = Math.max(1,(h/max)*100).toFixed(1);
+    return `<div class="riadok${dop ? '' : ' bezdetailu'}" style="--w:${sirka}%">
+      <div class="nazov">${esc(kluc(x))}</div>
+      <div class="hod cislo">${cis(h, h % 1 ? 1 : 0)}</div>
+      ${dop ? `<div class="detail">${esc(dop)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function vykresliProdukty(){
+  const pole = zobrazUdaj === 'metre' ? data.topMetre : data.topKusy;
+  const jed = zobrazUdaj === 'metre' ? 'm' : 'ks';
+  const ciel = $('#topProdukty');
+  if(!pole || !pole.length){ ciel.innerHTML = '<div class="prazdne">Za toto obdobie zatiaľ nič.</div>'; return; }
+  ciel.innerHTML = pole.map(p => `
+    <div class="produkt">
+      ${p.obrazok ? `<img src="${esc(p.obrazok)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<div></div>'}
+      <div>
+        <div class="nazov">${esc(p.nazov)}</div>
+        <div class="meta">${esc(p.sku)}${p.podpracovisko ? `<span class="miesto">${esc(p.podpracovisko)}</span>` : ''}</div>
+      </div>
+      <div class="hod">${cis(p.mnozstvo,1)}<small>${jed} · ${cis(p.obj)}×</small></div>
+    </div>`).join('');
+}
+
+function vykresliTrend(){
+  const t = data.trend || [];
+  const ciel = $('#trend');
+  if(!t.length){ ciel.innerHTML=''; $('#trendOd').textContent=''; $('#trendDo').textContent=''; return; }
+  const max = Math.max(...t.map(x => Number(x.metre)||0), 1);
+  ciel.innerHTML = t.map(x => {
+    const v = ((Number(x.metre)||0)/max*100).toFixed(1);
+    const d = new Date(x.den+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric'});
+    return `<div style="height:${v}%" title="${d}: ${cis(x.metre,1)} m, ${cis(x.obj)} obj."></div>`;
+  }).join('');
+  const f = s => new Date(s+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric'});
+  $('#trendOd').textContent = f(t[0].den);
+  $('#trendDo').textContent = f(t[t.length-1].den);
+}
+
+function vykresliRekordy(){
+  const e = data.extremy || {};
+  const karta = (stitok, o, trieda) => {
+    if(!o) return '';
+    const d = new Date(o.den+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'2-digit'});
+    const kr = KRAJINY[o.krajina] || o.krajina || '—';
+    return `<div class="rekord ${trieda||''}">
+      <div class="stitok">${esc(stitok)}</div>
+      <div class="cifry">
+        <div><b>${cis(o.poloziek)}</b> <span>položiek</span></div>
+        <div><b>${cis(o.metre,1)}</b> <span>m</span></div>
+        <div><b>${cis(o.kusy)}</b> <span>ks</span></div>
+      </div>
+      <div class="spodok">č. ${esc(o.cislo)} · ${esc(d)} · ${esc(kr)}</div>
+    </div>`;
+  };
+  $('#extremy').innerHTML =
+    karta('Najviac položiek', e.najviacPoloziek) +
+    karta('Najviac metrov', e.najviacMetrov) +
+    karta('Najmenšia', e.najmensia) +
+    `<div class="rekord stred">
+      <div class="stitok">Priemerná objednávka</div>
+      <div class="cifry">
+        <div><b>${cis(e.priemPoloziek,1)}</b> <span>položiek</span></div>
+        <div><b>${cis(e.priemMetrov,1)}</b> <span>m</span></div>
+      </div>
+      <div class="spodok">priemer za vybrané obdobie</div>
+    </div>`;
+}
+
+function vykresliPracoviska(){
+  riadky(data.pracoviska, '#pracoviska',
+    x => x.pracovisko,
+    x => x.metre,
+    x => `${cis(x.kusy)} ks · ${cis(x.vyberov)} výberov · ${cis(x.druhov)} druhov`);
+}
+
+function vykresli(){
+  const s = data.suhrn || {}, i = data.inestavy || {};
+  $('#hlavnaHodnota').textContent = cis(s.metre,1);
+  $('#kObj').textContent = cis(s.objednavok);
+  $('#kKusy').textContent = cis(s.kusy);
+  $('#kPol').textContent = cis(s.poloziek);
+  $('#kMetreObj').textContent = cis(s.metreNaObj,2);
+  $('#kPolObj').textContent = cis(s.polNaObj,1);
+  $('#kKrajin').textContent = cis(s.krajin);
+  $('#kHmot').textContent = cis(s.hmotnost,1);
+  $('#kStorno').textContent = cis(i.storno);
+  $('#kCaka').textContent = cis(i.ceka);
+  $('#kVydajne').textContent = cis(s.vydajne);
+  $('#kNaAdresu').textContent = cis((s.objednavok||0)-(s.vydajne||0));
+
+  vykresliTrend();
+  vykresliProdukty();
+  vykresliRekordy();
+  vykresliPracoviska();
+
+  riadky(data.velkosti, '#velkosti', x => x.pasmo, x => x.obj);
+  riadky(data.krajiny, '#krajiny',
+    x => KRAJINY[x.krajina] || x.krajina,
+    x => x.obj,
+    x => `${cis(x.metre,1)} m · ${cis(x.kusy)} ks`);
+}
+
+async function stavPrenosu(){
+  try{
+    const r = await fetch(`${URL_SUP}/rest/v1/objednavky?select=vytvorena&order=vytvorena.desc&limit=1`,
+      {headers:{apikey:KLUC, Authorization:'Bearer '+KLUC}});
+    const d = await r.json();
+    if(!d || !d[0]) return;
+    const t = new Date(d[0].vytvorena);
+    const minut = Math.round((Date.now() - t.getTime())/60000);
+    let popis;
+    if(minut < 90) popis = `aktuálne · ${minut} min`;
+    else if(minut < 60*20) popis = `dáta do ${t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})}`;
+    else popis = `dáta do ${t.toLocaleDateString('sk-SK',{day:'numeric',month:'numeric'})}`;
+    $('#stavSyn').textContent = popis;
+  }catch(_e){}
+}
+
+/* ---- Ovládanie ---- */
+$('#obdobia').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if(!b) return;
+  [...$('#obdobia').children].forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  if(b.dataset.o === 'vlastne'){
+    $('#vlastne').classList.add('zobraz');
+    $('#datOd').value = obdobie.od; $('#datDo').value = obdobie.do;
+    return;
+  }
+  $('#vlastne').classList.remove('zobraz');
+  nastavObdobie(b.dataset.o);
+  nacitaj();
+});
+
+$('#pouzi').addEventListener('click', () => {
+  const a = $('#datOd').value, b = $('#datDo').value;
+  if(!a || !b) return;
+  obdobie = a <= b ? {od:a, do:b} : {od:b, do:a};
+  nacitaj();
+});
+
+$('#nav').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  [...$('#nav').children].forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  document.querySelectorAll('.sekcia').forEach(x => x.classList.remove('aktivna'));
+  $('#s-' + b.dataset.s).classList.add('aktivna');
+  window.scrollTo({top:0, behavior:'instant'});
+});
+
+document.querySelectorAll('.prepinac').forEach(pr => {
+  pr.addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    [...b.parentElement.children].forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    if(b.dataset.p){ zobrazUdaj = b.dataset.p; if(data) vykresliProdukty(); }
+  });
+});
+
+kresliStupnicu();
+nastavObdobie('vcera');
+nacitaj();
+stavPrenosu();
+</script>
+</body>
+</html>
