@@ -2272,22 +2272,31 @@
 </html>
 
 <script>
-  /* Zalozka Statistiky - otvara statistiky.html */
+  /* Zalozka Statistiky + navigacia v dvoch riadkoch */
   (function(){
-    function pridajStatistiky(){
+    function upravNavigaciu(){
       try{
         var vzor = document.getElementById('tab-vzor');
-        if(!vzor || document.getElementById('tab-stat')) return;
-        var b = document.createElement('button');
-        b.id = 'tab-stat';
-        b.className = vzor.className;
-        b.title = 'Statistiky skladu';
-        b.onclick = function(){ location.href = 'statistiky.html'; };
-        b.innerHTML = '<span class="material-icons">insights<\/span> \u0160tatistiky';
-        vzor.parentNode.appendChild(b);
-      }catch(e){ console.warn('Zalozka statistiky sa nepridala:', e); }
+        if(!vzor) return;
+        var wrap = vzor.parentNode;
+        if(!document.getElementById('tab-stat')){
+          var b = document.createElement('button');
+          b.id = 'tab-stat';
+          b.className = vzor.className;
+          b.title = 'Statistiky skladu';
+          b.onclick = function(){ location.href = 'statistiky.html'; };
+          b.innerHTML = '<span class="material-icons">insights<\/span> \u0160tatistiky';
+          wrap.appendChild(b);
+        }
+        wrap.classList.remove('flex');
+        wrap.classList.add('grid','grid-cols-2');
+        ['tab-scan','tab-db','tab-vzor','tab-stat'].forEach(function(id){
+          var e = document.getElementById(id);
+          if(e){ e.classList.remove('py-4'); e.classList.add('py-2'); }
+        });
+      }catch(e){ console.warn('Navigacia statistiky:', e); }
     }
-    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pridajStatistiky);
-    else pridajStatistiky();
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', upravNavigaciu);
+    else upravNavigaciu();
   })();
 </script>
