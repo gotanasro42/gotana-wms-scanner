@@ -223,16 +223,6 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .rekord.klik:active{background:var(--platno-tmavsi)}
 .rekord .sipka{float:right;color:var(--safran);font-weight:700;font-size:14px;line-height:1}
 
-/* ---------- Fronta ---------- */
-.fronta-hlava{background:var(--atrament);color:var(--platno);border-radius:10px;padding:12px 13px;margin-bottom:9px}
-.fronta-cifry{display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
-.fronta-cifry div span{font-size:10px;color:#9FB0CE;display:block;letter-spacing:.06em;text-transform:uppercase}
-.fronta-cifry div b{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;letter-spacing:-.03em}
-.fronta-pozn{font-size:11px;margin-top:9px;padding-top:8px;border-top:1px solid rgba(250,247,242,.15);color:#9FB0CE;font-family:'IBM Plex Mono',monospace}
-.fronta-pozn.sklz{color:var(--safran);font-weight:600}
-h2 small{font-size:9px;letter-spacing:.06em;color:var(--sedy);text-transform:none;font-weight:400;margin-left:5px}
-.riadok.stary::before{background:var(--tehla)}
-
 /* ---------- Stavy ---------- */
 .info{padding:34px 14px;text-align:center;color:var(--sedy);font-size:14px}
 .chyba{
@@ -332,14 +322,7 @@ h2 small{font-size:9px;letter-spacing:.06em;color:var(--sedy);text-transform:non
 
   <!-- SKLAD -->
   <section class="sekcia" id="s-sklad">
-    <h2>Čaká na vybavenie — práve teraz</h2>
-    <div class="fronta-hlava" id="frontaHlava"></div>
-    <div id="frontaVek"></div>
-
-    <h2>Fronta podľa podpracovísk</h2>
-    <div id="frontaPrac"></div>
-
-    <h2>Vyťaženie podpracovísk <small>(za vybrané obdobie)</small></h2>
+    <h2>Vyťaženie podpracovísk</h2>
     <div id="pracoviska"></div>
     <h2>Kam sa doručovalo</h2>
     <div class="mriezka">
@@ -392,7 +375,6 @@ const den = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-$
 
 let obdobie = {od:null, do:null};
 let data = null;
-let fronta = null;
 let zobrazUdaj = 'metre';
 
 /* ---- Signature: stupnica krajčírskeho metra ---- */
@@ -446,7 +428,6 @@ async function nacitaj(){
     }
     data = await r.json();
     vykresli();
-    nacitajFrontu();
   }catch(e){
     $('#hlavnaHodnota').textContent = '—';
     dl.forEach(s => { const el = $(s); if (el) el.innerHTML = ''; });
@@ -588,61 +569,6 @@ function vykresliRekordy(){
       </div>
       <div class="spodok">priemer za vybrané obdobie</div>
     </div>`;
-}
-
-function vykresliFrontu(){
-  if(!fronta) return;
-  const s = fronta.suhrn || {};
-  const dni = Number(s.dniNajstarsej) || 0;
-  const sklz = dni >= 7;
-  $('#frontaHlava').innerHTML = `
-    <div class="fronta-cifry">
-      <div><span>Metrov</span><b class="cislo">${cis(s.metre,1)}</b></div>
-      <div><span>Kusov</span><b class="cislo">${cis(s.kusy)}</b></div>
-      <div><span>Objednávok</span><b class="cislo">${cis(s.objednavok)}</b></div>
-    </div>
-    <div class="fronta-pozn ${sklz ? 'sklz' : ''}">
-      ${cis(s.poloziek)} položiek · najstaršia čaká ${cis(dni)} dní${sklz ? ' ⚠' : ''}
-    </div>`;
-
-  const vek = fronta.vek || [];
-  const maxV = Math.max(...vek.map(x=>Number(x.metre)||0), 1);
-  $('#frontaVek').innerHTML = vek.map(x => {
-    const stary = x.poradie >= 3 && Number(x.obj) > 0;
-    return `<div class="riadok ${stary ? 'stary' : ''}" style="--w:${Math.max(1,(Number(x.metre)/maxV)*100).toFixed(1)}%">
-      <div class="nazov">${esc(x.pasmo)}</div>
-      <div class="hod cislo">${cis(x.metre,1)}</div>
-      <div class="detail">${cis(x.obj)} objednávok · ${cis(x.kusy)} ks</div>
-    </div>`;
-  }).join('');
-
-  const p = fronta.pracoviska || [];
-  if(!p.length){ $('#frontaPrac').innerHTML = '<div class="prazdne">Fronta je prázdna.</div>'; return; }
-  const maxP = Math.max(...p.map(x=>Number(x.metre)||0), 1);
-  $('#frontaPrac').innerHTML = p.map(x => `
-    <div class="riadok prac" style="--w:${Math.max(1,(Number(x.metre)/maxP)*100).toFixed(1)}%;--f:${farbaPracoviska(x.pracovisko)}">
-      <div class="nazov"><i class="bodka"></i>${esc(x.pracovisko)}</div>
-      <div class="dvojcislo">
-        <span><b class="cislo">${cis(x.metre,1)}</b> m</span>
-        <span><b class="cislo">${cis(x.kusy)}</b> ks</span>
-      </div>
-      <div class="detail">${cis(x.obj)} objednávok · ${cis(x.poloziek)} položiek</div>
-    </div>`).join('');
-}
-
-async function nacitajFrontu(){
-  try{
-    const r = await fetch(`${URL_SUP}/rest/v1/rpc/dash_fronta`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json', apikey:KLUC, Authorization:'Bearer '+KLUC},
-      body: '{}'
-    });
-    if(!r.ok) throw new Error('chyba ' + r.status);
-    fronta = await r.json();
-    vykresliFrontu();
-  }catch(e){
-    $('#frontaHlava').innerHTML = '<div class="fronta-pozn">Frontu sa nepodarilo načítať.</div>';
-  }
 }
 
 function vykresliPracoviska(){
