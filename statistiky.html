@@ -147,7 +147,9 @@ h2:first-child{margin-top:2px}
 
 /* Podpracoviská: metre aj kusy zvýraznené vedľa seba */
 .riadok.prac{grid-template-columns:1fr auto}
-.riadok.prac .nazov{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13.5px}
+.riadok.prac .nazov{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:7px}
+.bodka{width:9px;height:9px;border-radius:2px;background:var(--f,#8A8580);flex:0 0 auto}
+.riadok.prac::before{background:var(--f,var(--safran))}
 .riadok.prac .detail{grid-column:1}
 .dvojcislo{grid-row:1/3;text-align:right;display:flex;gap:10px;align-items:baseline;white-space:nowrap}
 .dvojcislo span{font-size:10.5px;color:var(--sedy)}
@@ -204,6 +206,33 @@ nav button svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width
 nav button[aria-pressed="true"]{color:var(--atrament)}
 nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 
+/* ---------- Detail objednávky ---------- */
+.zaclona{position:fixed;inset:0;z-index:200;background:rgba(20,33,61,.55);display:none;align-items:flex-end;justify-content:center}
+.zaclona.zobraz{display:flex}
+.okno{background:var(--platno);width:100%;max-width:640px;max-height:88vh;border-radius:14px 14px 0 0;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 -6px 30px rgba(0,0,0,.28)}
+.okno-hlava{background:var(--atrament);color:var(--platno);padding:13px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex:0 0 auto}
+.okno-hlava h3{margin:0;font-size:15px;font-family:'IBM Plex Mono',monospace;font-weight:600}
+.okno-hlava .pod{font-size:11px;color:#9FB0CE;margin-top:3px}
+.okno-hlava button{background:rgba(250,247,242,.15);border:0;color:var(--platno);width:32px;height:32px;border-radius:8px;font-size:19px;line-height:1;cursor:pointer;flex:0 0 auto}
+.okno-telo{overflow-y:auto;padding:0 14px 16px;-webkit-overflow-scrolling:touch}
+.okno-suhrn{display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--linka);position:sticky;top:0;background:var(--platno)}
+.okno-suhrn div span{font-size:10.5px;color:var(--sedy);display:block}
+.okno-suhrn div b{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600}
+.vratena{color:var(--tehla);font-size:10.5px;font-weight:600}
+.rekord.klik{cursor:pointer}
+.rekord.klik:active{background:var(--platno-tmavsi)}
+.rekord .sipka{float:right;color:var(--safran);font-weight:700;font-size:14px;line-height:1}
+
+/* ---------- Fronta ---------- */
+.fronta-hlava{background:var(--atrament);color:var(--platno);border-radius:10px;padding:12px 13px;margin-bottom:9px}
+.fronta-cifry{display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+.fronta-cifry div span{font-size:10px;color:#9FB0CE;display:block;letter-spacing:.06em;text-transform:uppercase}
+.fronta-cifry div b{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;letter-spacing:-.03em}
+.fronta-pozn{font-size:11px;margin-top:9px;padding-top:8px;border-top:1px solid rgba(250,247,242,.15);color:#9FB0CE;font-family:'IBM Plex Mono',monospace}
+.fronta-pozn.sklz{color:var(--safran);font-weight:600}
+h2 small{font-size:9px;letter-spacing:.06em;color:var(--sedy);text-transform:none;font-weight:400;margin-left:5px}
+.riadok.stary::before{background:var(--tehla)}
+
 /* ---------- Stavy ---------- */
 .info{padding:34px 14px;text-align:center;color:var(--sedy);font-size:14px}
 .chyba{
@@ -231,6 +260,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
   <div class="obdobia" id="obdobia">
     <button class="chip" data-o="dnes">Dnes</button>
     <button class="chip" data-o="vcera" aria-pressed="true">Včera</button>
+    <button class="chip" data-o="predvcerom">Predvčerom</button>
     <button class="chip" data-o="7">7 dní</button>
     <button class="chip" data-o="30">30 dní</button>
     <button class="chip" data-o="mesiac">Tento mesiac</button>
@@ -302,7 +332,14 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 
   <!-- SKLAD -->
   <section class="sekcia" id="s-sklad">
-    <h2>Vyťaženie podpracovísk</h2>
+    <h2>Čaká na vybavenie — práve teraz</h2>
+    <div class="fronta-hlava" id="frontaHlava"></div>
+    <div id="frontaVek"></div>
+
+    <h2>Fronta podľa podpracovísk</h2>
+    <div id="frontaPrac"></div>
+
+    <h2>Vyťaženie podpracovísk <small>(za vybrané obdobie)</small></h2>
     <div id="pracoviska"></div>
     <h2>Kam sa doručovalo</h2>
     <div class="mriezka">
@@ -327,6 +364,16 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
   </button>
 </nav>
 
+<div class="zaclona" id="zaclona">
+  <div class="okno" role="dialog" aria-modal="true" aria-labelledby="oknoCislo">
+    <div class="okno-hlava">
+      <div><h3 id="oknoCislo">—</h3><div class="pod" id="oknoPod"></div></div>
+      <button id="oknoZavri" aria-label="Zavrieť">×</button>
+    </div>
+    <div class="okno-telo" id="oknoTelo"></div>
+  </div>
+</div>
+
 <script>
 const URL_SUP = 'https://gduarwvhxlffrasuuxqw.supabase.co';
 const KLUC = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkdWFyd3ZoeGxmZnJhc3V1eHF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDUxMTMsImV4cCI6MjEwMTQ4MTExM30.xGnlwd5XPVSIkd9X1PlsxlTldiwuul410B8EX-VftLQ';
@@ -337,12 +384,15 @@ const KRAJINY = {SK:'Slovensko',CZ:'Česko',HU:'Maďarsko',PL:'Poľsko',AT:'Rak�
  LV:'Lotyšsko',EE:'Estónsko',CH:'Švajčiarsko',RS:'Srbsko',BA:'Bosna',UA:'Ukrajina',GB:'Británia',LU:'Luxembursko'};
 
 const $ = s => document.querySelector(s);
+const vlajka = k => (k && k.length === 2)
+  ? String.fromCodePoint(...[...k.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65)) : '';
 const cis = (n,d=0) => Number(n||0).toLocaleString('sk-SK',{minimumFractionDigits:d,maximumFractionDigits:d});
 const esc = s => String(s??'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 const den = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
 let obdobie = {od:null, do:null};
 let data = null;
+let fronta = null;
 let zobrazUdaj = 'metre';
 
 /* ---- Signature: stupnica krajčírskeho metra ---- */
@@ -365,6 +415,7 @@ function nastavObdobie(typ){
   let od = new Date(d0), doD = new Date(d0);
   if (typ === 'dnes'){}
   else if (typ === 'vcera'){ od.setDate(od.getDate()-1); doD.setDate(doD.getDate()-1); }
+  else if (typ === 'predvcerom'){ od.setDate(od.getDate()-2); doD.setDate(doD.getDate()-2); }
   else if (typ === '7'){ od.setDate(od.getDate()-6); }
   else if (typ === '30'){ od.setDate(od.getDate()-29); }
   else if (typ === 'mesiac'){ od = new Date(d0.getFullYear(), d0.getMonth(), 1); }
@@ -395,6 +446,7 @@ async function nacitaj(){
     }
     data = await r.json();
     vykresli();
+    nacitajFrontu();
   }catch(e){
     $('#hlavnaHodnota').textContent = '—';
     dl.forEach(s => { const el = $(s); if (el) el.innerHTML = ''; });
@@ -422,6 +474,13 @@ function riadky(pole, cielSel, kluc, hodnota, popis){
   }).join('');
 }
 
+const FARBY_HAL = {H1:'#2F6B4F', H2:'#2B5F8F', H3:'#8A5A2B', D1:'#7A3E8F', V1:'#A63D40', HT1:'#4A6B7A'};
+function farbaPracoviska(kod){
+  if(!kod) return '#8A8580';
+  const m = String(kod).match(/^([A-Z]+\d)/i);
+  return (m && FARBY_HAL[m[1].toUpperCase()]) || '#8A8580';
+}
+
 function vykresliProdukty(){
   const pole = zobrazUdaj === 'metre' ? data.topMetre : data.topKusy;
   const jed = zobrazUdaj === 'metre' ? 'm' : 'ks';
@@ -432,7 +491,7 @@ function vykresliProdukty(){
       ${p.obrazok ? `<img src="${esc(p.obrazok)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<div></div>'}
       <div>
         <div class="nazov">${esc(p.nazov)}</div>
-        <div class="meta">${esc(p.sku)}${p.podpracovisko ? `<span class="miesto">${esc(p.podpracovisko)}</span>` : ''}</div>
+        <div class="meta">${esc(p.sku)}${p.podpracovisko ? `<span class="miesto" style="background:${farbaPracoviska(p.podpracovisko)}">${esc(p.podpracovisko)}</span>` : ''}</div>
       </div>
       <div class="hod">${cis(p.mnozstvo,1)}<small>${jed} · ${cis(p.obj)}×</small></div>
     </div>`).join('');
@@ -453,20 +512,68 @@ function vykresliTrend(){
   $('#trendDo').textContent = f(t[t.length-1].den);
 }
 
+async function otvorObjednavku(cislo){
+  if(!cislo) return;
+  $('#oknoCislo').textContent = 'č. ' + cislo;
+  $('#oknoPod').textContent = 'Načítavam…';
+  $('#oknoTelo').innerHTML = '<div class="kostra" style="margin-top:12px"></div>';
+  $('#zaclona').classList.add('zobraz');
+  document.body.style.overflow = 'hidden';
+  try{
+    const r = await fetch(`${URL_SUP}/rest/v1/rpc/dash_objednavka`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json', apikey:KLUC, Authorization:'Bearer '+KLUC},
+      body: JSON.stringify({p_cislo: String(cislo)})
+    });
+    if(!r.ok) throw new Error('chyba ' + r.status);
+    const o = await r.json();
+    if(!o){ $('#oknoTelo').innerHTML = '<div class="prazdne">Objednávka sa nenašla.</div>'; return; }
+    const d = new Date(o.den).toLocaleDateString('sk-SK',{day:'numeric',month:'long',year:'numeric'});
+    const kr = KRAJINY[o.krajina] || o.krajina || '';
+    $('#oknoPod').textContent = `${d} · ${vlajka(o.krajina)} ${kr} · ${o.stavPopis || o.stav}`;
+    const pol = o.polozky || [];
+    $('#oknoTelo').innerHTML = `
+      <div class="okno-suhrn">
+        <div><span>Metrov</span><b class="cislo">${cis(o.metre,1)}</b></div>
+        <div><span>Kusov</span><b class="cislo">${cis(o.kusy)}</b></div>
+        <div><span>Položiek</span><b class="cislo">${cis(o.poloziek)}</b></div>
+        <div><span>Doprava</span><b style="font-size:12px">${esc(o.vydajne ? 'výdajné miesto' : 'na adresu')}</b></div>
+      </div>` +
+      (pol.length ? pol.map(x => `
+        <div class="produkt">
+          ${x.obrazok ? `<img src="${esc(x.obrazok)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<div></div>'}
+          <div>
+            <div class="nazov">${esc(x.nazov)}</div>
+            <div class="meta">${esc(x.sku)}${x.podpracovisko ? `<span class="miesto" style="background:${farbaPracoviska(x.podpracovisko)}">${esc(x.podpracovisko)}</span>` : ''}</div>
+            ${x.vratene > 0 ? `<div class="vratena">vrátené / stornované: ${cis(x.vratene,2)}</div>` : ''}
+          </div>
+          <div class="hod">${cis(x.mnozstvo, x.mnozstvo % 1 ? 2 : 0)}<small>${x.je_meter ? 'm' : 'ks'}</small></div>
+        </div>`).join('')
+      : '<div class="prazdne">Bez položiek.</div>');
+  }catch(e){
+    $('#oknoTelo').innerHTML = `<div class="chyba">Detail sa nenačítal.<br>${esc(e.message)}</div>`;
+  }
+}
+
+function zavriObjednavku(){
+  $('#zaclona').classList.remove('zobraz');
+  document.body.style.overflow = '';
+}
+
 function vykresliRekordy(){
   const e = data.extremy || {};
   const karta = (stitok, o, trieda) => {
     if(!o) return '';
     const d = new Date(o.den+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'2-digit'});
     const kr = KRAJINY[o.krajina] || o.krajina || '—';
-    return `<div class="rekord ${trieda||''}">
+    return `<div class="rekord klik ${trieda||''}" data-cislo="${esc(o.cislo)}" role="button" tabindex="0">
       <div class="stitok">${esc(stitok)}</div>
       <div class="cifry">
         <div><b>${cis(o.poloziek)}</b> <span>položiek</span></div>
         <div><b>${cis(o.metre,1)}</b> <span>m</span></div>
         <div><b>${cis(o.kusy)}</b> <span>ks</span></div>
       </div>
-      <div class="spodok">č. ${esc(o.cislo)} · ${esc(d)} · ${esc(kr)}</div>
+      <div class="spodok">č. ${esc(o.cislo)} · ${esc(d)} · ${esc(kr)} <span class="sipka">›</span></div>
     </div>`;
   };
   $('#extremy').innerHTML =
@@ -483,6 +590,61 @@ function vykresliRekordy(){
     </div>`;
 }
 
+function vykresliFrontu(){
+  if(!fronta) return;
+  const s = fronta.suhrn || {};
+  const dni = Number(s.dniNajstarsej) || 0;
+  const sklz = dni >= 7;
+  $('#frontaHlava').innerHTML = `
+    <div class="fronta-cifry">
+      <div><span>Metrov</span><b class="cislo">${cis(s.metre,1)}</b></div>
+      <div><span>Kusov</span><b class="cislo">${cis(s.kusy)}</b></div>
+      <div><span>Objednávok</span><b class="cislo">${cis(s.objednavok)}</b></div>
+    </div>
+    <div class="fronta-pozn ${sklz ? 'sklz' : ''}">
+      ${cis(s.poloziek)} položiek · najstaršia čaká ${cis(dni)} dní${sklz ? ' ⚠' : ''}
+    </div>`;
+
+  const vek = fronta.vek || [];
+  const maxV = Math.max(...vek.map(x=>Number(x.metre)||0), 1);
+  $('#frontaVek').innerHTML = vek.map(x => {
+    const stary = x.poradie >= 3 && Number(x.obj) > 0;
+    return `<div class="riadok ${stary ? 'stary' : ''}" style="--w:${Math.max(1,(Number(x.metre)/maxV)*100).toFixed(1)}%">
+      <div class="nazov">${esc(x.pasmo)}</div>
+      <div class="hod cislo">${cis(x.metre,1)}</div>
+      <div class="detail">${cis(x.obj)} objednávok · ${cis(x.kusy)} ks</div>
+    </div>`;
+  }).join('');
+
+  const p = fronta.pracoviska || [];
+  if(!p.length){ $('#frontaPrac').innerHTML = '<div class="prazdne">Fronta je prázdna.</div>'; return; }
+  const maxP = Math.max(...p.map(x=>Number(x.metre)||0), 1);
+  $('#frontaPrac').innerHTML = p.map(x => `
+    <div class="riadok prac" style="--w:${Math.max(1,(Number(x.metre)/maxP)*100).toFixed(1)}%;--f:${farbaPracoviska(x.pracovisko)}">
+      <div class="nazov"><i class="bodka"></i>${esc(x.pracovisko)}</div>
+      <div class="dvojcislo">
+        <span><b class="cislo">${cis(x.metre,1)}</b> m</span>
+        <span><b class="cislo">${cis(x.kusy)}</b> ks</span>
+      </div>
+      <div class="detail">${cis(x.obj)} objednávok · ${cis(x.poloziek)} položiek</div>
+    </div>`).join('');
+}
+
+async function nacitajFrontu(){
+  try{
+    const r = await fetch(`${URL_SUP}/rest/v1/rpc/dash_fronta`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json', apikey:KLUC, Authorization:'Bearer '+KLUC},
+      body: '{}'
+    });
+    if(!r.ok) throw new Error('chyba ' + r.status);
+    fronta = await r.json();
+    vykresliFrontu();
+  }catch(e){
+    $('#frontaHlava').innerHTML = '<div class="fronta-pozn">Frontu sa nepodarilo načítať.</div>';
+  }
+}
+
 function vykresliPracoviska(){
   const p = data.pracoviska || [];
   const ciel = $('#pracoviska');
@@ -491,8 +653,8 @@ function vykresliPracoviska(){
   const max = Math.max(...p.map(x => Number(x.metre)||0), 1);
   ciel.innerHTML = p.map(x => {
     const sirka = Math.max(1,((Number(x.metre)||0)/max)*100).toFixed(1);
-    return `<div class="riadok prac" style="--w:${sirka}%">
-      <div class="nazov">${esc(x.pracovisko)}</div>
+    return `<div class="riadok prac" style="--w:${sirka}%;--f:${farbaPracoviska(x.pracovisko)}">
+      <div class="nazov"><i class="bodka"></i>${esc(x.pracovisko)}</div>
       <div class="dvojcislo">
         <span><b class="cislo">${cis(x.metre,1)}</b> m</span>
         <span><b class="cislo">${cis(x.kusy)}</b> ks</span>
@@ -525,7 +687,7 @@ function vykresli(){
 
   riadky(data.velkosti, '#velkosti', x => x.pasmo, x => x.obj);
   riadky(data.krajiny, '#krajiny',
-    x => KRAJINY[x.krajina] || x.krajina,
+    x => vlajka(x.krajina) + '  ' + (KRAJINY[x.krajina] || x.krajina),
     x => x.obj,
     x => `${cis(x.metre,1)} m · ${cis(x.kusy)} ks`);
 }
@@ -582,6 +744,17 @@ document.querySelectorAll('.prepinac').forEach(pr => {
     if(b.dataset.p){ zobrazUdaj = b.dataset.p; if(data) vykresliProdukty(); }
   });
 });
+
+$('#extremy').addEventListener('click', e => {
+  const k = e.target.closest('.rekord.klik'); if(k) otvorObjednavku(k.dataset.cislo);
+});
+$('#extremy').addEventListener('keydown', e => {
+  if(e.key !== 'Enter' && e.key !== ' ') return;
+  const k = e.target.closest('.rekord.klik'); if(k){ e.preventDefault(); otvorObjednavku(k.dataset.cislo); }
+});
+$('#oknoZavri').addEventListener('click', zavriObjednavku);
+$('#zaclona').addEventListener('click', e => { if(e.target.id === 'zaclona') zavriObjednavku(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') zavriObjednavku(); });
 
 kresliStupnicu();
 nastavObdobie('vcera');
