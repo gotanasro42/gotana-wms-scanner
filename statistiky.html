@@ -219,7 +219,13 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .okno-suhrn div span{font-size:10.5px;color:var(--sedy);display:block}
 .okno-suhrn div b{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600}
 .vratena{color:var(--tehla);font-size:10.5px;font-weight:600}
-.hladanie{display:flex;gap:7px;margin-bottom:4px}
+.sklad-info{font-size:10px;color:var(--mach);font-weight:600;margin-top:2px;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.sklad-info.nieje{color:var(--sedy);font-weight:400}
+.regal{background:var(--mach);color:var(--platno);padding:0 5px;border-radius:3px;font-size:9.5px;font-weight:700}
+.hladanie{display:flex;gap:6px;padding-bottom:8px}
+.hladanie input{flex:1;min-width:0;padding:7px 10px;border:1px solid rgba(250,247,242,.3);border-radius:7px;font-family:'IBM Plex Mono',monospace;font-size:13px;min-height:36px;background:rgba(250,247,242,.1);color:var(--platno)}
+.hladanie input::placeholder{color:#7C8CA8}
+.hladanie button{background:var(--safran);color:var(--atrament);border:0;padding:7px 14px;border-radius:7px;font-weight:600;font-size:12.5px;min-height:36px;cursor:pointer;flex:0 0 auto}
 .podnadpis{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sedy);font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;margin:12px 0 6px}
 .podnadpis:first-child{margin-top:0}
 .rekord .poradie{color:var(--safran);font-size:12px}
@@ -269,6 +275,10 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
     <input type="date" id="datOd" aria-label="Od dátumu">
     <input type="date" id="datDo" aria-label="Do dátumu">
     <button id="pouzi">Zobraziť</button>
+  </div>
+  <div class="hladanie" id="hladanie">
+    <input type="search" id="hladajCislo" inputmode="numeric" placeholder="číslo objednávky…" aria-label="Číslo objednávky">
+    <button id="hladajBtn">Nájsť</button>
   </div>
   <div class="rozsah" id="rozsah"></div>
 </header>
@@ -324,13 +334,6 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 
   <!-- KRAJINY -->
   <section class="sekcia" id="s-odbyt">
-    <h2>Nájsť objednávku</h2>
-    <div class="hladanie">
-      <input type="search" id="hladajCislo" inputmode="numeric" placeholder="číslo objednávky…" aria-label="Číslo objednávky">
-      <button id="hladajBtn">Nájsť</button>
-    </div>
-    <div id="hladajVysledok"></div>
-
     <h2>Krajiny</h2>
     <div id="krajiny"></div>
   </section>
@@ -478,8 +481,27 @@ function farbaPracoviska(kod){
   return (m && FARBY_HAL[m[1].toUpperCase()]) || '#8A8580';
 }
 
+let zasoby = {};
+
+async function nacitajZasoby(skus){
+  const chybaju = skus.filter(x => !(x in zasoby));
+  if(!chybaju.length) return;
+  try{
+    const r = await fetch(`${URL_SUP}/rest/v1/rpc/dash_zasoby`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json', apikey:KLUC, Authorization:'Bearer '+KLUC},
+      body: JSON.stringify({p_sku: chybaju})
+    });
+    if(!r.ok) return;
+    const d = await r.json();
+    chybaju.forEach(x => { zasoby[x] = d[x.toUpperCase()] || null; });
+  }catch(_e){}
+}
+
 function vykresliProdukty(){
   const pole = zobrazUdaj === 'metre' ? data.topMetre : data.topKusy;
+  const chybaju = (pole||[]).map(x=>x.sku).filter(x => !(x in zasoby));
+  if(chybaju.length){ nacitajZasoby(chybaju).then(() => { if(data) vykresliProdukty(); }); }
   const jed = zobrazUdaj === 'metre' ? 'm' : 'ks';
   const ciel = $('#topProdukty');
   if(!pole || !pole.length){ ciel.innerHTML = '<div class="prazdne">Za toto obdobie zatiaľ nič.</div>'; return; }
@@ -488,7 +510,7 @@ function vykresliProdukty(){
       ${p.obrazok ? `<img src="${esc(p.obrazok)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<div></div>'}
       <div>
         <div class="nazov">${esc(p.nazov)}</div>
-        <div class="meta">${esc(p.sku)}${p.podpracovisko ? `<span class="miesto" style="background:${farbaPracoviska(p.podpracovisko)}">${esc(p.podpracovisko)}</span>` : ''}</div>
+        <div class="meta">${esc(p.sku)}${p.podpracovisko ? `<span class="miesto" style="background:${farbaPracoviska(p.podpracovisko)}">${esc(p.podpracovisko)}</span>` : ''}${(function(){ const z = zasoby[p.sku]; return z ? `<span class="regal" style="margin-left:4px">${esc(z.regaly||'?')}</span>` : ''; })()}</div>
       </div>
       <div class="hod">${cis(p.mnozstvo,1)}<small>${jed} · ${cis(p.obj)}×</small></div>
     </div>`).join('');
@@ -542,6 +564,7 @@ async function otvorObjednavku(cislo){
           <div>
             <div class="nazov">${esc(x.nazov)}</div>
             <div class="meta">${esc(x.sku)}${x.podpracovisko ? `<span class="miesto" style="background:${farbaPracoviska(x.podpracovisko)}">${esc(x.podpracovisko)}</span>` : ''}</div>
+            ${x.rolky > 0 ? `<div class="sklad-info"><span class="regal">${esc(x.regaly || '?')}</span> ${cis(x.rolky)} ks na sklade</div>` : '<div class="sklad-info nieje">nie je na sklade</div>'}
             ${x.vratene > 0 ? `<div class="vratena">vrátené / stornované: ${cis(x.vratene,2)}</div>` : ''}
           </div>
           <div class="hod">${cis(x.mnozstvo, x.mnozstvo % 1 ? 2 : 0)}<small>${x.je_meter ? 'm' : 'ks'}</small></div>
