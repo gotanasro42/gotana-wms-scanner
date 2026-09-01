@@ -564,7 +564,7 @@ async function otvorObjednavku(cislo){
           <div>
             <div class="nazov">${esc(x.nazov)}</div>
             <div class="meta">${esc(x.sku)}${x.podpracovisko ? `<span class="miesto" style="background:${farbaPracoviska(x.podpracovisko)}">${esc(x.podpracovisko)}</span>` : ''}</div>
-            ${x.rolky > 0 ? `<div class="sklad-info"><span class="regal">${esc(x.regaly || '?')}</span> ${cis(x.rolky)} ks na sklade</div>` : '<div class="sklad-info nieje">nie je na sklade</div>'}
+            ${x.regaly ? `<div class="sklad-info"><span class="regal">${esc(x.regaly)}</span></div>` : ''}
             ${x.vratene > 0 ? `<div class="vratena">vrátené / stornované: ${cis(x.vratene,2)}</div>` : ''}
           </div>
           <div class="hod">${cis(x.mnozstvo, x.mnozstvo % 1 ? 2 : 0)}<small>${x.je_meter ? 'm' : 'ks'}</small></div>
@@ -736,8 +736,7 @@ $('#extremy').addEventListener('keydown', e => {
 });
 $('#hladajBtn').addEventListener('click', () => {
   const c = $('#hladajCislo').value.trim();
-  if(!c){ $('#hladajVysledok').innerHTML = ''; return; }
-  $('#hladajVysledok').innerHTML = '';
+  if(!c) return;
   otvorObjednavku(c);
 });
 $('#hladajCislo').addEventListener('keydown', e => {
