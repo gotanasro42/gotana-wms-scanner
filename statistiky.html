@@ -209,7 +209,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 /* ---------- Detail objednávky ---------- */
 .zaclona{position:fixed;inset:0;z-index:200;background:rgba(20,33,61,.55);display:none;align-items:flex-end;justify-content:center}
 .zaclona.zobraz{display:flex}
-.okno{background:var(--platno);width:100%;max-width:640px;max-height:88vh;border-radius:14px 14px 0 0;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 -6px 30px rgba(0,0,0,.28)}
+.okno{background:var(--platno);width:100%;max-width:640px;max-height:85dvh;max-height:85vh;border-radius:14px 14px 0 0;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 -6px 30px rgba(0,0,0,.28);padding-bottom:env(safe-area-inset-bottom)}
 .okno-hlava{background:var(--atrament);color:var(--platno);padding:13px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex:0 0 auto}
 .okno-hlava h3{margin:0;font-size:15px;font-family:'IBM Plex Mono',monospace;font-weight:600}
 .okno-hlava .pod{font-size:11px;color:#9FB0CE;margin-top:3px}
@@ -243,6 +243,8 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 @media (min-width:640px){
   body{max-width:720px;margin:0 auto;box-shadow:0 0 0 1px var(--linka)}
   .mriezka{grid-template-columns:repeat(4,1fr)}
+  .zaclona{align-items:center;padding:20px}
+  .okno{border-radius:12px;max-height:82vh;box-shadow:0 10px 40px rgba(0,0,0,.3)}
 }
 </style>
 </head>
