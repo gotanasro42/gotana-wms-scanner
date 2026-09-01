@@ -219,6 +219,12 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .okno-suhrn div span{font-size:10.5px;color:var(--sedy);display:block}
 .okno-suhrn div b{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600}
 .vratena{color:var(--tehla);font-size:10.5px;font-weight:600}
+.hladanie{display:flex;gap:7px;margin-bottom:4px}
+.podnadpis{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sedy);font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;margin:12px 0 6px}
+.podnadpis:first-child{margin-top:0}
+.rekord .poradie{color:var(--safran);font-size:12px}
+.hladanie input{flex:1;min-width:0;padding:9px 11px;border:1px solid var(--linka);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:14px;min-height:40px;background:#fff;color:var(--atrament)}
+.hladanie button{background:var(--atrament);color:var(--platno);border:0;padding:9px 16px;border-radius:8px;font-weight:600;font-size:13px;min-height:40px;cursor:pointer;flex:0 0 auto}
 .rekord.klik{cursor:pointer}
 .rekord.klik:active{background:var(--platno-tmavsi)}
 .rekord .sipka{float:right;color:var(--safran);font-weight:700;font-size:14px;line-height:1}
@@ -316,6 +322,13 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 
   <!-- KRAJINY -->
   <section class="sekcia" id="s-odbyt">
+    <h2>Nájsť objednávku</h2>
+    <div class="hladanie">
+      <input type="search" id="hladajCislo" inputmode="numeric" placeholder="číslo objednávky…" aria-label="Číslo objednávky">
+      <button id="hladajBtn">Nájsť</button>
+    </div>
+    <div id="hladajVysledok"></div>
+
     <h2>Krajiny</h2>
     <div id="krajiny"></div>
   </section>
@@ -428,6 +441,7 @@ async function nacitaj(){
     }
     data = await r.json();
     vykresli();
+    nacitajTop3();
   }catch(e){
     $('#hlavnaHodnota').textContent = '—';
     dl.forEach(s => { const el = $(s); if (el) el.innerHTML = ''; });
@@ -541,34 +555,51 @@ function zavriObjednavku(){
   document.body.style.overflow = '';
 }
 
+let top3 = { poloziek: [], metre: [] };
+
+function kartaRekordu(o, poradie){
+  const d = new Date(o.den + 'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'2-digit'});
+  const kr = KRAJINY[o.krajina] || o.krajina || '—';
+  return `<div class="rekord klik" data-cislo="${esc(o.cislo)}" role="button" tabindex="0">
+    <div class="stitok"><span class="poradie">${poradie}.</span> ${vlajka(o.krajina)} ${esc(kr)}</div>
+    <div class="cifry">
+      <div><b class="cislo">${cis(o.poloziek)}</b> <span>položiek</span></div>
+      <div><b class="cislo">${cis(o.metre,1)}</b> <span>m</span></div>
+      <div><b class="cislo">${cis(o.kusy)}</b> <span>ks</span></div>
+    </div>
+    <div class="spodok">č. ${esc(o.cislo)} · ${esc(d)} <span class="sipka">›</span></div>
+  </div>`;
+}
+
 function vykresliRekordy(){
   const e = data.extremy || {};
-  const karta = (stitok, o, trieda) => {
-    if(!o) return '';
-    const d = new Date(o.den+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'2-digit'});
-    const kr = KRAJINY[o.krajina] || o.krajina || '—';
-    return `<div class="rekord klik ${trieda||''}" data-cislo="${esc(o.cislo)}" role="button" tabindex="0">
-      <div class="stitok">${esc(stitok)}</div>
-      <div class="cifry">
-        <div><b>${cis(o.poloziek)}</b> <span>položiek</span></div>
-        <div><b>${cis(o.metre,1)}</b> <span>m</span></div>
-        <div><b>${cis(o.kusy)}</b> <span>ks</span></div>
-      </div>
-      <div class="spodok">č. ${esc(o.cislo)} · ${esc(d)} · ${esc(kr)} <span class="sipka">›</span></div>
-    </div>`;
-  };
+  const p = top3.poloziek || [], m = top3.metre || [];
   $('#extremy').innerHTML =
-    karta('Najviac položiek', e.najviacPoloziek) +
-    karta('Najviac metrov', e.najviacMetrov) +
-    karta('Najmenšia', e.najmensia) +
+    '<div class="podnadpis">Najviac položiek</div>' +
+    (p.length ? p.map((o,i)=>kartaRekordu(o,i+1)).join('') : '<div class="prazdne">Nič.</div>') +
+    '<div class="podnadpis">Najviac metrov</div>' +
+    (m.length ? m.map((o,i)=>kartaRekordu(o,i+1)).join('') : '<div class="prazdne">Nič.</div>') +
     `<div class="rekord stred">
       <div class="stitok">Priemerná objednávka</div>
       <div class="cifry">
-        <div><b>${cis(e.priemPoloziek,1)}</b> <span>položiek</span></div>
-        <div><b>${cis(e.priemMetrov,1)}</b> <span>m</span></div>
+        <div><b class="cislo">${cis(e.priemPoloziek,1)}</b> <span>položiek</span></div>
+        <div><b class="cislo">${cis(e.priemMetrov,1)}</b> <span>m</span></div>
       </div>
       <div class="spodok">priemer za vybrané obdobie</div>
     </div>`;
+}
+
+async function nacitajTop3(){
+  try{
+    const vol = (podla) => fetch(`${URL_SUP}/rest/v1/rpc/dash_top3`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json', apikey:KLUC, Authorization:'Bearer '+KLUC},
+      body: JSON.stringify({p_od:obdobie.od, p_do:obdobie.do, p_podla:podla})
+    }).then(r => r.ok ? r.json() : []);
+    const [a,b] = await Promise.all([vol('poloziek'), vol('metre')]);
+    top3 = { poloziek: a || [], metre: b || [] };
+  }catch(_e){ top3 = { poloziek: [], metre: [] }; }
+  if(data) vykresliRekordy();
 }
 
 function vykresliPracoviska(){
@@ -677,6 +708,15 @@ $('#extremy').addEventListener('click', e => {
 $('#extremy').addEventListener('keydown', e => {
   if(e.key !== 'Enter' && e.key !== ' ') return;
   const k = e.target.closest('.rekord.klik'); if(k){ e.preventDefault(); otvorObjednavku(k.dataset.cislo); }
+});
+$('#hladajBtn').addEventListener('click', () => {
+  const c = $('#hladajCislo').value.trim();
+  if(!c){ $('#hladajVysledok').innerHTML = ''; return; }
+  $('#hladajVysledok').innerHTML = '';
+  otvorObjednavku(c);
+});
+$('#hladajCislo').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); $('#hladajBtn').click(); }
 });
 $('#oknoZavri').addEventListener('click', zavriObjednavku);
 $('#zaclona').addEventListener('click', e => { if(e.target.id === 'zaclona') zavriObjednavku(); });
