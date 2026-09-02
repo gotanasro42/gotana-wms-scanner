@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14213D">
+<title>Gotana — Trhovisko</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --atrament:#14213D; --atrament-svetly:#2B3F63;
+  --platno:#FAF7F2; --platno-tmavsi:#F0EAE0;
+  --safran:#E8A33D; --mach:#2F6B4F; --tehla:#A63D40;
+  --linka:#DED8CE; --sedy:#6B6660;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--platno);color:var(--atrament);
+  font-family:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+  font-size:15px;line-height:1.45;
+  padding-bottom:calc(78px + env(safe-area-inset-bottom));
+  -webkit-font-smoothing:antialiased;
+}
+.cislo{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+/* Hlavička */
+header{
+  position:sticky;top:0;z-index:50;background:var(--atrament);color:var(--platno);
+  padding:calc(9px + env(safe-area-inset-top)) 12px 10px;
+}
+.znacka{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.znacka h1{
+  margin:0;font-size:13px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;
+  font-family:'IBM Plex Sans Condensed',sans-serif;
+}
+.kto{font-size:10.5px;color:#9FB0CE;font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+.hladaj{display:flex;gap:6px;margin-top:9px}
+.hladaj input{
+  flex:1;min-width:0;padding:8px 11px;border:1px solid rgba(250,247,242,.28);border-radius:8px;
+  font-size:13.5px;min-height:38px;background:rgba(250,247,242,.1);color:var(--platno);
+  font-family:'IBM Plex Sans',sans-serif;
+}
+.hladaj input::placeholder{color:#7C8CA8}
+
+main{padding:12px 12px 0;max-width:720px;margin:0 auto}
+
+/* Inzeráty */
+.inzerat{
+  background:#fff;border:1px solid var(--linka);border-radius:12px;
+  overflow:hidden;margin-bottom:11px;
+}
+.inzerat.predane{opacity:.62}
+.inz-foto{
+  width:100%;aspect-ratio:4/3;object-fit:cover;display:block;
+  background:var(--platno-tmavsi);border-bottom:1px solid var(--linka);
+}
+.inz-telo{padding:11px 12px 12px}
+.inz-hlava{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.inz-nazov{font-size:15.5px;font-weight:600;line-height:1.25;margin:0}
+.inz-cena{
+  font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;
+  white-space:nowrap;color:var(--mach);
+}
+.inz-cena.dohodou{font-size:12px;color:var(--sedy);font-weight:500}
+.inz-popis{font-size:13.5px;color:#413D38;margin-top:6px;white-space:pre-wrap;overflow-wrap:anywhere}
+.inz-spodok{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin-top:10px;padding-top:9px;border-top:1px solid var(--platno-tmavsi);
+  font-size:11.5px;color:var(--sedy);font-family:'IBM Plex Mono',monospace;
+}
+.znacka-kat{
+  background:var(--atrament);color:var(--platno);padding:1px 7px;border-radius:4px;
+  font-size:10px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;letter-spacing:.02em;
+}
+.znacka-predane{background:var(--tehla)}
+.inz-akcie{margin-left:auto;display:flex;gap:6px}
+.inz-akcie button{
+  background:var(--platno-tmavsi);border:1px solid var(--linka);color:var(--atrament);
+  padding:5px 11px;border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer;min-height:32px;
+  font-family:'IBM Plex Sans',sans-serif;
+}
+.inz-akcie button.zmaz{color:var(--tehla)}
+.kontakt-odkaz{color:var(--atrament);font-weight:600;text-decoration:none;border-bottom:1px solid var(--safran)}
+
+/* Plávajúce tlačidlo */
+.pridaj-btn{
+  position:fixed;right:14px;z-index:55;
+  bottom:calc(78px + env(safe-area-inset-bottom));
+  background:var(--safran);color:var(--atrament);border:0;
+  width:56px;height:56px;border-radius:50%;font-size:30px;line-height:1;
+  cursor:pointer;box-shadow:0 4px 16px rgba(20,33,61,.3);font-weight:300;
+}
+
+/* Formulár a okná */
+.zaclona{
+  position:fixed;inset:0;z-index:200;background:rgba(20,33,61,.55);
+  display:none;align-items:flex-end;justify-content:center;
+}
+.zaclona.zobraz{display:flex}
+.okno{
+  background:var(--platno);width:100%;max-width:640px;max-height:88dvh;max-height:88vh;
+  border-radius:14px 14px 0 0;overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 -6px 30px rgba(0,0,0,.28);padding-bottom:env(safe-area-inset-bottom);
+}
+.okno-hlava{
+  background:var(--atrament);color:var(--platno);padding:13px 14px;
+  display:flex;justify-content:space-between;align-items:center;gap:10px;flex:0 0 auto;
+}
+.okno-hlava h3{margin:0;font-size:14px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  font-family:'IBM Plex Sans Condensed',sans-serif}
+.okno-hlava button{
+  background:rgba(250,247,242,.15);border:0;color:var(--platno);width:32px;height:32px;
+  border-radius:8px;font-size:19px;line-height:1;cursor:pointer;flex:0 0 auto;
+}
+.okno-telo{overflow-y:auto;padding:14px;-webkit-overflow-scrolling:touch}
+
+label{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--sedy);font-weight:700;margin:12px 0 5px;font-family:'IBM Plex Sans Condensed',sans-serif}
+label:first-child{margin-top:0}
+input[type=text],input[type=number],input[type=password],textarea,select{
+  width:100%;padding:10px 11px;border:1px solid var(--linka);border-radius:9px;
+  font-size:15px;background:#fff;color:var(--atrament);min-height:44px;
+  font-family:'IBM Plex Sans',sans-serif;
+}
+textarea{min-height:96px;resize:vertical;line-height:1.4}
+.dvojica{display:flex;gap:9px}
+.dvojica > div{flex:1;min-width:0}
+.hlavne-tl{
+  width:100%;background:var(--atrament);color:var(--platno);border:0;
+  padding:13px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;
+  margin-top:16px;min-height:50px;font-family:'IBM Plex Sans',sans-serif;
+}
+.hlavne-tl:disabled{opacity:.55;cursor:default}
+.napoveda{font-size:11.5px;color:var(--sedy);margin-top:6px;line-height:1.35}
+
+/* Foto vo formulári */
+.foto-pole{
+  border:1px dashed var(--linka);border-radius:10px;padding:14px;text-align:center;
+  background:#fff;cursor:pointer;
+}
+.foto-pole span{font-size:13px;color:var(--sedy)}
+.foto-nahlad{width:100%;border-radius:9px;display:block;border:1px solid var(--linka)}
+.foto-zmaz{
+  background:none;border:0;color:var(--tehla);font-size:12px;font-weight:600;
+  cursor:pointer;margin-top:6px;padding:4px;
+}
+
+/* Stavy */
+.oznam{
+  border-radius:10px;padding:11px 12px;font-size:13.5px;margin-bottom:11px;
+  border:1px solid;border-left-width:3px;
+}
+.oznam.chyba{background:#fff;border-color:var(--tehla);color:var(--tehla)}
+.oznam.dobre{background:#fff;border-color:var(--mach);color:var(--mach)}
+.prazdne{text-align:center;color:var(--sedy);font-size:14px;padding:44px 16px;line-height:1.5}
+.kostra{background:var(--platno-tmavsi);border-radius:12px;height:220px;margin-bottom:11px;
+  animation:puls 1.4s ease-in-out infinite}
+@keyframes puls{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* Spodná navigácia */
+nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:60;background:#fff;
+  border-top:1px solid var(--linka);display:grid;grid-template-columns:repeat(3,1fr);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+nav a,nav button{
+  background:none;border:0;padding:8px 4px 7px;cursor:pointer;color:var(--sedy);
+  display:flex;flex-direction:column;align-items:center;gap:3px;min-height:54px;
+  text-decoration:none;font-family:'IBM Plex Sans Condensed',sans-serif;
+}
+nav span{font-size:9.5px;font-weight:600;letter-spacing:.04em}
+nav svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8}
+nav .aktivny{color:var(--atrament)}
+nav .aktivny svg{stroke:var(--safran);stroke-width:2.2}
+:focus-visible{outline:2px solid var(--safran);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+@media (min-width:640px){
+  .zaclona{align-items:center;padding:20px}
+  .okno{border-radius:12px;max-height:84vh}
+  .pridaj-btn{bottom:24px;right:calc(50% - 320px + 14px)}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="znacka">
+    <h1>Gotana · Trhovisko</h1>
+    <span class="kto" id="kto"></span>
+  </div>
+  <div class="hladaj">
+    <input type="search" id="hladaj" placeholder="hľadať v inzerátoch…" aria-label="Hľadať">
+  </div>
+</header>
+
+<main>
+  <div id="oznam"></div>
+  <div id="zoznam"><div class="kostra"></div><div class="kostra"></div></div>
+</main>
+
+<button class="pridaj-btn" id="pridajBtn" aria-label="Pridať inzerát">+</button>
+
+<!-- Formulár -->
+<div class="zaclona" id="zaclonaForm">
+  <div class="okno" role="dialog" aria-modal="true">
+    <div class="okno-hlava">
+      <h3 id="formNadpis">Nový inzerát</h3>
+      <button id="formZavri" aria-label="Zavrieť">×</button>
+    </div>
+    <div class="okno-telo">
+      <div id="formOznam"></div>
+
+      <div id="polePristup">
+        <label for="fKod">Firemný kód</label>
+        <input type="password" id="fKod" autocomplete="off" inputmode="text">
+        <div class="napoveda">Zadáš len raz, potom si ťa telefón zapamätá.</div>
+      </div>
+
+      <label for="fMeno">Tvoje meno</label>
+      <input type="text" id="fMeno" maxlength="60" autocomplete="name">
+
+      <label for="fNazov">Čo ponúkaš</label>
+      <input type="text" id="fNazov" maxlength="120">
+
+      <label for="fPopis">Popis</label>
+      <textarea id="fPopis" maxlength="2000"></textarea>
+
+      <div class="dvojica">
+        <div>
+          <label for="fCena">Cena v €</label>
+          <input type="number" id="fCena" step="0.5" min="0" inputmode="decimal" placeholder="dohodou">
+        </div>
+        <div>
+          <label for="fKat">Kategória</label>
+          <select id="fKat">
+            <option value="">—</option>
+            <option>Ručná výroba</option>
+            <option>Nábytok</option>
+            <option>Oblečenie</option>
+            <option>Domácnosť</option>
+            <option>Detské veci</option>
+            <option>Šport</option>
+            <option>Služby</option>
+            <option>Iné</option>
+          </select>
+        </div>
+      </div>
+
+      <label for="fKontakt">Kontakt</label>
+      <input type="text" id="fKontakt" maxlength="120" placeholder="telefón alebo e-mail">
+
+      <label>Fotka</label>
+      <div id="fotoOblast">
+        <div class="foto-pole" id="fotoPole"><span>Klepni a vyber fotku</span></div>
+      </div>
+      <input type="file" id="fFoto" accept="image/*" style="display:none">
+
+      <button class="hlavne-tl" id="fUloz">Zverejniť</button>
+    </div>
+  </div>
+</div>
+
+<nav>
+  <a href="index.html" id="navSken">
+    <svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></svg>
+    <span>SKLAD</span>
+  </a>
+  <a href="statistiky.html">
+    <svg viewBox="0 0 24 24"><path d="M3 13h6V3H3zM15 21h6V11h-6zM3 21h6v-5H3zM15 8h6V3h-6z"/></svg>
+    <span>ŠTATISTIKY</span>
+  </a>
+  <button class="aktivny">
+    <svg viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9M9 13h6"/></svg>
+    <span>TRHOVISKO</span>
+  </button>
+</nav>
+
+<script>
+const URL_SUP = 'https://gduarwvhxlffrasuuxqw.supabase.co';
+const KLUC = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkdWFyd3ZoeGxmZnJhc3V1eHF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDUxMTMsImV4cCI6MjEwMTQ4MTExM30.xGnlwd5XPVSIkd9X1PlsxlTldiwuul410B8EX-VftLQ';
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s??'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const cis = (n,d=0) => Number(n||0).toLocaleString('sk-SK',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+/* Uloženie v telefóne */
+const U = {
+  get kod(){ return localStorage.getItem('trh_kod') || ''; },
+  set kod(v){ localStorage.setItem('trh_kod', v); },
+  get meno(){ return localStorage.getItem('trh_meno') || ''; },
+  set meno(v){ localStorage.setItem('trh_meno', v); },
+  get spravca(){ return localStorage.getItem('trh_spravca') === '1'; },
+  set spravca(v){ localStorage.setItem('trh_spravca', v ? '1' : '0'); },
+  moje(){ try { return JSON.parse(localStorage.getItem('trh_moje') || '{}'); } catch(_e){ return {}; } },
+  zapisMoj(id, tajomstvo){ const m = U.moje(); m[id] = tajomstvo; localStorage.setItem('trh_moje', JSON.stringify(m)); },
+  tajomstvoPre(id){ return U.moje()[id] || null; }
+};
+
+function noveTajomstvo(){
+  const p = new Uint8Array(16);
+  crypto.getRandomValues(p);
+  return [...p].map(x => x.toString(16).padStart(2,'0')).join('');
+}
+
+async function rpc(meno, telo){
+  const r = await fetch(`${URL_SUP}/rest/v1/rpc/${meno}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json', apikey:KLUC, Authorization:'Bearer '+KLUC},
+    body: JSON.stringify(telo || {})
+  });
+  if(!r.ok) throw new Error('Server odpovedal chybou ' + r.status);
+  return r.json();
+}
+
+function oznam(kde, text, typ){
+  const e = $(kde);
+  if(!text){ e.innerHTML = ''; return; }
+  e.innerHTML = `<div class="oznam ${typ||'chyba'}">${esc(text)}</div>`;
+  if(typ === 'dobre') setTimeout(() => { e.innerHTML = ''; }, 3500);
+}
+
+/* ---------- Zoznam ---------- */
+let inzeraty = [];
+
+async function nacitaj(){
+  try{
+    const r = await fetch(`${URL_SUP}/rest/v1/inzeraty_verejne?select=*&order=vytvorene.desc&limit=200`,
+      {headers:{apikey:KLUC, Authorization:'Bearer '+KLUC}});
+    if(!r.ok) throw new Error('chyba ' + r.status);
+    inzeraty = await r.json();
+    vykresli();
+  }catch(e){
+    $('#zoznam').innerHTML = '';
+    oznam('#oznam', 'Inzeráty sa nenačítali. Skús to o chvíľu znova.', 'chyba');
+  }
+}
+
+function vykresli(){
+  const f = ($('#hladaj').value || '').trim().toLowerCase();
+  const pole = f
+    ? inzeraty.filter(x => (x.nazov+' '+(x.popis||'')+' '+x.meno+' '+(x.kategoria||'')).toLowerCase().includes(f))
+    : inzeraty;
+
+  if(!pole.length){
+    $('#zoznam').innerHTML = `<div class="prazdne">${f
+      ? 'Nič sa nenašlo.'
+      : 'Zatiaľ tu nič nie je.<br>Buď prvý — klepni na <b>+</b> vpravo dole.'}</div>`;
+    return;
+  }
+
+  $('#zoznam').innerHTML = pole.map(x => {
+    const moj = !!U.tajomstvoPre(x.id) || U.spravca;
+    const d = new Date(x.vytvorene).toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'2-digit'});
+    const cena = (x.cena === null || x.cena === undefined)
+      ? '<span class="inz-cena dohodou">dohodou</span>'
+      : `<span class="inz-cena">${cis(x.cena, Number(x.cena) % 1 ? 2 : 0)} €</span>`;
+    const kontakt = x.kontakt
+      ? (/^[+0-9 ()-]{6,}$/.test(x.kontakt)
+          ? `<a class="kontakt-odkaz" href="tel:${esc(x.kontakt.replace(/\s/g,''))}">${esc(x.kontakt)}</a>`
+          : `<a class="kontakt-odkaz" href="mailto:${esc(x.kontakt)}">${esc(x.kontakt)}</a>`)
+      : '';
+    return `<article class="inzerat ${x.predane ? 'predane' : ''}">
+      ${x.foto_url ? `<img class="inz-foto" src="${esc(x.foto_url)}" alt="" loading="lazy" onerror="this.remove()">` : ''}
+      <div class="inz-telo">
+        <div class="inz-hlava">
+          <h2 class="inz-nazov">${esc(x.nazov)}</h2>
+          ${cena}
+        </div>
+        ${x.popis ? `<div class="inz-popis">${esc(x.popis)}</div>` : ''}
+        <div class="inz-spodok">
+          ${x.predane ? '<span class="znacka-kat znacka-predane">predané</span>' : ''}
+          ${x.kategoria ? `<span class="znacka-kat">${esc(x.kategoria)}</span>` : ''}
+          <span>${esc(x.meno)} · ${esc(d)}</span>
+          ${kontakt}
+          ${moj ? `<span class="inz-akcie">
+            <button data-uprav="${x.id}">Upraviť</button>
+            <button class="zmaz" data-zmaz="${x.id}">Zmazať</button>
+          </span>` : ''}
+        </div>
+      </div>
+    </article>`;
+  }).join('');
+}
+
+/* ---------- Formulár ---------- */
+let upravujeId = null;
+let fotoData = null;
+
+function otvorForm(id){
+  upravujeId = id || null;
+  fotoData = null;
+  oznam('#formOznam', '');
+  $('#formNadpis').textContent = id ? 'Upraviť inzerát' : 'Nový inzerát';
+  $('#polePristup').style.display = U.kod ? 'none' : 'block';
+  $('#fMeno').value = U.meno;
+  $('#fotoOblast').innerHTML = '<div class="foto-pole" id="fotoPole"><span>Klepni a vyber fotku</span></div>';
+  $('#fFoto').value = '';
+
+  if(id){
+    const x = inzeraty.find(i => String(i.id) === String(id));
+    if(x){
+      $('#fNazov').value = x.nazov || '';
+      $('#fPopis').value = x.popis || '';
+      $('#fCena').value = (x.cena ?? '');
+      $('#fKat').value = x.kategoria || '';
+      $('#fKontakt').value = x.kontakt || '';
+      $('#fMeno').value = x.meno || U.meno;
+      if(x.foto_url) ukazNahlad(x.foto_url, true);
+    }
+  } else {
+    ['#fNazov','#fPopis','#fCena','#fKontakt'].forEach(s => $(s).value = '');
+    $('#fKat').value = '';
+  }
+  $('#zaclonaForm').classList.add('zobraz');
+  document.body.style.overflow = 'hidden';
+}
+
+function zavriForm(){
+  $('#zaclonaForm').classList.remove('zobraz');
+  document.body.style.overflow = '';
+}
+
+function ukazNahlad(src, existujuca){
+  $('#fotoOblast').innerHTML = `<img class="foto-nahlad" src="${esc(src)}" alt="">
+    <button type="button" class="foto-zmaz" id="fotoZmaz">${existujuca ? 'Vymeniť fotku' : 'Odstrániť fotku'}</button>`;
+}
+
+/* Zmenšenie fotky priamo v telefóne */
+function zmensiFotku(file){
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1200;
+        let { width: w, height: h } = img;
+        if(w > MAX || h > MAX){
+          if(w > h){ h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        c.toBlob(b => b ? res(b) : rej(new Error('Fotku sa nepodarilo spracovať')), 'image/jpeg', 0.8);
+      };
+      img.onerror = () => rej(new Error('Toto nevyzerá ako obrázok'));
+      img.src = fr.result;
+    };
+    fr.onerror = () => rej(new Error('Fotku sa nepodarilo načítať'));
+    fr.readAsDataURL(file);
+  });
+}
+
+async function nahrajFotku(blob){
+  const meno = `${Date.now()}-${Math.random().toString(36).slice(2,9)}.jpg`;
+  const r = await fetch(`${URL_SUP}/storage/v1/object/inzeraty/${meno}`,{
+    method:'POST',
+    headers:{ apikey:KLUC, Authorization:'Bearer '+KLUC, 'Content-Type':'image/jpeg' },
+    body: blob
+  });
+  if(!r.ok) throw new Error('Fotku sa nepodarilo nahrať');
+  return `${URL_SUP}/storage/v1/object/public/inzeraty/${meno}`;
+}
+
+async function uloz(){
+  const tl = $('#fUloz');
+  const kod = U.kod || $('#fKod').value.trim();
+  const meno = $('#fMeno').value.trim();
+  const nazov = $('#fNazov').value.trim();
+
+  if(!kod){ oznam('#formOznam','Zadaj firemný kód.'); return; }
+  if(!meno){ oznam('#formOznam','Napíš svoje meno.'); return; }
+  if(!nazov){ oznam('#formOznam','Napíš, čo ponúkaš.'); return; }
+
+  tl.disabled = true; tl.textContent = 'Ukladám…';
+  try{
+    if(!U.kod){
+      const o = await rpc('trh_over_kod', { p_kod: kod });
+      if(!o || !o.ok) throw new Error('Neplatný firemný kód.');
+      U.kod = kod; U.spravca = !!o.spravca;
+      $('#polePristup').style.display = 'none';
+    }
+    U.meno = meno;
+
+    let fotoUrl = null;
+    if(fotoData){ tl.textContent = 'Nahrávam fotku…'; fotoUrl = await nahrajFotku(fotoData); }
+
+    const cenaTxt = $('#fCena').value.trim();
+    const spolocne = {
+      p_nazov: nazov,
+      p_popis: $('#fPopis').value.trim(),
+      p_cena: cenaTxt === '' ? null : Number(cenaTxt),
+      p_kontakt: $('#fKontakt').value.trim(),
+      p_kategoria: $('#fKat').value,
+      p_foto: fotoUrl
+    };
+
+    let v;
+    if(upravujeId){
+      v = await rpc('trh_uprav', {
+        p_id: Number(upravujeId),
+        p_tajomstvo: U.tajomstvoPre(upravujeId),
+        p_kod: U.spravca ? U.kod : null,
+        p_predane: null, ...spolocne
+      });
+    } else {
+      const taj = noveTajomstvo();
+      v = await rpc('trh_pridaj', { p_kod: U.kod, p_tajomstvo: taj, p_meno: meno, ...spolocne });
+      if(v && v.ok) U.zapisMoj(v.id, taj);
+    }
+    if(!v || !v.ok) throw new Error((v && v.chyba) || 'Nepodarilo sa uložiť.');
+
+    zavriForm();
+    oznam('#oznam', upravujeId ? 'Inzerát upravený.' : 'Inzerát zverejnený.', 'dobre');
+    await nacitaj();
+    ukazKto();
+  }catch(e){
+    oznam('#formOznam', e.message || 'Niečo sa pokazilo.');
+  }finally{
+    tl.disabled = false; tl.textContent = 'Zverejniť';
+  }
+}
+
+async function zmaz(id){
+  if(!confirm('Naozaj zmazať tento inzerát?')) return;
+  try{
+    const v = await rpc('trh_zmaz', {
+      p_id: Number(id),
+      p_tajomstvo: U.tajomstvoPre(id),
+      p_kod: U.spravca ? U.kod : null
+    });
+    if(!v || !v.ok) throw new Error((v && v.chyba) || 'Nepodarilo sa zmazať.');
+    oznam('#oznam','Inzerát zmazaný.','dobre');
+    await nacitaj();
+  }catch(e){ oznam('#oznam', e.message, 'chyba'); }
+}
+
+function ukazKto(){
+  const c = U.meno ? U.meno + (U.spravca ? ' · správca' : '') : 'neprihlásený';
+  $('#kto').textContent = c;
+}
+
+/* ---------- Ovládanie ---------- */
+$('#pridajBtn').addEventListener('click', () => otvorForm(null));
+$('#formZavri').addEventListener('click', zavriForm);
+$('#zaclonaForm').addEventListener('click', e => { if(e.target.id === 'zaclonaForm') zavriForm(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') zavriForm(); });
+$('#fUloz').addEventListener('click', uloz);
+$('#hladaj').addEventListener('input', vykresli);
+
+$('#zoznam').addEventListener('click', e => {
+  const u = e.target.closest('[data-uprav]');
+  if(u){ otvorForm(u.dataset.uprav); return; }
+  const z = e.target.closest('[data-zmaz]');
+  if(z){ zmaz(z.dataset.zmaz); }
+});
+
+$('#fotoOblast').addEventListener('click', e => {
+  if(e.target.id === 'fotoZmaz'){
+    fotoData = null; $('#fFoto').value = '';
+    $('#fotoOblast').innerHTML = '<div class="foto-pole" id="fotoPole"><span>Klepni a vyber fotku</span></div>';
+    return;
+  }
+  if(e.target.closest('.foto-pole')) $('#fFoto').click();
+});
+
+$('#fFoto').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  try{
+    oznam('#formOznam','');
+    fotoData = await zmensiFotku(f);
+    ukazNahlad(URL.createObjectURL(fotoData), false);
+  }catch(err){
+    fotoData = null;
+    oznam('#formOznam', err.message);
+  }
+});
+
+ukazKto();
+nacitaj();
+</script>
+</body>
+</html>
