@@ -2289,14 +2289,20 @@
           wrap.appendChild(b);
         }
         wrap.classList.remove('flex');
-        wrap.classList.add('grid','grid-cols-3');
+        wrap.classList.add('grid','grid-cols-6');
+        var siroke = {'tab-scan':'col-span-3','tab-db':'col-span-3',
+                      'tab-vzor':'col-span-2','tab-stat':'col-span-2','tab-trh':'col-span-2'};
+        Object.keys(siroke).forEach(function(id){
+          var e = document.getElementById(id);
+          if(e) e.classList.add(siroke[id]);
+        });
         if(!document.getElementById('tab-trh')){
           var t = document.createElement('button');
           t.id = 'tab-trh';
           t.className = vzor.className;
           t.title = 'Trhovisko zamestnancov';
           t.onclick = function(){ location.href = 'trhovisko.html'; };
-          t.innerHTML = '<span class="material-icons">storefront<\/span> Trhovisko';
+          t.innerHTML = '<span class="material-icons">storefront<\/span> Trh';
           wrap.appendChild(t);
         }
         ['tab-scan','tab-db','tab-vzor','tab-stat','tab-trh'].forEach(function(id){
@@ -2305,7 +2311,33 @@
         });
       }catch(e){ console.warn('Navigacia statistiky:', e); }
     }
-    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', upravNavigaciu);
-    else upravNavigaciu();
+    /* Spodná lišta na prepínanie medzi časťami aplikácie */
+    function pridajSpodnuListu(){
+      try{
+        if(document.getElementById('appky-lista')) return;
+        var st = document.createElement('style');
+        st.textContent = '#appky-lista{position:fixed;bottom:0;left:0;right:0;z-index:9000;' +
+          'background:#14213D;display:grid;grid-template-columns:repeat(3,1fr);' +
+          'padding-bottom:env(safe-area-inset-bottom)}' +
+          '#appky-lista a,#appky-lista span{display:flex;align-items:center;justify-content:center;' +
+          'gap:5px;min-height:42px;text-decoration:none;color:#9FB0CE;font-size:10px;' +
+          'font-weight:700;letter-spacing:.1em;font-family:inherit}' +
+          '#appky-lista .tu{color:#E8A33D}' +
+          '#appky-lista .material-icons{font-size:16px}' +
+          'body{padding-bottom:calc(50px + env(safe-area-inset-bottom))!important}';
+        document.head.appendChild(st);
+        var d = document.createElement('div');
+        d.id = 'appky-lista';
+        d.innerHTML =
+          '<span class="tu"><i class="material-icons">qr_code_scanner<\/i>SKLAD<\/span>' +
+          '<a href="statistiky.html"><i class="material-icons">insights<\/i>ŠTATISTIKY<\/a>' +
+          '<a href="trhovisko.html"><i class="material-icons">storefront<\/i>TRH<\/a>';
+        document.body.appendChild(d);
+      }catch(e){ console.warn('Spodna lista:', e); }
+    }
+
+    function spusti(){ upravNavigaciu(); pridajSpodnuListu(); }
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', spusti);
+    else spusti();
   })();
 </script>
