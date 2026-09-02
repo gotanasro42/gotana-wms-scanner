@@ -154,6 +154,23 @@ textarea{min-height:96px;resize:vertical;line-height:1.4}
   cursor:pointer;margin-top:6px;padding:4px;
 }
 
+/* Veľký náhľad fotky */
+.lupa{
+  position:fixed;inset:0;z-index:300;background:rgba(20,33,61,.92);
+  display:none;align-items:center;justify-content:center;padding:16px;
+}
+.lupa.zobraz{display:flex}
+.lupa img{
+  max-width:100%;max-height:88vh;border-radius:10px;display:block;
+  box-shadow:0 8px 40px rgba(0,0,0,.5);
+}
+.lupa-zavri{
+  position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;
+  background:rgba(250,247,242,.16);border:0;color:var(--platno);
+  width:40px;height:40px;border-radius:50%;font-size:22px;line-height:1;cursor:pointer;
+}
+.inz-foto{cursor:zoom-in}
+
 /* Stavy */
 .oznam{
   border-radius:10px;padding:11px 12px;font-size:13.5px;margin-bottom:11px;
@@ -208,6 +225,11 @@ nav .aktivny svg{stroke:var(--safran);stroke-width:2.2}
 </main>
 
 <button class="pridaj-btn" id="pridajBtn" aria-label="Pridať inzerát">+</button>
+
+<div class="lupa" id="lupa">
+  <button class="lupa-zavri" id="lupaZavri" aria-label="Zavrieť">×</button>
+  <img id="lupaFoto" src="" alt="">
+</div>
 
 <!-- Formulár -->
 <div class="zaclona" id="zaclonaForm">
@@ -531,11 +553,27 @@ function ukazKto(){
 $('#pridajBtn').addEventListener('click', () => otvorForm(null));
 $('#formZavri').addEventListener('click', zavriForm);
 $('#zaclonaForm').addEventListener('click', e => { if(e.target.id === 'zaclonaForm') zavriForm(); });
-document.addEventListener('keydown', e => { if(e.key === 'Escape') zavriForm(); });
+function zavriLupu(){
+  $('#lupa').classList.remove('zobraz');
+  $('#lupaFoto').src = '';
+  if(!$('#zaclonaForm').classList.contains('zobraz')) document.body.style.overflow = '';
+}
+$('#lupa').addEventListener('click', zavriLupu);
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  if($('#lupa').classList.contains('zobraz')) zavriLupu(); else zavriForm();
+});
 $('#fUloz').addEventListener('click', uloz);
 $('#hladaj').addEventListener('input', vykresli);
 
 $('#zoznam').addEventListener('click', e => {
+  const f = e.target.closest('.inz-foto');
+  if(f && f.src){
+    $('#lupaFoto').src = f.src;
+    $('#lupa').classList.add('zobraz');
+    document.body.style.overflow = 'hidden';
+    return;
+  }
   const u = e.target.closest('[data-uprav]');
   if(u){ otvorForm(u.dataset.uprav); return; }
   const z = e.target.closest('[data-zmaz]');
