@@ -29,7 +29,7 @@ body{
   color:var(--atrament);
   font-family:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
   font-size:15px;line-height:1.45;
-  padding-bottom:calc(76px + env(safe-area-inset-bottom));
+  padding-bottom:calc(120px + env(safe-area-inset-bottom));
   -webkit-font-smoothing:antialiased;
 }
 .cislo{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
@@ -191,11 +191,23 @@ h2:first-child{margin-top:2px}
 
 /* ---------- Spodná navigácia ---------- */
 nav{
-  position:fixed;bottom:0;left:0;right:0;z-index:60;
+  position:fixed;bottom:calc(42px + env(safe-area-inset-bottom));left:0;right:0;z-index:60;
   background:#fff;border-top:1px solid var(--linka);
   display:grid;grid-template-columns:repeat(4,1fr);
+}
+/* Prepínanie medzi časťami aplikácie */
+.appky{
+  position:fixed;bottom:0;left:0;right:0;z-index:61;
+  background:var(--atrament);display:grid;grid-template-columns:repeat(3,1fr);
   padding-bottom:env(safe-area-inset-bottom);
 }
+.appky a,.appky span{
+  display:flex;align-items:center;justify-content:center;gap:5px;min-height:42px;
+  text-decoration:none;color:#9FB0CE;font-family:'IBM Plex Sans Condensed',sans-serif;
+  font-size:10px;font-weight:600;letter-spacing:.1em;
+}
+.appky .tu{color:var(--safran)}
+.appky svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
 nav button{
   background:none;border:0;padding:7px 4px 6px;cursor:pointer;color:var(--sedy);
   display:flex;flex-direction:column;align-items:center;gap:2px;min-height:50px;
@@ -364,6 +376,12 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
     <svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-7h6v7"/></svg><span>SKLAD</span>
   </button>
 </nav>
+
+<div class="appky">
+  <a href="index.html"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></svg>SKLAD</a>
+  <span class="tu"><svg viewBox="0 0 24 24"><path d="M3 13h6V3H3zM15 21h6V11h-6zM3 21h6v-5H3zM15 8h6V3h-6z"/></svg>ŠTATISTIKY</span>
+  <a href="trhovisko.html"><svg viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9M9 13h6"/></svg>TRH</a>
+</div>
 
 <div class="zaclona" id="zaclona">
   <div class="okno" role="dialog" aria-modal="true" aria-labelledby="oknoCislo">
