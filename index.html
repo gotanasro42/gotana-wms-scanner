@@ -2289,8 +2289,17 @@
           wrap.appendChild(b);
         }
         wrap.classList.remove('flex');
-        wrap.classList.add('grid','grid-cols-2');
-        ['tab-scan','tab-db','tab-vzor','tab-stat'].forEach(function(id){
+        wrap.classList.add('grid','grid-cols-3');
+        if(!document.getElementById('tab-trh')){
+          var t = document.createElement('button');
+          t.id = 'tab-trh';
+          t.className = vzor.className;
+          t.title = 'Trhovisko zamestnancov';
+          t.onclick = function(){ location.href = 'trhovisko.html'; };
+          t.innerHTML = '<span class="material-icons">storefront<\/span> Trhovisko';
+          wrap.appendChild(t);
+        }
+        ['tab-scan','tab-db','tab-vzor','tab-stat','tab-trh'].forEach(function(id){
           var e = document.getElementById(id);
           if(e){ e.classList.remove('py-4'); e.classList.add('py-2'); }
         });
