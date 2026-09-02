@@ -21,7 +21,7 @@ body{
   background:var(--platno);color:var(--atrament);
   font-family:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
   font-size:15px;line-height:1.45;
-  padding-bottom:calc(78px + env(safe-area-inset-bottom));
+  padding-bottom:calc(92px + env(safe-area-inset-bottom));
   -webkit-font-smoothing:antialiased;
 }
 .cislo{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
@@ -54,9 +54,10 @@ main{padding:12px 12px 0;max-width:720px;margin:0 auto}
 }
 .inzerat.predane{opacity:.62}
 .inz-foto{
-  width:100%;aspect-ratio:4/3;object-fit:cover;display:block;
+  width:100%;height:170px;object-fit:cover;display:block;
   background:var(--platno-tmavsi);border-bottom:1px solid var(--linka);
 }
+@media (min-width:640px){ .inz-foto{height:210px} }
 .inz-telo{padding:11px 12px 12px}
 .inz-hlava{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
 .inz-nazov{font-size:15.5px;font-weight:600;line-height:1.25;margin:0}
@@ -88,7 +89,7 @@ main{padding:12px 12px 0;max-width:720px;margin:0 auto}
 /* Plávajúce tlačidlo */
 .pridaj-btn{
   position:fixed;right:14px;z-index:55;
-  bottom:calc(78px + env(safe-area-inset-bottom));
+  bottom:calc(92px + env(safe-area-inset-bottom));
   background:var(--safran);color:var(--atrament);border:0;
   width:56px;height:56px;border-radius:50%;font-size:30px;line-height:1;
   cursor:pointer;box-shadow:0 4px 16px rgba(20,33,61,.3);font-weight:300;
@@ -180,7 +181,7 @@ nav .aktivny svg{stroke:var(--safran);stroke-width:2.2}
 @media (min-width:640px){
   .zaclona{align-items:center;padding:20px}
   .okno{border-radius:12px;max-height:84vh}
-  .pridaj-btn{bottom:24px;right:calc(50% - 320px + 14px)}
+  .pridaj-btn{bottom:96px;right:calc(50% - 320px + 14px)}
 }
 </style>
 </head>
@@ -228,27 +229,8 @@ nav .aktivny svg{stroke:var(--safran);stroke-width:2.2}
       <label for="fPopis">Popis</label>
       <textarea id="fPopis" maxlength="2000"></textarea>
 
-      <div class="dvojica">
-        <div>
-          <label for="fCena">Cena v €</label>
-          <input type="number" id="fCena" step="0.5" min="0" inputmode="decimal" placeholder="dohodou">
-        </div>
-        <div>
-          <label for="fKat">Kategória</label>
-          <select id="fKat">
-            <option value="">—</option>
-            <option>Ručná výroba</option>
-            <option>Nábytok</option>
-            <option>Oblečenie</option>
-            <option>Domácnosť</option>
-            <option>Detské veci</option>
-            <option>Šport</option>
-            <option>Služby</option>
-            <option>Iné</option>
-          </select>
-        </div>
-      </div>
-
+      <label for="fCena">Cena v €</label>
+      <input type="number" id="fCena" step="0.5" min="0" inputmode="decimal" placeholder="dohodou">
       <label for="fKontakt">Kontakt</label>
       <input type="text" id="fKontakt" maxlength="120" placeholder="telefón alebo e-mail">
 
@@ -341,7 +323,7 @@ async function nacitaj(){
 function vykresli(){
   const f = ($('#hladaj').value || '').trim().toLowerCase();
   const pole = f
-    ? inzeraty.filter(x => (x.nazov+' '+(x.popis||'')+' '+x.meno+' '+(x.kategoria||'')).toLowerCase().includes(f))
+    ? inzeraty.filter(x => (x.nazov+' '+(x.popis||'')+' '+x.meno).toLowerCase().includes(f))
     : inzeraty;
 
   if(!pole.length){
@@ -372,7 +354,6 @@ function vykresli(){
         ${x.popis ? `<div class="inz-popis">${esc(x.popis)}</div>` : ''}
         <div class="inz-spodok">
           ${x.predane ? '<span class="znacka-kat znacka-predane">predané</span>' : ''}
-          ${x.kategoria ? `<span class="znacka-kat">${esc(x.kategoria)}</span>` : ''}
           <span>${esc(x.meno)} · ${esc(d)}</span>
           ${kontakt}
           ${moj ? `<span class="inz-akcie">
@@ -405,14 +386,12 @@ function otvorForm(id){
       $('#fNazov').value = x.nazov || '';
       $('#fPopis').value = x.popis || '';
       $('#fCena').value = (x.cena ?? '');
-      $('#fKat').value = x.kategoria || '';
       $('#fKontakt').value = x.kontakt || '';
       $('#fMeno').value = x.meno || U.meno;
       if(x.foto_url) ukazNahlad(x.foto_url, true);
     }
   } else {
     ['#fNazov','#fPopis','#fCena','#fKontakt'].forEach(s => $(s).value = '');
-    $('#fKat').value = '';
   }
   $('#zaclonaForm').classList.add('zobraz');
   document.body.style.overflow = 'hidden';
@@ -494,7 +473,7 @@ async function uloz(){
       p_popis: $('#fPopis').value.trim(),
       p_cena: cenaTxt === '' ? null : Number(cenaTxt),
       p_kontakt: $('#fKontakt').value.trim(),
-      p_kategoria: $('#fKat').value,
+      p_kategoria: null,
       p_foto: fotoUrl
     };
 
