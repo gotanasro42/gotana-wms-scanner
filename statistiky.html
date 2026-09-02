@@ -266,26 +266,56 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 }
 </style>
 <script>
-/* ---- Prihlásenie do aplikácie Gotana ----
-   Vloží sa do <head> každej stránky. Kým človek nezadá firemný kód,
-   obsah stránky sa nezobrazí. Prihlásenie sa pamätá natrvalo. */
+/* ---- Prihlásenie do aplikácie Gotana ---- */
 (function(){
   var SUP = 'https://gduarwvhxlffrasuuxqw.supabase.co';
   var KLUC = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkdWFyd3ZoeGxmZnJhc3V1eHF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDUxMTMsImV4cCI6MjEwMTQ4MTExM30.xGnlwd5XPVSIkd9X1PlsxlTldiwuul410B8EX-VftLQ';
+
+  function ulozMeno(m){
+    localStorage.setItem('trh_meno', m);
+    localStorage.setItem('gotana_user', m);   /* aby sa Sklad nepýtal znova */
+  }
 
   window.GotanaUcet = {
     prihlaseny: function(){ return localStorage.getItem('trh_kod') ? true : false; },
     meno: function(){ return localStorage.getItem('trh_meno') || ''; },
     spravca: function(){ return localStorage.getItem('trh_spravca') === '1'; },
     odhlasit: function(){
-      if(!confirm('Naozaj sa odhlásiť? Budeš musieť znova zadať firemný kód.')) return;
+      if(!confirm('Odhlásiť sa? Budeš musieť znova zadať meno a firemný kód.')) return;
       localStorage.removeItem('trh_kod');
       localStorage.removeItem('trh_spravca');
+      localStorage.removeItem('gotana_user');
       location.reload();
     }
   };
 
-  if(window.GotanaUcet.prihlaseny()) return;
+  function pridajOdhlasenie(){
+    try{
+      if(document.getElementById('gt-odhlas')) return;
+      var h = document.querySelector('header');
+      if(!h) return;
+      var b = document.createElement('button');
+      b.id = 'gt-odhlas';
+      b.type = 'button';
+      b.title = window.GotanaUcet.meno() + (window.GotanaUcet.spravca() ? ' · správca' : '');
+      b.textContent = window.GotanaUcet.meno().split(' ')[0] + ' ▾';
+      b.style.cssText = 'position:absolute;top:calc(9px + env(safe-area-inset-top));right:10px;' +
+        'background:rgba(250,247,242,.14);border:0;color:#FAF7F2;padding:4px 9px;border-radius:6px;' +
+        'font-size:10.5px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.04em;z-index:70';
+      b.onclick = function(){ window.GotanaUcet.odhlasit(); };
+      if(getComputedStyle(h).position === 'static') h.style.position = 'relative';
+      h.appendChild(b);
+    }catch(e){}
+  }
+
+  if(window.GotanaUcet.prihlaseny()){
+    /* meno mohlo pribudnúť skôr, než sme ho vedeli uložiť pre Sklad */
+    if(localStorage.getItem('trh_meno') && !localStorage.getItem('gotana_user'))
+      localStorage.setItem('gotana_user', localStorage.getItem('trh_meno'));
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pridajOdhlasenie);
+    else pridajOdhlasenie();
+    return;
+  }
 
   var css = '#gt-brana{position:fixed;inset:0;z-index:99999;background:#14213D;color:#FAF7F2;'
     + 'display:flex;align-items:center;justify-content:center;padding:22px;'
@@ -298,7 +328,6 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
     + '#gt-brana input{width:100%;padding:12px 13px;border:1px solid rgba(250,247,242,.3);'
     + 'border-radius:9px;font-size:16px;background:rgba(250,247,242,.1);color:#FAF7F2;'
     + 'box-sizing:border-box;margin-bottom:14px;font-family:inherit}'
-    + '#gt-brana input::placeholder{color:#7C8CA8}'
     + '#gt-brana button{width:100%;background:#E8A33D;color:#14213D;border:0;padding:13px;'
     + 'border-radius:9px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}'
     + '#gt-brana button:disabled{opacity:.6;cursor:default}'
@@ -313,33 +342,25 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
   function postav(){
     var d = document.createElement('div');
     d.id = 'gt-brana';
-    d.innerHTML =
-      '<div class="box">'
-      + '<h2>Gotana</h2>'
+    d.innerHTML = '<div class="box"><h2>Gotana</h2>'
       + '<p>Zadaj svoje meno a firemný kód. Stačí raz — nabudúce ťa appka spozná.</p>'
       + '<label for="gt-meno">Meno</label>'
       + '<input id="gt-meno" type="text" autocomplete="name" maxlength="60">'
       + '<label for="gt-kod">Firemný kód</label>'
       + '<input id="gt-kod" type="password" autocomplete="off">'
-      + '<button id="gt-vstup">Vstúpiť</button>'
-      + '<div id="gt-chyba"></div>'
-      + '</div>';
+      + '<button id="gt-vstup">Vstúpiť</button><div id="gt-chyba"></div></div>';
     document.body.appendChild(d);
 
-    var meno = d.querySelector('#gt-meno');
-    var kod = d.querySelector('#gt-kod');
-    var tl = d.querySelector('#gt-vstup');
-    var ch = d.querySelector('#gt-chyba');
-    meno.value = localStorage.getItem('trh_meno') || '';
+    var meno = d.querySelector('#gt-meno'), kod = d.querySelector('#gt-kod');
+    var tl = d.querySelector('#gt-vstup'), ch = d.querySelector('#gt-chyba');
+    meno.value = localStorage.getItem('trh_meno') || localStorage.getItem('gotana_user') || '';
     (meno.value ? kod : meno).focus();
-
-    function chyba(t){ ch.textContent = t || ''; }
 
     async function vstup(){
       var m = meno.value.trim(), k = kod.value.trim();
-      if(!m){ chyba('Napíš svoje meno.'); meno.focus(); return; }
-      if(!k){ chyba('Zadaj firemný kód.'); kod.focus(); return; }
-      tl.disabled = true; tl.textContent = 'Overujem…'; chyba('');
+      if(!m){ ch.textContent = 'Napíš svoje meno.'; meno.focus(); return; }
+      if(!k){ ch.textContent = 'Zadaj firemný kód.'; kod.focus(); return; }
+      tl.disabled = true; tl.textContent = 'Overujem…'; ch.textContent = '';
       try{
         var r = await fetch(SUP + '/rest/v1/rpc/trh_over_kod', {
           method: 'POST',
@@ -350,15 +371,14 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
         var o = await r.json();
         if(!o || !o.ok) throw new Error('Kód nesedí. Skús to znova.');
         localStorage.setItem('trh_kod', k);
-        localStorage.setItem('trh_meno', m);
+        ulozMeno(m);
         localStorage.setItem('trh_spravca', o.spravca ? '1' : '0');
         location.reload();
       }catch(e){
-        chyba(e.message || 'Niečo sa pokazilo.');
+        ch.textContent = e.message || 'Niečo sa pokazilo.';
         tl.disabled = false; tl.textContent = 'Vstúpiť';
       }
     }
-
     tl.addEventListener('click', vstup);
     d.addEventListener('keydown', function(e){ if(e.key === 'Enter') vstup(); });
   }
