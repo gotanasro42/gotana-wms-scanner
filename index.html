@@ -2430,14 +2430,18 @@
 
     async function doplnZasoby(){
       try{
-        var zoznam = document.querySelector('#view-db .space-y-2');
+        var kandidati = document.querySelectorAll('#view-db .space-y-2');
+        var zoznam = null;
+        for(var i = 0; i < kandidati.length; i++){
+          if(!zoznam || kandidati[i].children.length > zoznam.children.length) zoznam = kandidati[i];
+        }
         if(!zoznam) return;
         var riadky = [].slice.call(zoznam.children).filter(function(r){ return !r.querySelector('.gt-zasoba'); });
         if(!riadky.length) return;
 
         var mapa = [], nove = [];
         riadky.forEach(function(r){
-          var m = (r.innerText || '').match(/^\s*([A-Z]{1,4}-\d+)/);
+          var m = (r.innerText || '').match(/^\s*([A-Z]{1,4}-[\w.]+)/);
           if(!m) return;
           mapa.push([r, m[1]]);
           if(!(m[1] in pamat) && nove.indexOf(m[1]) < 0) nove.push(m[1]);
