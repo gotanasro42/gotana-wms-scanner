@@ -2399,6 +2399,85 @@
   <script>
     function spustiSNovouDB(){ try{ localStorage.setItem("gotana_zdroj","supabase"); localStorage.setItem("gotana_api_url","https://script.google.com/nepouziva-sa/exec"); location.reload(); }catch(e){ alert("Chyba: "+e.message); } }
   </script>
+
+<script>
+  /* Zásoby z Magenta do zoznamu v Sklade */
+  (function(){
+    var SUP = 'https://gduarwvhxlffrasuuxqw.supabase.co';
+    var KLUC = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkdWFyd3ZoeGxmZnJhc3V1eHF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDUxMTMsImV4cCI6MjEwMTQ4MTExM30.xGnlwd5XPVSIkd9X1PlsxlTldiwuul410B8EX-VftLQ';
+    var pamat = {};      /* SKU -> zásoba, aby sme sa nepýtali dvakrát */
+    var caka = false;
+
+    function cislo(n){
+      return Number(n).toLocaleString('sk-SK', { maximumFractionDigits: 1 });
+    }
+
+    function vypis(riadok, z){
+      try{
+        if(riadok.querySelector('.gt-zasoba')) return;
+        var stred = riadok.querySelector('.flex-1');
+        if(!stred) return;
+        var d = document.createElement('div');
+        d.className = 'gt-zasoba';
+        var ma = z && z.zasoba !== null && z.zasoba !== undefined;
+        var kladna = ma && z.zasoba > 0;
+        d.style.cssText = 'font-size:10px;font-weight:700;margin-top:2px;letter-spacing:.02em;color:'
+          + (kladna ? '#2F6B4F' : '#A63D40');
+        d.textContent = ma ? (kladna ? 'skladom ' + cislo(z.zasoba) : 'vypredané') : '';
+        if(d.textContent) stred.appendChild(d);
+      }catch(e){}
+    }
+
+    async function doplnZasoby(){
+      try{
+        var zoznam = document.querySelector('#view-db .space-y-2');
+        if(!zoznam) return;
+        var riadky = [].slice.call(zoznam.children).filter(function(r){ return !r.querySelector('.gt-zasoba'); });
+        if(!riadky.length) return;
+
+        var mapa = [], nove = [];
+        riadky.forEach(function(r){
+          var m = (r.innerText || '').match(/^\s*([A-Z]{1,4}-\d+)/);
+          if(!m) return;
+          mapa.push([r, m[1]]);
+          if(!(m[1] in pamat) && nove.indexOf(m[1]) < 0) nove.push(m[1]);
+        });
+        if(!mapa.length) return;
+
+        while(nove.length){
+          var davka = nove.splice(0, 200);
+          var r = await fetch(SUP + '/rest/v1/rpc/dash_zasoby', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json', apikey: KLUC, Authorization: 'Bearer ' + KLUC},
+            body: JSON.stringify({ p_sku: davka })
+          });
+          if(!r.ok) return;
+          var d = await r.json();
+          davka.forEach(function(s){ pamat[s] = d[s.toUpperCase()] || null; });
+        }
+
+        mapa.forEach(function(par){ vypis(par[0], pamat[par[1]]); });
+      }catch(e){ console.warn('Zásoby do zoznamu:', e); }
+    }
+
+    function naplanuj(){
+      if(caka) return;
+      caka = true;
+      setTimeout(function(){ caka = false; doplnZasoby(); }, 400);
+    }
+
+    function spusti(){
+      var v = document.getElementById('view-db');
+      if(!v) return;
+      new MutationObserver(naplanuj).observe(v, { childList: true, subtree: true });
+      naplanuj();
+    }
+
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', spusti);
+    else spusti();
+    window.gt_zasoby_zoznam = doplnZasoby;
+  })();
+</script>
 </body>
 </html>
 
