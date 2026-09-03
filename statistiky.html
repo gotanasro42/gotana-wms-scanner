@@ -234,6 +234,8 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .sklad-info{font-size:10px;color:var(--mach);font-weight:600;margin-top:2px;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
 .sklad-info.nieje{color:var(--sedy);font-weight:400}
 .regal{background:var(--mach);color:var(--platno);padding:0 5px;border-radius:3px;font-size:9.5px;font-weight:700}
+.zasoba-ok{color:var(--mach);font-weight:600}
+.zasoba-nic{color:var(--tehla);font-weight:600}
 .hladanie{display:flex;gap:6px;padding-bottom:8px}
 .hladanie input{flex:1;min-width:0;padding:7px 10px;border:1px solid rgba(250,247,242,.3);border-radius:7px;font-family:'IBM Plex Mono',monospace;font-size:13px;min-height:36px;background:rgba(250,247,242,.1);color:var(--platno)}
 .hladanie input::placeholder{color:#7C8CA8}
@@ -659,7 +661,15 @@ function vykresliProdukty(){
       ${p.obrazok ? `<img src="${esc(p.obrazok)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<div></div>'}
       <div>
         <div class="nazov">${esc(p.nazov)}</div>
-        <div class="meta">${esc(p.sku)}${p.podpracovisko ? `<span class="miesto" style="background:${farbaPracoviska(p.podpracovisko)}">${esc(p.podpracovisko)}</span>` : ''}${(function(){ const z = zasoby[p.sku]; return z ? `<span class="regal" style="margin-left:4px">${esc(z.regaly||'?')}</span>` : ''; })()}</div>
+        <div class="meta">${esc(p.sku)}${p.podpracovisko ? `<span class="miesto" style="background:${farbaPracoviska(p.podpracovisko)}">${esc(p.podpracovisko)}</span>` : ''}${(function(){
+          const z = zasoby[p.sku]; if(!z) return '';
+          let v = '';
+          if(z.regaly) v += '<span class="regal" style="margin-left:4px">' + esc(z.regaly) + '</span>';
+          if(z.zasoba !== null && z.zasoba !== undefined)
+            v += '<span class="' + (z.zasoba > 0 ? 'zasoba-ok' : 'zasoba-nic') + '" style="margin-left:5px">'
+               + cis(z.zasoba, z.zasoba % 1 ? 1 : 0) + '</span>';
+          return v;
+        })()}</div>
       </div>
       <div class="hod">${cis(p.mnozstvo,1)}<small>${jed} · ${cis(p.obj)}×</small></div>
     </div>`).join('');
@@ -713,7 +723,15 @@ async function otvorObjednavku(cislo){
           <div>
             <div class="nazov">${esc(x.nazov)}</div>
             <div class="meta">${esc(x.sku)}${x.podpracovisko ? `<span class="miesto" style="background:${farbaPracoviska(x.podpracovisko)}">${esc(x.podpracovisko)}</span>` : ''}</div>
-            ${x.regaly ? `<div class="sklad-info"><span class="regal">${esc(x.regaly)}</span></div>` : ''}
+            ${(function(){
+              var c = [];
+              if(x.regaly) c.push('<span class="regal">' + esc(x.regaly) + '</span>');
+              if(x.zasoba !== null && x.zasoba !== undefined){
+                var malo = x.zasoba <= 0;
+                c.push('<span class="' + (malo ? 'zasoba-nic' : 'zasoba-ok') + '">skladom ' + cis(x.zasoba, x.zasoba % 1 ? 1 : 0) + (x.je_meter ? ' m' : ' ks') + '</span>');
+              }
+              return c.length ? '<div class="sklad-info">' + c.join('') + '</div>' : '';
+            })()}
             ${x.vratene > 0 ? `<div class="vratena">vrátené / stornované: ${cis(x.vratene,2)}</div>` : ''}
           </div>
           <div class="hod">${cis(x.mnozstvo, x.mnozstvo % 1 ? 2 : 0)}<small>${x.je_meter ? 'm' : 'ks'}</small></div>
