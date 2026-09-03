@@ -2443,8 +2443,10 @@
         riadky.forEach(function(r){
           var m = (r.innerText || '').match(/^\s*([A-Z]{1,4}-[\w.]+)/);
           if(!m) return;
-          mapa.push([r, m[1]]);
-          if(!(m[1] in pamat) && nove.indexOf(m[1]) < 0) nove.push(m[1]);
+          /* čo je za podčiarknikom je len dodatok, sklad vedie základný kód */
+          var kod = m[1].split('_')[0];
+          mapa.push([r, kod]);
+          if(!(kod in pamat) && nove.indexOf(kod) < 0) nove.push(kod);
         });
         if(!mapa.length) return;
 
