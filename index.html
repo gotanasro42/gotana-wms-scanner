@@ -2466,10 +2466,29 @@
       }catch(e){ console.warn('Zásoby do zoznamu:', e); }
     }
 
+    function hnedZnamé(){
+      /* čo už máme v pamäti, vypíšeme okamžite - napr. po filtrovaní */
+      try{
+        var kandidati = document.querySelectorAll('#view-db .space-y-2');
+        for(var i = 0; i < kandidati.length; i++){
+          var deti = kandidati[i].children;
+          for(var j = 0; j < deti.length; j++){
+            var r = deti[j];
+            if(r.querySelector('.gt-zasoba')) continue;
+            var m = (r.innerText || '').match(/^\s*([A-Z]{1,4}-[\w.]+)/);
+            if(!m) continue;
+            var kod = m[1].split('_')[0];
+            if(kod in pamat) vypis(r, pamat[kod]);
+          }
+        }
+      }catch(e){}
+    }
+
     function naplanuj(){
+      hnedZnamé();
       if(caka) return;
       caka = true;
-      setTimeout(function(){ caka = false; doplnZasoby(); }, 400);
+      setTimeout(function(){ caka = false; doplnZasoby(); }, 250);
     }
 
     function spusti(){
