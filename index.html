@@ -341,14 +341,29 @@
 
           <!-- PRIJEM -->
           <div id="pnlPanePrijem">
-              <div class="bg-purple-700 text-white p-3 rounded-2xl shadow-lg flex justify-between items-center mb-3">
-                  <h2 class="font-black text-lg">PRÍJEM PANELOV</h2>
-                  <div class="bg-white text-purple-700 w-10 h-10 rounded-full flex items-center justify-center font-black text-lg shadow-inner" id="pnlPocet">0</div>
-              </div>
+              <div class="bg-white p-4 rounded-2xl shadow-md border border-slate-200 mb-3 space-y-3">
+                  <button onclick="pnlSkenuj()" class="w-full h-16 bg-purple-600 active:bg-purple-800 text-white rounded-xl font-black text-base flex items-center justify-center gap-2 shadow-lg tap-feedback">
+                      <span class="material-icons">qr_code_scanner</span> SKENOVAŤ PANEL
+                  </button>
 
-              <button onclick="pnlSkenuj()" class="w-full h-16 bg-purple-600 active:bg-purple-800 text-white rounded-xl font-black text-base flex items-center justify-center gap-2 shadow-lg mb-3 tap-feedback">
-                  <span class="material-icons">qr_code_scanner</span> SKENOVAŤ PANEL
-              </button>
+                  <div class="flex items-center gap-2">
+                      <div class="flex-1 h-px bg-slate-200"></div>
+                      <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">alebo prstový skener</span>
+                      <div class="flex-1 h-px bg-slate-200"></div>
+                  </div>
+
+                  <div class="relative">
+                      <input id="pnlVstup" type="text" autocapitalize="characters" autocomplete="off"
+                             placeholder="Sem naskenuj prstovým skenerom..."
+                             onkeydown="if(event.key==='Enter'){event.preventDefault();pnlZapisRucne(this);}"
+                             class="w-full p-4 pl-11 border-2 border-purple-200 rounded-xl font-bold uppercase focus:border-purple-500 outline-none shadow-inner text-sm bg-purple-50/40">
+                      <span class="material-icons absolute left-3 top-4 text-purple-400">keyboard</span>
+                  </div>
+                  <div class="flex justify-between items-center">
+                      <span class="text-[11px] text-slate-400">Políčko nechaj aktívne — skener píše sám a potvrdí.</span>
+                      <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-lg font-black" id="pnlPocet">0</span>
+                  </div>
+              </div>
 
               <div id="pnlNoveList" class="space-y-2 pb-32"></div>
 
@@ -2568,7 +2583,7 @@
           else if (/^\d{2,4}-\d{4,}$/.test(c)) { out.obj_vyroba = c; }
           else if (/^\d+$/.test(c)) { out.interne_id = c; }
         });
-        if (!out.sku && casti.length) out.sku = casti[0];
+        if (!out.sku && casti.length && /^[A-Z]{2,4}-?\d{2,}$/.test(casti[0])) out.sku = casti[0];
         return out.sku ? out : null;
       }
 
@@ -2608,6 +2623,21 @@
       window.pnlSkenuj = function () {
         initCamera(function (text) { pnlPridaj(text); }, true);
       };
+
+      // Prstovy (bluetooth) skener sa sprava ako klavesnica: napise kod a posle Enter.
+      window.pnlZapisRucne = function (el) {
+        var v = (el.value || "").trim();
+        if (!v) return;
+        el.value = "";
+        pnlPridaj(v);
+        setTimeout(function () { el.focus(); }, 10);   // aby mohol hned skenovat dalsi
+      };
+
+      // Po prepnuti na Prijem drzime kurzor v policku, nech skener zapisuje bez klikania.
+      function pnlFokus() {
+        var el = $("pnlVstup");
+        if (el && !$("pnlPanePrijem").classList.contains("hidden")) { try { el.focus(); } catch (e) { } }
+      }
 
       async function pnlPridaj(text) {
         var p = pnlParsujPanel(text);
@@ -2805,10 +2835,10 @@
         $("pnlTabPrijem").classList.toggle("text-white", a);
         $("pnlTabPrehlad").classList.toggle("bg-slate-800", !a);
         $("pnlTabPrehlad").classList.toggle("text-white", !a);
-        if (!a) pnlNacitaj(); else stopCamera();
+        if (!a) pnlNacitaj(); else { stopCamera(); setTimeout(pnlFokus, 50); }
       };
 
-      window.pnlInit = function () { pnlRenderNove(); pnlNacitaj(); };
+      window.pnlInit = function () { pnlRenderNove(); pnlNacitaj(); setTimeout(pnlFokus, 100); };
     })();
   </script>
 
