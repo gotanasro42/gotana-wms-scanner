@@ -196,6 +196,9 @@
         <button onclick="switchView('vzor')" id="tab-vzor" class="nav-item flex-1 py-4 font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 transition-all">
           <span class="material-icons">image_search</span> Vzor
         </button>
+        <button onclick="switchView('panely'); pnlInit();" id="tab-panely" class="nav-item flex-1 py-4 font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 transition-all">
+          <span class="material-icons">dashboard</span> Panely
+        </button>
       </div>
       
       <!-- LAST ACTION BAR -->
@@ -326,6 +329,44 @@
               <button onclick="finishInventory()" id="btnFinishInv" class="w-full bg-slate-800 active:bg-black text-white py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all tap-feedback">
                   <span class="material-icons">difference</span> POROVNAŤ S DATABÁZOU
               </button>
+          </div>
+      </div>
+
+      <!-- PANELY VIEW (regal na panely z vyroby) -->
+      <div id="view-panely" class="hidden animate-scale-in">
+          <div class="flex gap-2 mb-3">
+              <button id="pnlTabPrijem" onclick="pnlTab('prijem')" class="flex-1 py-3 rounded-xl font-bold uppercase text-sm bg-slate-800 text-white tap-feedback">Príjem</button>
+              <button id="pnlTabPrehlad" onclick="pnlTab('prehlad')" class="flex-1 py-3 rounded-xl font-bold uppercase text-sm bg-slate-200 text-slate-600 tap-feedback">Regál</button>
+          </div>
+
+          <!-- PRIJEM -->
+          <div id="pnlPanePrijem">
+              <div class="bg-purple-700 text-white p-3 rounded-2xl shadow-lg flex justify-between items-center mb-3">
+                  <h2 class="font-black text-lg">PRÍJEM PANELOV</h2>
+                  <div class="bg-white text-purple-700 w-10 h-10 rounded-full flex items-center justify-center font-black text-lg shadow-inner" id="pnlPocet">0</div>
+              </div>
+
+              <button onclick="pnlSkenuj()" class="w-full h-16 bg-purple-600 active:bg-purple-800 text-white rounded-xl font-black text-base flex items-center justify-center gap-2 shadow-lg mb-3 tap-feedback">
+                  <span class="material-icons">qr_code_scanner</span> SKENOVAŤ PANEL
+              </button>
+
+              <div id="pnlNoveList" class="space-y-2 pb-32"></div>
+
+              <div class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200 shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-50">
+                  <button onclick="pnlUlozNaPoziciu()" id="pnlBtnUloz" class="w-full bg-green-600 active:bg-green-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale transition-all" disabled>
+                      <span class="material-icons">where_to_vote</span> ULOŽIŤ NA POZÍCIU
+                  </button>
+              </div>
+          </div>
+
+          <!-- PREHLAD REGALA -->
+          <div id="pnlPanePrehlad" class="hidden">
+              <div class="relative mb-3">
+                  <input id="pnlHladaj" oninput="pnlFilter()" type="text" autocapitalize="characters" placeholder="Hľadaj: NS kód, objednávka, regál..." class="w-full p-3 pl-10 border-2 border-slate-200 rounded-xl font-bold uppercase focus:border-purple-500 outline-none shadow-inner text-sm">
+                  <span class="material-icons absolute left-3 top-3 text-slate-400">search</span>
+              </div>
+              <div class="text-xs text-slate-500 font-bold mb-2 uppercase tracking-wider"><span id="pnlPrehladPocet">0</span> panelov v regáli</div>
+              <div id="pnlPrehladList" class="pb-24"></div>
           </div>
       </div>
 
@@ -1351,7 +1392,7 @@
       }
 
       function switchView(v) {
-         ['scan','db', 'vzor', 'bulk', 'inventory'].forEach(t => { 
+         ['scan','db', 'vzor', 'bulk', 'inventory', 'panely'].forEach(t => { 
              const el = document.getElementById('view-'+t); if(el) el.classList.add('hidden'); 
              const tab = document.getElementById('tab-'+t); if(tab) tab.classList.remove('active'); 
          });
@@ -2503,6 +2544,274 @@
     window.gt_zasoby_zoznam = doplnZasoby;
   })();
 </script>
+
+  <script>
+    // ==================== PANELY (regal na panely z vyroby) ====================
+    // Samostatny modul. Tabulka v Supabase: panely / pohlad panely_v_regali.
+    // QR panelu:  149-109450__NS-21709__100564   (vyrobna obj __ NS kod __ interne ID)
+    // QR pozicie: REGAL-7  alebo rucne cislo 1-100
+    (function () {
+      var pnlNove = [];      // naskenovane, este neulozene
+      var pnlVRegali = [];   // co lezi v regali (z DB)
+
+      function $(id) { return document.getElementById(id); }
+      function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
+
+      // ---------- parsovanie ----------
+      function pnlParsujPanel(text) {
+        if (!text) return null;
+        var t = String(text).toUpperCase().trim();
+        var casti = t.split("__").map(function (x) { return x.trim(); }).filter(Boolean);
+        var out = { obj_vyroba: "", sku: "", interne_id: "" };
+        casti.forEach(function (c) {
+          if (/^NS-\d+/.test(c) || /^[A-Z]{2,4}-\d+/.test(c)) { if (!out.sku) out.sku = c; }
+          else if (/^\d{2,4}-\d{4,}$/.test(c)) { out.obj_vyroba = c; }
+          else if (/^\d+$/.test(c)) { out.interne_id = c; }
+        });
+        if (!out.sku && casti.length) out.sku = casti[0];
+        return out.sku ? out : null;
+      }
+
+      function pnlParsujPoziciu(text) {
+        if (!text) return "";
+        var t = String(text).toUpperCase().trim();
+        var m = t.match(/^REGAL-(\d{1,3})$/) || t.match(/^(\d{1,3})$/);
+        if (!m) return "";
+        var n = parseInt(m[1], 10);
+        if (!(n >= 1 && n <= 100)) return "";
+        return String(n);
+      }
+
+      // ---------- dohladanie objednavky podla NS kodu ----------
+      async function pnlNajdiObjednavky(sku) {
+        try {
+          var riadky = await sbFetch("objednavky_polozky?select=objednavka_id&sku=eq." + encodeURIComponent(sku) +
+            "&odoslane=eq.0&ignoruj=is.false&order=riadok_id.desc&limit=60");
+          if (!riadky || !riadky.length) return [];
+          var ids = riadky.map(function (r) { return r.objednavka_id; });
+          ids = ids.filter(function (v, i) { return ids.indexOf(v) === i; }).slice(0, 40);
+          var obj = await sbFetch("objednavky?select=cislo,vytvorena&id=in.(" + ids.join(",") +
+            ")&stav=eq.processing&order=vytvorena.asc&limit=20");
+          return obj || [];
+        } catch (e) { console.warn("pnl objednavky:", e); return []; }
+      }
+
+      // ---------- prijem ----------
+      window.pnlStartPrijem = function () {
+        pnlNove = [];
+        pnlRenderNove();
+        switchView("panely");
+        $("pnlTabPrijem").click();
+        pnlSkenuj();
+      };
+
+      window.pnlSkenuj = function () {
+        initCamera(function (text) { pnlPridaj(text); }, true);
+      };
+
+      async function pnlPridaj(text) {
+        var p = pnlParsujPanel(text);
+        if (!p) { beep("error"); updateLastAction("Neznamy kod: " + String(text).slice(0, 20)); return; }
+        var kluc = p.interne_id || (p.obj_vyroba + "|" + p.sku);
+        if (pnlNove.some(function (x) { return (x.interne_id || (x.obj_vyroba + "|" + x.sku)) === kluc; })) {
+          beep("error"); updateLastAction("Uz naskenovane: " + p.sku); return;
+        }
+        beep("success"); vibrate(30);
+        var zaznam = { sku: p.sku, obj_vyroba: p.obj_vyroba, interne_id: p.interne_id, nazov: "", obj_sklad: "", moznosti: [], hotovo: false };
+        pnlNove.push(zaznam);
+        pnlRenderNove();
+        updateLastAction("Panel " + p.sku);
+
+        // nazov z katalogu (uz nacitany v appke)
+        try {
+          if (typeof dbCatalog !== "undefined" && dbCatalog) {
+            var k = dbCatalog[p.sku] || dbCatalog[String(p.sku).toUpperCase()];
+            if (typeof k === "string") zaznam.nazov = k;
+            else if (k && typeof k === "object") zaznam.nazov = k.n || k.nazov || k.name || "";
+          }
+        } catch (e) { }
+
+        var obj = await pnlNajdiObjednavky(p.sku);
+        zaznam.moznosti = obj.map(function (o) { return o.cislo; });
+        if (zaznam.moznosti.length === 1) zaznam.obj_sklad = zaznam.moznosti[0];
+        zaznam.hotovo = true;
+        pnlRenderNove();
+        if (zaznam.obj_sklad) pnlZistiPoziciu(zaznam);
+      }
+
+      // Ak uz nejaky panel tej istej objednavky lezi v regali, drzime ich pokope.
+      async function pnlZistiPoziciu(z) {
+        if (!z.obj_sklad) { z.existujuca = ""; pnlRenderNove(); return; }
+        // najprv pozri, ci ju nemame uz v tejto davke
+        var vDavke = pnlNove.find(function (x) { return x !== z && x.obj_sklad === z.obj_sklad && x.existujuca; });
+        if (vDavke) { z.existujuca = vDavke.existujuca; pnlRenderNove(); return; }
+        try {
+          var r = await sbFetch("panely_v_regali?select=pozicia&obj_sklad=eq." + encodeURIComponent(z.obj_sklad) + "&limit=1");
+          z.existujuca = (r && r.length) ? String(r[0].pozicia) : "";
+        } catch (e) { z.existujuca = ""; }
+        pnlRenderNove();
+      }
+
+      window.pnlVyberObj = function (i, cislo) { if (pnlNove[i]) { pnlNove[i].obj_sklad = cislo; pnlRenderNove(); pnlZistiPoziciu(pnlNove[i]); } };
+      window.pnlZmazNovy = function (i) { pnlNove.splice(i, 1); pnlRenderNove(); };
+
+      function pnlRenderNove() {
+        var box = $("pnlNoveList"); if (!box) return;
+        $("pnlPocet").innerText = pnlNove.length;
+        $("pnlBtnUloz").disabled = pnlNove.length === 0;
+        if (!pnlNove.length) {
+          box.innerHTML = '<div class="text-center text-slate-400 py-6 font-medium italic">Naskenuj prvy panel...</div>';
+          return;
+        }
+        box.innerHTML = pnlNove.map(function (z, i) {
+          var obj;
+          if (!z.hotovo) obj = '<div class="text-xs text-slate-400 italic">hladam objednavku...</div>';
+          else if (z.obj_sklad) obj = '<div class="text-sm font-bold text-green-700">Obj: ' + esc(z.obj_sklad) + '</div>';
+          else if (z.moznosti.length > 1) obj = '<div class="text-xs text-amber-700 font-bold mb-1">Vyber objednavku:</div><div class="flex flex-wrap gap-1">' +
+            z.moznosti.map(function (c) { return '<button onclick="pnlVyberObj(' + i + ',\'' + esc(c) + '\')" class="px-2 py-1 bg-amber-100 border border-amber-300 rounded text-xs font-bold tap-feedback">' + esc(c) + '</button>'; }).join("") + '</div>';
+          else obj = '<div class="text-xs text-slate-500 italic">objednavka sa nenasla</div>';
+          var poz = z.existujuca
+            ? '<div class="mt-1 inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-lg text-xs font-bold"><span class="material-icons text-sm">place</span> Objednávka už leží na regáli ' + esc(z.existujuca) + '</div>'
+            : '';
+          return '<div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex justify-between gap-2">' +
+            '<div class="min-w-0 flex-1">' +
+            '<div class="font-black text-slate-900">' + esc(z.sku) + '</div>' +
+            (z.nazov ? '<div class="text-xs text-slate-500 truncate">' + esc(z.nazov) + '</div>' : '') +
+            (z.obj_vyroba ? '<div class="text-[11px] text-slate-400 font-mono">' + esc(z.obj_vyroba) + '</div>' : '') +
+            obj + poz + '</div>' +
+            '<button onclick="pnlZmazNovy(' + i + ')" class="text-slate-300 hover:text-red-500 self-start"><span class="material-icons">close</span></button>' +
+            '</div>';
+        }).join("");
+      }
+
+      // ---------- ulozenie na poziciu ----------
+      window.pnlUlozNaPoziciu = async function () {
+        if (!pnlNove.length) return;
+        await stopCamera();
+
+        // Panely objednavky, ktora uz v regali lezi, idu automaticky k nej.
+        var uzMaju = pnlNove.filter(function (z) { return z.existujuca; });
+        var zvysok = pnlNove.filter(function (z) { return !z.existujuca; });
+
+        var poz = "";
+        if (zvysok.length) {
+          var navrh = uzMaju.length ? uzMaju[0].existujuca : "";
+          var vstup = await showInputModal(
+            uzMaju.length ? ("Pozícia pre zvyšné panely (" + zvysok.length + " ks)") : "Číslo pozície v regáli (1-100)",
+            "napr. 7", navrh);
+          if (vstup === null) return;
+          poz = pnlParsujPoziciu(vstup);
+          if (!poz) { showCustomAlert("Zlá pozícia", "Zadaj číslo od 1 do 100, alebo naskenuj štítok REGAL-x."); return; }
+        }
+
+        var bezObj = zvysok.filter(function (z) { return !z.obj_sklad; }).length;
+        if (bezObj > 0) {
+          var ok = await showCustomConfirm("Uložiť aj bez objednávky?",
+            bezObj + " z " + pnlNove.length + " panelov nemá priradenú objednávku. Uložia sa aj tak - objednávku vieš doplniť neskôr.");
+          if (!ok) return;
+        }
+
+        try {
+          setLoading(true, "Ukladám do regála...");
+          var kto = (typeof currentUser !== "undefined" && currentUser) ? currentUser : "";
+          var davka = pnlNove.map(function (z) {
+            return { pozicia: z.existujuca || poz, sku: z.sku, nazov: z.nazov || null, obj_sklad: z.obj_sklad || null, obj_vyroba: z.obj_vyroba || null, poznamka: z.interne_id ? ("ID " + z.interne_id) : null, pouzivatel: kto };
+          });
+          await sbFetch("panely", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify(davka) });
+          setLoading(false); beep("success"); vibrate([40, 60, 40]);
+
+          var podla = {};
+          davka.forEach(function (d) { podla[d.pozicia] = (podla[d.pozicia] || 0) + 1; });
+          var suhrn = Object.keys(podla).sort(function (a, b) { return Number(a) - Number(b); })
+            .map(function (p) { return "regál " + p + ": " + podla[p] + " ks"; }).join("\n");
+          updateLastAction("Uložené - " + suhrn.replace(/\n/g, ", "));
+          showCustomAlert("Uložené", suhrn + (uzMaju.length ? "\n\n" + uzMaju.length + " panelov šlo k svojej objednávke, ktorá už v regáli ležala." : ""));
+          pnlNove = []; pnlRenderNove();
+          pnlNacitaj();
+        } catch (e) { setLoading(false); beep("error"); showCustomAlert("Chyba pri ukladaní", e.message); }
+      };
+
+      // ---------- prehlad regala ----------
+      window.pnlNacitaj = async function () {
+        try {
+          var d = await sbFetch("panely_v_regali?select=*&order=pozicia,prijate&limit=2000");
+          pnlVRegali = d || [];
+          pnlRenderPrehlad();
+        } catch (e) { console.warn(e); var b = $("pnlPrehladList"); if (b) b.innerHTML = '<div class="text-center text-red-500 py-6">Nepodarilo sa nacitat: ' + esc(e.message) + '</div>'; }
+      };
+
+      window.pnlFilter = function () { pnlRenderPrehlad(); };
+
+      function pnlRenderPrehlad() {
+        var box = $("pnlPrehladList"); if (!box) return;
+        var q = ($("pnlHladaj") ? $("pnlHladaj").value : "").toUpperCase().trim();
+        var data = pnlVRegali;
+        if (q) {
+          data = data.filter(function (r) {
+            return [r.sku, r.obj_sklad, r.obj_vyroba, r.pozicia, r.nazov].some(function (v) { return String(v || "").toUpperCase().indexOf(q) >= 0; });
+          });
+        }
+        $("pnlPrehladPocet").innerText = data.length;
+        if (!data.length) { box.innerHTML = '<div class="text-center text-slate-400 py-8 font-medium">' + (q ? "Nic sa nenaslo." : "Regal je prazdny.") + '</div>'; return; }
+
+        var skupiny = {};
+        data.forEach(function (r) { (skupiny[r.pozicia] = skupiny[r.pozicia] || []).push(r); });
+        var pozicie = Object.keys(skupiny).sort(function (a, b) { return Number(a) - Number(b); });
+
+        box.innerHTML = pozicie.map(function (p) {
+          var rows = skupiny[p].map(function (r) {
+            var stary = Number(r.dni_v_regali) >= 14;
+            return '<div class="flex justify-between items-start gap-2 py-2 border-t border-slate-100 first:border-0">' +
+              '<div class="min-w-0 flex-1">' +
+              '<div class="font-bold text-slate-900 text-sm">' + esc(r.sku) + (r.obj_sklad ? ' <span class="text-slate-400 font-normal">/</span> <span class="text-blue-700">' + esc(r.obj_sklad) + '</span>' : '') + '</div>' +
+              (r.nazov ? '<div class="text-xs text-slate-500 truncate">' + esc(r.nazov) + '</div>' : '') +
+              '<div class="text-[11px] ' + (stary ? "text-red-600 font-bold" : "text-slate-400") + '">' + esc(r.dni_v_regali) + ' dni v regali' + (stary ? ' - skontroluj!' : '') + '</div>' +
+              '</div>' +
+              '<div class="flex gap-1 shrink-0">' +
+              '<button onclick="pnlVydaj(' + r.id + ')" title="Vydane na strihanie" class="px-2 py-1 bg-green-600 text-white rounded-lg text-xs font-bold tap-feedback">VYDANE</button>' +
+              '<button onclick="pnlZmaz(' + r.id + ')" title="Zmazat zaznam" class="px-2 py-1 bg-slate-100 text-slate-500 rounded-lg tap-feedback"><span class="material-icons text-sm">delete</span></button>' +
+              '</div></div>';
+          }).join("");
+          return '<div class="bg-white rounded-xl border border-slate-200 shadow-sm mb-2 overflow-hidden">' +
+            '<div class="bg-slate-800 text-white px-3 py-2 flex justify-between items-center">' +
+            '<span class="font-black text-lg">Regal ' + esc(p) + '</span>' +
+            '<span class="text-xs bg-white/20 px-2 py-1 rounded-lg font-bold">' + skupiny[p].length + ' ks</span></div>' +
+            '<div class="p-3">' + rows + '</div></div>';
+        }).join("");
+      }
+
+      window.pnlVydaj = async function (id) {
+        try {
+          await sbFetch("panely?id=eq." + id, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ vydane: new Date().toISOString() }) });
+          beep("success"); updateLastAction("Panel vydany na strihanie");
+          pnlNacitaj();
+        } catch (e) { beep("error"); showCustomAlert("Chyba", e.message); }
+      };
+
+      window.pnlZmaz = async function (id) {
+        if (!(await showCustomConfirm("Zmazat zaznam?", "Pouzi len pri preklepe. Ak panel odisiel na strihanie, klikni radsej VYDANE - zostane v historii."))) return;
+        try {
+          await sbFetch("panely?id=eq." + id, { method: "DELETE", headers: { Prefer: "return=minimal" } });
+          beep("success"); pnlNacitaj();
+        } catch (e) { beep("error"); showCustomAlert("Chyba", e.message); }
+      };
+
+      // ---------- prepinanie podzalozek ----------
+      window.pnlTab = function (ktora) {
+        var a = ktora === "prijem";
+        $("pnlPanePrijem").classList.toggle("hidden", !a);
+        $("pnlPanePrehlad").classList.toggle("hidden", a);
+        $("pnlTabPrijem").classList.toggle("bg-slate-800", a);
+        $("pnlTabPrijem").classList.toggle("text-white", a);
+        $("pnlTabPrehlad").classList.toggle("bg-slate-800", !a);
+        $("pnlTabPrehlad").classList.toggle("text-white", !a);
+        if (!a) pnlNacitaj(); else stopCamera();
+      };
+
+      window.pnlInit = function () { pnlRenderNove(); pnlNacitaj(); };
+    })();
+  </script>
+
 </body>
 </html>
 
