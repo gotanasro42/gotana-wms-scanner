@@ -2834,8 +2834,8 @@
         }
         wrap.classList.remove('flex');
         wrap.classList.add('grid','grid-cols-6');
-        var siroke = {'tab-scan':'col-span-3','tab-db':'col-span-3',
-                      'tab-vzor':'col-span-2','tab-stat':'col-span-2','tab-trh':'col-span-2'};
+        var siroke = {'tab-scan':'col-span-2','tab-db':'col-span-2','tab-vzor':'col-span-2',
+                      'tab-panely':'col-span-2','tab-stat':'col-span-2','tab-trh':'col-span-2'};
         Object.keys(siroke).forEach(function(id){
           var e = document.getElementById(id);
           if(e) e.classList.add(siroke[id]);
@@ -2849,9 +2849,14 @@
           t.innerHTML = '<span class="material-icons">storefront<\/span> Trh';
           wrap.appendChild(t);
         }
-        ['tab-scan','tab-db','tab-vzor','tab-stat','tab-trh'].forEach(function(id){
+        ['tab-scan','tab-db','tab-vzor','tab-panely','tab-stat','tab-trh'].forEach(function(id){
           var e = document.getElementById(id);
-          if(e){ e.classList.remove('py-4'); e.classList.add('py-2'); }
+          if(e){
+            e.classList.remove('py-4','text-sm','tracking-widest','gap-2');
+            e.classList.add('py-2','text-[11px]','tracking-normal','gap-1','whitespace-nowrap');
+            var ik = e.querySelector('.material-icons');
+            if(ik) ik.style.fontSize = '18px';
+          }
         });
       }catch(e){ console.warn('Navigacia statistiky:', e); }
     }
