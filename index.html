@@ -2922,7 +2922,7 @@
         if(document.getElementById('appky-lista')) return;
         var st = document.createElement('style');
         st.textContent = '#appky-lista{position:fixed;bottom:0;left:0;right:0;z-index:60;' +
-          'background:#14213D;display:grid;grid-template-columns:repeat(3,1fr);' +
+          'background:#14213D;display:grid;grid-template-columns:repeat(2,1fr);' +
           'padding-bottom:env(safe-area-inset-bottom)}' +
           '#appky-lista a,#appky-lista span{display:flex;align-items:center;justify-content:center;' +
           'gap:5px;min-height:42px;text-decoration:none;color:#9FB0CE;font-size:10px;' +
@@ -2935,8 +2935,7 @@
         d.id = 'appky-lista';
         d.innerHTML =
           '<span class="tu"><i class="material-icons">qr_code_scanner<\/i>SKLAD<\/span>' +
-          '<a href="statistiky.html"><i class="material-icons">insights<\/i>ŠTATISTIKY<\/a>' +
-          '<a href="trhovisko.html"><i class="material-icons">storefront<\/i>TRH<\/a>';
+          '<a href="statistiky.html"><i class="material-icons">insights<\/i>ŠTATISTIKY<\/a>';
         document.body.appendChild(d);
       }catch(e){ console.warn('Spodna lista:', e); }
     }
