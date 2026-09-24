@@ -296,10 +296,12 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .spolu .pozn{font-size:10px;color:var(--sedy);margin-top:7px}
 
 /* ---------- 7-dňový graf ---------- */
-.graf7{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;align-items:end;height:118px;padding-top:2px}
-.graf7 .st{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
-.graf7 .hodn{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;margin-bottom:2px;white-space:nowrap}
-.graf7 .stlp{width:100%;background:var(--atrament-svetly);border-radius:3px 3px 0 0;min-height:2px}
+.graf7{display:grid;gap:3px;height:140px}
+.graf7 .st{display:grid;grid-template-rows:1fr auto;height:100%;min-width:0}
+.graf7 .plocha{position:relative}
+.graf7 .vnutro{position:absolute;left:0;right:0;bottom:0;top:15px}
+.graf7 .hodn{position:absolute;left:-2px;right:-2px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;white-space:nowrap;line-height:1;margin-bottom:2px}
+.graf7 .stlp{position:absolute;left:0;right:0;bottom:0;background:var(--atrament-svetly);border-radius:3px 3px 0 0;min-height:2px}
 .graf7 .st.vybr .stlp{background:var(--safran)}
 .graf7 .st.ciastocny .stlp{background:repeating-linear-gradient(135deg,var(--safran) 0 5px,#F3C77F 5px 10px)}
 .graf7 .den{font-size:9.5px;color:var(--sedy);margin-top:3px;font-family:'IBM Plex Mono',monospace;text-align:center;line-height:1.2;white-space:nowrap}
@@ -552,7 +554,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 
   <!-- KRAJINY -->
   <section class="sekcia" id="s-odbyt">
-    <h2>Krajiny <span style="text-transform:none;letter-spacing:0;font-weight:500">· klikni na krajinu pre 7 dní</span></h2>
+    <h2>Krajiny <span style="text-transform:none;letter-spacing:0;font-weight:500">· klikni na krajinu pre 10 dní</span></h2>
     <div id="krajiny"></div>
   </section>
 
@@ -755,7 +757,7 @@ function vykresliTrend(){
   const jedenDen = obdobie.od === obdobie.do;
   $('#trendObal').style.display = jedenDen ? 'none' : '';
   $('#graf7Prehlad').style.display = jedenDen ? '' : 'none';
-  $('#trendNadpis').textContent = jedenDen ? 'Posledných 7 dní · objednávky' : 'Denný priebeh';
+  $('#trendNadpis').textContent = jedenDen ? `Posledných ${POCET_DNI} dní · objednávky` : 'Denný priebeh';
   if(jedenDen){ vykresli7Prehlad(); return; }
   const t = data.trend || [];
   const ciel = $('#trend');
@@ -965,14 +967,15 @@ function vykresliSpolu(s, i){
 
 /* ---- 7 dní: spolu aj po krajinách ---- */
 let sedem = null, sedemPre = null, otvoreneKrajiny = new Set();
+const POCET_DNI = 10;
 
 async function nacitaj7(){
   const pre = obdobie.do;
   try{
-    const r = await fetch(`${URL_SUP}/rest/v1/rpc/dash_7dni`,{
+    const r = await fetch(`${URL_SUP}/rest/v1/rpc/dash_dni`,{
       method:'POST',
       headers:{'Content-Type':'application/json', apikey:KLUC, Authorization:'Bearer '+KLUC},
-      body: JSON.stringify({p_do: pre})
+      body: JSON.stringify({p_do: pre, p_dni: POCET_DNI})
     });
     if(!r.ok) throw new Error(r.status);
     const d = await r.json();
@@ -989,15 +992,17 @@ function popisDna(iso){
 }
 
 function graf7(dni, jeDnes){
-  if(!dni || !dni.length) return '<div class="prazdne">Údaje za 7 dní nie sú k dispozícii.</div>';
+  if(!dni || !dni.length) return '<div class="prazdne">Údaje za posledné dni nie sú k dispozícii.</div>';
   const max = Math.max(...dni.map(x => Number(x.obj)||0), 1);
-  return '<div class="graf7">' + dni.map((x, idx) => {
+  return `<div class="graf7" style="grid-template-columns:repeat(${dni.length},1fr)">` + dni.map((x, idx) => {
     const posl = idx === dni.length - 1;
-    const v = Math.max(1.5, (Number(x.obj)||0) / max * 100);
+    const v = (Number(x.obj)||0) > 0 ? Math.max(2, (Number(x.obj)||0) / max * 100) : 0;
     const tr = 'st' + (posl ? ' vybr' : '') + (posl && jeDnes ? ' ciastocny' : '');
     return `<div class="${tr}" title="${cis(x.metre,1)} m · ${cis(x.kusy)} ks">
-      <div class="hodn">${cis(x.obj)}</div>
-      <div class="stlp" style="height:${v.toFixed(1)}%"></div>
+      <div class="plocha"><div class="vnutro">
+        <div class="stlp" style="height:${v.toFixed(1)}%"></div>
+        <div class="hodn" style="bottom:${v.toFixed(1)}%">${cis(x.obj)}</div>
+      </div></div>
       <div class="den">${popisDna(x.den)}</div>
     </div>`;
   }).join('') + '</div>';
@@ -1010,7 +1015,7 @@ function porovnanie(dni, jeDnes, cas){
   const teraz = Number(posl.obj)||0;
   const priem = pred.reduce((a,x) => a + (Number(x[kluc])||0), 0) / pred.length;
   const kedy = jeDnes ? `Dnes do ${cas}` : new Date(posl.den+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric'});
-  const porovTxt = jeDnes ? `bežne do ${cas} priemerne` : 'priemer predošlých 6 dní';
+  const porovTxt = jeDnes ? `bežne do ${cas} priemerne (${pred.length} dní)` : `priemer predošlých ${pred.length} dní`;
   let zmena = '';
   if(priem > 0){
     const pct = Math.round((teraz - priem) / priem * 100);
@@ -1043,7 +1048,7 @@ function vykresliKrajiny(){
       rozbal = `<div class="rozbal">${
         !ok7 ? '<div class="kostra"></div>'
         : (dni ? graf7(dni, sedem.jeDnes) + porovnanie(dni, sedem.jeDnes, sedem.cas)
-               : '<div class="prazdne">Za posledných 7 dní žiadne objednávky.</div>')}</div>`;
+               : `<div class="prazdne">Za posledných ${POCET_DNI} dní žiadne objednávky.</div>`)}</div>`;
     }
     return `<div class="riadok klik${otv ? ' otvor' : ''}" data-kr="${esc(x.krajina)}" role="button" tabindex="0" style="--w:${sirka}%">
       <div class="nazov">${esc(vlajka(x.krajina) + '  ' + (KRAJINY[x.krajina] || x.krajina))}</div>
