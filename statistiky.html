@@ -259,6 +259,68 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 @keyframes puls{0%,100%{opacity:1}50%{opacity:.5}}
 .prazdne{color:var(--sedy);font-size:13px;padding:18px 0;text-align:center}
 :focus-visible{outline:2px solid var(--safran);outline-offset:2px}
+
+/* ---------- Tlačidlo Obnoviť ---------- */
+.znacka{align-items:center}
+.stav-syn{margin-left:auto}
+.obnov{
+  flex:0 0 auto;background:rgba(250,247,242,.14);border:0;color:#FAF7F2;
+  padding:4px 9px;border-radius:6px;font-size:10.5px;font-weight:600;cursor:pointer;
+  font-family:inherit;letter-spacing:.04em;white-space:nowrap;line-height:1.3;
+  display:inline-flex;align-items:center;gap:4px;
+}
+.obnov:disabled{opacity:.75;cursor:default}
+.obnov .ik{display:inline-block;font-size:12px;line-height:1}
+.obnov.bezi .ik{animation:tocenie 1s linear infinite}
+@keyframes tocenie{to{transform:rotate(360deg)}}
+.stav-syn.stare{color:#F0B4B6}
+.hlaska{
+  position:fixed;left:50%;bottom:calc(104px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  z-index:120;background:var(--atrament);color:var(--platno);padding:9px 14px;border-radius:9px;
+  font-size:12.5px;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:92vw;display:none;
+}
+.hlaska.zobraz{display:block}
+
+/* ---------- Všetky objednávky spolu ---------- */
+.spolu{background:#fff;border:1px solid var(--linka);border-radius:10px;padding:9px 9px 10px;margin-bottom:6px}
+.spolu-hlava{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px}
+.spolu-hlava .t{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sedy);font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700}
+.spolu-hlava b{font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;letter-spacing:-.03em}
+.pruh3{display:flex;height:9px;border-radius:5px;overflow:hidden;background:var(--platno-tmavsi);margin-bottom:8px}
+.pruh3 i{display:block;height:100%}
+.f-predaj{background:var(--atrament)} .f-ceka{background:var(--safran)} .f-storno{background:var(--tehla)}
+.spolu .mriezka{grid-template-columns:repeat(3,1fr)}
+.karta.l-ceka{border-left:4px solid var(--safran)}
+.karta.l-storno{border-left:4px solid var(--tehla)}
+.spolu .karta.zvyraznena{border-left:4px solid var(--atrament)}
+.spolu .pozn{font-size:10px;color:var(--sedy);margin-top:7px}
+
+/* ---------- 7-dňový graf ---------- */
+.graf7{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;align-items:end;height:118px;padding-top:2px}
+.graf7 .st{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.graf7 .hodn{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;margin-bottom:2px;white-space:nowrap}
+.graf7 .stlp{width:100%;background:var(--atrament-svetly);border-radius:3px 3px 0 0;min-height:2px}
+.graf7 .st.vybr .stlp{background:var(--safran)}
+.graf7 .st.ciastocny .stlp{background:repeating-linear-gradient(135deg,var(--safran) 0 5px,#F3C77F 5px 10px)}
+.graf7 .den{font-size:9.5px;color:var(--sedy);margin-top:3px;font-family:'IBM Plex Mono',monospace;text-align:center;line-height:1.2;white-space:nowrap}
+.graf7 .st.vybr .den{color:var(--atrament);font-weight:600}
+.porov{font-size:12px;margin-top:8px;padding:7px 9px;background:var(--platno-tmavsi);border-radius:7px;line-height:1.4}
+.porov b{font-family:'IBM Plex Mono',monospace}
+.hore{color:var(--mach);font-weight:700} .dole{color:var(--tehla);font-weight:700}
+
+/* ---------- Krajiny: rozbaľovanie ---------- */
+.riadok.klik{cursor:pointer}
+.riadok.klik .nazov::after{content:' ›';color:var(--safran);font-weight:700}
+.riadok.klik.otvor .nazov::after{content:' ⌄'}
+.rozbal{padding:8px 6px 12px;border-bottom:1px solid var(--linka);background:#fff}
+
+@media (max-width:420px){
+  .obnov .tx{display:none}
+  .obnov{padding:4px 7px}
+  .stav-syn .slovo{display:none}
+}
+.stav-syn{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.znacka h1{white-space:nowrap}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (min-width:640px){
   body{max-width:720px;margin:0 auto;box-shadow:0 0 0 1px var(--linka)}
@@ -405,6 +467,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
   <div class="znacka">
     <h1>Gotana · Štatistiky</h1>
     <span class="stav-syn" id="stavSyn"></span>
+    <button class="obnov" id="obnov" type="button" title="Stiahnuť najnovšie objednávky"><span class="ik">↻</span><span class="tx">Obnoviť</span></button>
   </div>
   <div class="obdobia" id="obdobia">
     <button class="chip" data-o="dnes">Dnes</button>
@@ -444,21 +507,31 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
   <!-- PREHĽAD -->
   <section class="sekcia aktivna" id="s-prehlad">
     <h2>Súhrn obdobia</h2>
+    <div class="spolu">
+      <div class="spolu-hlava"><span class="t">Všetky objednávky</span><b id="kVsetky">—</b></div>
+      <div class="pruh3" id="pruh3"></div>
+      <div class="mriezka">
+        <div class="karta zvyraznena"><div class="hod cislo" id="kObj">—</div><div class="pop">Predaných</div></div>
+        <div class="karta l-ceka"><div class="hod cislo" id="kCaka">—</div><div class="pop">Čaká na platbu</div></div>
+        <div class="karta l-storno"><div class="hod cislo zle" id="kStorno">—</div><div class="pop">Stornovaných</div></div>
+      </div>
+      <div class="pozn">Metre, kusy a ostatné čísla nižšie sú len z predaných objednávok.</div>
+    </div>
     <div class="mriezka">
-      <div class="karta zvyraznena"><div class="hod cislo" id="kObj">—</div><div class="pop">Objednávok</div></div>
       <div class="karta"><div class="hod cislo" id="kKusy">—</div><div class="pop">Kusov</div></div>
       <div class="karta"><div class="hod cislo" id="kPol">—</div><div class="pop">Položiek</div></div>
       <div class="karta"><div class="hod cislo" id="kMetreObj">—</div><div class="pop">Metrov / obj.</div></div>
       <div class="karta"><div class="hod cislo" id="kPolObj">—</div><div class="pop">Položiek / obj.</div></div>
       <div class="karta"><div class="hod cislo" id="kKrajin">—</div><div class="pop">Krajín</div></div>
       <div class="karta"><div class="hod cislo" id="kHmot">—</div><div class="pop">Kg (orient.)</div></div>
-      <div class="karta"><div class="hod cislo zle" id="kStorno">—</div><div class="pop">Stornovaných</div></div>
-      <div class="karta"><div class="hod cislo" id="kCaka">—</div><div class="pop">Čaká na platbu</div></div>
     </div>
 
-    <h2>Denný priebeh</h2>
-    <div class="trend" id="trend"></div>
-    <div class="trend-popis"><span id="trendOd"></span><span id="trendDo"></span></div>
+    <h2 id="trendNadpis">Denný priebeh</h2>
+    <div id="graf7Prehlad"></div>
+    <div id="trendObal">
+      <div class="trend" id="trend"></div>
+      <div class="trend-popis"><span id="trendOd"></span><span id="trendDo"></span></div>
+    </div>
 
     <h2>Rekordy obdobia</h2>
     <div id="extremy"></div>
@@ -479,7 +552,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 
   <!-- KRAJINY -->
   <section class="sekcia" id="s-odbyt">
-    <h2>Krajiny</h2>
+    <h2>Krajiny <span style="text-transform:none;letter-spacing:0;font-weight:500">· klikni na krajinu pre 7 dní</span></h2>
     <div id="krajiny"></div>
   </section>
 
@@ -515,6 +588,8 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
   <span class="tu"><svg viewBox="0 0 24 24"><path d="M3 13h6V3H3zM15 21h6V11h-6zM3 21h6v-5H3zM15 8h6V3h-6z"/></svg>ŠTATISTIKY</span>
   <a href="trhovisko.html"><svg viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9M9 13h6"/></svg>TRH</a>
 </div>
+
+<div class="hlaska" id="hlaska"></div>
 
 <div class="zaclona" id="zaclona">
   <div class="okno" role="dialog" aria-modal="true" aria-labelledby="oknoCislo">
@@ -598,6 +673,7 @@ async function nacitaj(){
     data = await r.json();
     vykresli();
     nacitajTop3();
+    nacitaj7();
   }catch(e){
     $('#hlavnaHodnota').textContent = '—';
     dl.forEach(s => { const el = $(s); if (el) el.innerHTML = ''; });
@@ -676,6 +752,11 @@ function vykresliProdukty(){
 }
 
 function vykresliTrend(){
+  const jedenDen = obdobie.od === obdobie.do;
+  $('#trendObal').style.display = jedenDen ? 'none' : '';
+  $('#graf7Prehlad').style.display = jedenDen ? '' : 'none';
+  $('#trendNadpis').textContent = jedenDen ? 'Posledných 7 dní · objednávky' : 'Denný priebeh';
+  if(jedenDen){ vykresli7Prehlad(); return; }
   const t = data.trend || [];
   const ciel = $('#trend');
   if(!t.length){ ciel.innerHTML=''; $('#trendOd').textContent=''; $('#trendDo').textContent=''; return; }
@@ -826,6 +907,7 @@ function vykresli(){
   $('#kHmot').textContent = cis(s.hmotnost,1);
   $('#kStorno').textContent = cis(i.storno);
   $('#kCaka').textContent = cis(i.ceka);
+  vykresliSpolu(s, i);
   $('#kVydajne').textContent = cis(s.vydajne);
   $('#kNaAdresu').textContent = cis((s.objednavok||0)-(s.vydajne||0));
 
@@ -835,13 +917,25 @@ function vykresli(){
   vykresliPracoviska();
 
   riadky(data.velkosti, '#velkosti', x => x.pasmo, x => x.obj);
-  riadky(data.krajiny, '#krajiny',
-    x => vlajka(x.krajina) + '  ' + (KRAJINY[x.krajina] || x.krajina),
-    x => x.obj,
-    x => `${cis(x.metre,1)} m · ${cis(x.kusy)} ks`);
+  vykresliKrajiny();
 }
 
 async function stavPrenosu(){
+  try{
+    const si = await rpc('dash_sync_info');
+    if(si && si.posledny_beh){
+      const t = new Date(si.posledny_beh);
+      const minut = Math.round((Date.now() - t.getTime())/60000);
+      const el = $('#stavSyn');
+      const kedy = minut < 60*20
+        ? t.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})
+        : t.toLocaleDateString('sk-SK',{day:'numeric',month:'numeric'});
+      el.innerHTML = `<span class="slovo">obnovené </span>${kedy}`;
+      el.title = `Objednávky stiahnuté z Magenta pred ${minut} min`;
+      el.classList.toggle('stare', minut > 90);
+      return;
+    }
+  }catch(_e){}
   try{
     const r = await fetch(`${URL_SUP}/rest/v1/objednavky?select=vytvorena&order=vytvorena.desc&limit=1`,
       {headers:{apikey:KLUC, Authorization:'Bearer '+KLUC}});
@@ -856,6 +950,165 @@ async function stavPrenosu(){
     $('#stavSyn').textContent = popis;
   }catch(_e){}
 }
+
+
+/* ---- Všetky objednávky spolu ---- */
+function vykresliSpolu(s, i){
+  const p = Number(s.objednavok)||0, c = Number(i.ceka)||0, st = Number(i.storno)||0;
+  const sp = p + c + st;
+  $('#kVsetky').textContent = cis(sp);
+  const w = x => sp ? (x/sp*100).toFixed(2) : 0;
+  $('#pruh3').innerHTML = sp
+    ? `<i class="f-predaj" style="width:${w(p)}%" title="Predané ${p}"></i><i class="f-ceka" style="width:${w(c)}%" title="Čaká na platbu ${c}"></i><i class="f-storno" style="width:${w(st)}%" title="Storno ${st}"></i>`
+    : '';
+}
+
+/* ---- 7 dní: spolu aj po krajinách ---- */
+let sedem = null, sedemPre = null, otvoreneKrajiny = new Set();
+
+async function nacitaj7(){
+  const pre = obdobie.do;
+  try{
+    const r = await fetch(`${URL_SUP}/rest/v1/rpc/dash_7dni`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json', apikey:KLUC, Authorization:'Bearer '+KLUC},
+      body: JSON.stringify({p_do: pre})
+    });
+    if(!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    if(pre !== obdobie.do) return;
+    sedem = d; sedemPre = pre;
+  }catch(_e){ sedem = null; sedemPre = null; }
+  if(data){ if(obdobie.od === obdobie.do) vykresli7Prehlad(); vykresliKrajiny(); }
+}
+
+function popisDna(iso){
+  const d = new Date(iso + 'T12:00');
+  const nazov = d.toLocaleDateString('sk-SK',{weekday:'short'}).replace('.','');
+  return `${nazov}<br>${d.getDate()}.${d.getMonth()+1}.`;
+}
+
+function graf7(dni, jeDnes){
+  if(!dni || !dni.length) return '<div class="prazdne">Údaje za 7 dní nie sú k dispozícii.</div>';
+  const max = Math.max(...dni.map(x => Number(x.obj)||0), 1);
+  return '<div class="graf7">' + dni.map((x, idx) => {
+    const posl = idx === dni.length - 1;
+    const v = Math.max(1.5, (Number(x.obj)||0) / max * 100);
+    const tr = 'st' + (posl ? ' vybr' : '') + (posl && jeDnes ? ' ciastocny' : '');
+    return `<div class="${tr}" title="${cis(x.metre,1)} m · ${cis(x.kusy)} ks">
+      <div class="hodn">${cis(x.obj)}</div>
+      <div class="stlp" style="height:${v.toFixed(1)}%"></div>
+      <div class="den">${popisDna(x.den)}</div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+function porovnanie(dni, jeDnes, cas){
+  if(!dni || dni.length < 2) return '';
+  const posl = dni[dni.length-1], pred = dni.slice(0, -1);
+  const kluc = jeDnes ? 'objTeraz' : 'obj';
+  const teraz = Number(posl.obj)||0;
+  const priem = pred.reduce((a,x) => a + (Number(x[kluc])||0), 0) / pred.length;
+  const kedy = jeDnes ? `Dnes do ${cas}` : new Date(posl.den+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric'});
+  const porovTxt = jeDnes ? `bežne do ${cas} priemerne` : 'priemer predošlých 6 dní';
+  let zmena = '';
+  if(priem > 0){
+    const pct = Math.round((teraz - priem) / priem * 100);
+    zmena = pct >= 0 ? ` <span class="hore">↑ +${pct} %</span>` : ` <span class="dole">↓ ${pct} %</span>`;
+  }
+  const m = `${cis(posl.metre,1)} m · ${cis(posl.kusy)} ks`;
+  return `<div class="porov">${kedy}: <b>${cis(teraz)}</b> obj. (${m})<br>${porovTxt}: <b>${cis(priem, priem < 10 ? 1 : 0)}</b> obj.${zmena}</div>`;
+}
+
+function vykresli7Prehlad(){
+  const ciel = $('#graf7Prehlad');
+  if(!sedem || sedemPre !== obdobie.do){ ciel.innerHTML = '<div class="kostra"></div>'; return; }
+  ciel.innerHTML = graf7(sedem.spolu, sedem.jeDnes) + porovnanie(sedem.spolu, sedem.jeDnes, sedem.cas);
+}
+
+function vykresliKrajiny(){
+  const pole = data && data.krajiny;
+  const ciel = $('#krajiny');
+  if(!ciel) return;
+  if(!pole || !pole.length){ ciel.innerHTML = '<div class="prazdne">Za toto obdobie zatiaľ nič.</div>'; return; }
+  const max = Math.max(...pole.map(x => Number(x.obj)||0), 1);
+  const ok7 = sedem && sedemPre === obdobie.do;
+  ciel.innerHTML = pole.map(x => {
+    const h = Number(x.obj)||0;
+    const sirka = Math.max(1,(h/max)*100).toFixed(1);
+    const otv = otvoreneKrajiny.has(x.krajina);
+    let rozbal = '';
+    if(otv){
+      const dni = ok7 ? sedem.krajiny[x.krajina] : null;
+      rozbal = `<div class="rozbal">${
+        !ok7 ? '<div class="kostra"></div>'
+        : (dni ? graf7(dni, sedem.jeDnes) + porovnanie(dni, sedem.jeDnes, sedem.cas)
+               : '<div class="prazdne">Za posledných 7 dní žiadne objednávky.</div>')}</div>`;
+    }
+    return `<div class="riadok klik${otv ? ' otvor' : ''}" data-kr="${esc(x.krajina)}" role="button" tabindex="0" style="--w:${sirka}%">
+      <div class="nazov">${esc(vlajka(x.krajina) + '  ' + (KRAJINY[x.krajina] || x.krajina))}</div>
+      <div class="hod cislo">${cis(h)}</div>
+      <div class="detail">${esc(`${cis(x.metre,1)} m · ${cis(x.kusy)} ks`)}</div>
+    </div>${rozbal}`;
+  }).join('');
+}
+
+function prepniKrajinu(kr){
+  if(!kr) return;
+  if(otvoreneKrajiny.has(kr)) otvoreneKrajiny.delete(kr); else otvoreneKrajiny.add(kr);
+  vykresliKrajiny();
+}
+$('#krajiny').addEventListener('click', e => {
+  const r = e.target.closest('.riadok.klik'); if(r) prepniKrajinu(r.dataset.kr);
+});
+$('#krajiny').addEventListener('keydown', e => {
+  if(e.key !== 'Enter' && e.key !== ' ') return;
+  const r = e.target.closest('.riadok.klik'); if(r){ e.preventDefault(); prepniKrajinu(r.dataset.kr); }
+});
+
+/* ---- Tlačidlo Obnoviť ---- */
+function hlaska(t, ms=3500){
+  const h = $('#hlaska'); h.textContent = t; h.classList.add('zobraz');
+  clearTimeout(hlaska._t); hlaska._t = setTimeout(() => h.classList.remove('zobraz'), ms);
+}
+async function rpc(meno, telo){
+  const r = await fetch(`${URL_SUP}/rest/v1/rpc/${meno}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json', apikey:KLUC, Authorization:'Bearer '+KLUC},
+    body: JSON.stringify(telo || {})
+  });
+  if(!r.ok) throw new Error('chyba ' + r.status);
+  return r.json();
+}
+async function obnov(){
+  const b = $('#obnov');
+  if(b.disabled) return;
+  b.disabled = true; b.classList.add('bezi'); b.querySelector('.tx').textContent = 'Sťahujem…';
+  let stiahnute = false;
+  try{
+    const z = await rpc('dash_obnov_zacni');
+    if(z && z.stiahnut){
+      const dnes = new Date(), vcera = new Date(); vcera.setDate(vcera.getDate()-1);
+      const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 110000);
+      try{
+        await fetch(`${URL_SUP}/functions/v1/sync-objednavky`,{
+          method:'POST', signal: ctrl.signal,
+          headers:{'Content-Type':'application/json', apikey:KLUC, Authorization:'Bearer '+KLUC},
+          body: JSON.stringify({od: den(vcera), do: den(dnes), maxSekund: 60, reset: true})
+        });
+        stiahnute = true;
+      } finally { clearTimeout(t); }
+    }
+    b.querySelector('.tx').textContent = 'Počítam…';
+    await rpc('dash_obnov_dokonci');
+    hlaska(stiahnute ? 'Hotovo — objednávky sú aktuálne.' : 'Dáta boli stiahnuté pred chvíľou, zobrazujem najnovší stav.');
+  }catch(e){
+    hlaska('Obnovenie sa nepodarilo. Skús to o chvíľu znova.', 5000);
+  }
+  b.disabled = false; b.classList.remove('bezi'); b.querySelector('.tx').textContent = 'Obnoviť';
+  nacitaj(); stavPrenosu();
+}
+$('#obnov').addEventListener('click', obnov);
 
 /* ---- Ovládanie ---- */
 $('#obdobia').addEventListener('click', e => {
