@@ -389,20 +389,20 @@
       <div id="view-db" class="hidden">
           <!-- Zmenšené vyhľadávacie polia -->
           <div class="sticky z-40 bg-slate-100 pb-2 -mx-4 px-4 shadow-sm" style="top:var(--hlavicka,120px)" style="margin-top: -1rem; padding-top: 1rem;">
-             <div class="bg-white p-2 rounded-xl shadow-md border border-slate-200 space-y-2">
+             <div class="bg-white p-1.5 rounded-xl shadow-md border border-slate-200 grid grid-cols-2 gap-1.5">
                  <div class="relative">
-                    <input type="text" id="dbSearchCode" autocapitalize="characters" oninput="filterDb()" placeholder="KÓD / LOKÁCIA..." class="w-full pl-8 p-2 text-sm sm:text-base border-2 border-slate-100 rounded-lg focus:outline-none focus:border-blue-500 font-bold uppercase">
+                    <input type="text" id="dbSearchCode" autocapitalize="characters" oninput="filterDb()" placeholder="KÓD / LOKÁCIA" class="w-full pl-8 p-2 text-sm sm:text-base border-2 border-slate-100 rounded-lg focus:outline-none focus:border-blue-500 font-bold uppercase">
                     <span class="material-icons absolute left-2 top-2.5 text-slate-400 text-lg">qr_code_2</span>
                  </div>
                  <div class="relative">
-                    <input type="text" id="dbSearchName" oninput="filterDb()" placeholder="NÁZOV LÁTKY..." class="w-full pl-8 p-2 text-sm sm:text-base border-2 border-slate-100 rounded-lg focus:outline-none focus:border-blue-500 font-bold uppercase">
+                    <input type="text" id="dbSearchName" oninput="filterDb()" placeholder="NÁZOV LÁTKY" class="w-full pl-8 p-2 text-sm sm:text-base border-2 border-slate-100 rounded-lg focus:outline-none focus:border-blue-500 font-bold uppercase">
                     <span class="material-icons absolute left-2 top-2.5 text-slate-400 text-lg">search</span>
                  </div>
              </div>
-             <div id="dbStats" class="flex justify-between items-center mt-2 px-2 text-xs font-bold text-slate-500 uppercase tracking-wide bg-slate-200/50 p-2 rounded-lg"><span>Načítavam...</span></div>
+             <div id="dbStats" class="flex justify-between items-center mt-1.5 px-2 py-1 text-xs font-bold text-slate-500 uppercase tracking-wide bg-slate-200/50 rounded-lg"><span>Načítavam...</span></div>
           </div>
           
-          <div id="dbList" class="space-y-2 mt-4 pb-4"></div>
+          <div id="dbList" class="space-y-2 mt-2 pb-4"></div>
           
           <!-- Presunuté tlačidlá na zálohu a archív (úplne dole) -->
           <div class="flex justify-center gap-4 pb-24 pt-6 border-t border-slate-200">
@@ -1586,11 +1586,11 @@
          if (i.location) {
              locStyle = getColorForLoc(i.location);
              locText = i.location;
-             locClasses = "w-20 sm:w-24 shrink-0 flex items-center justify-center font-black text-center text-sm sm:text-base border-l border-opacity-50 cursor-pointer";
+             locClasses = "w-14 sm:w-24 shrink-0 flex items-center justify-center font-black text-center text-sm sm:text-base border-l border-opacity-50 cursor-pointer";
          } else {
              locStyle = "background-color: #fee2e2; color: #991b1b; border-color: #fca5a5;";
              locText = "NEUSKL.";
-             locClasses = "w-20 sm:w-24 shrink-0 flex items-center justify-center font-bold text-center text-[10px] sm:text-xs border-l cursor-pointer";
+             locClasses = "w-14 sm:w-24 shrink-0 flex items-center justify-center font-bold text-center text-[10px] sm:text-xs border-l cursor-pointer";
          }
 
          const isSelected = selectedIds.has(String(i.id)) ? 'checked' : '';
@@ -1598,21 +1598,25 @@
          const checkHtml = isSelected ? '<span class="material-icons text-sm">check</span>' : '';
 
          let displayTitle = (i.name && i.name.trim() !== "") ? i.name : (dbCatalog[i.sku || getBaseCode(i.id)] || "");
-         // Zmenšené písmo a odstránenie mena pre kompaktnejší vzhľad
-         let titleHtml = `<div class="font-black text-slate-900 text-sm font-mono leading-tight break-words tracking-tight">${i.id}</div>`;
-         let subtitleHtml = (displayTitle && displayTitle !== i.id) ? `<div class="font-bold text-slate-700 text-xs leading-snug mt-0.5">${displayTitle}</div>` : '';
+         // Hustý riadok: kód, názov na 1 riadok, dátum + podpracovisko + zásoba v jednom riadku
+         const bezUv = t => String(t).replace(/"/g,'&quot;');
+         let titleHtml = `<div class="font-black text-slate-900 text-[13px] font-mono leading-tight truncate tracking-tight">${i.id}</div>`;
+         let subtitleHtml = (displayTitle && displayTitle !== i.id) ? `<div class="font-bold text-slate-700 text-xs leading-tight truncate" title="${bezUv(displayTitle)}">${displayTitle}</div>` : '';
+         const datum = (function(){ const d = String(i.date || '').substring(0,10).split('-'); return d.length === 3 ? `${+d[2]}.${+d[1]}.${d[0].slice(2)}` : ''; })();
+         const podprac = dbPodprac[String(i.sku||'').toUpperCase()] || dbPodprac[String(getBaseCode(i.id)||'').toUpperCase()] || '';
+         const nahlad = dbNahlady[i.sku || getBaseCode(i.id)];
 
          return `
-         <div class="${bgClass} rounded-xl shadow-sm border mb-1.5 transition-colors flex overflow-hidden">
+         <div class="${bgClass} rounded-xl shadow-sm border mb-1 transition-colors flex overflow-hidden" style="min-height:58px">
             <div class="flex items-center justify-center px-2 cursor-pointer" onclick="toggleSelection('${i.id}')">
                 <div class="custom-checkbox ${isSelected} item-checkbox" data-id="${i.id}">${checkHtml}</div>
             </div>
-            ${dbNahlady[i.sku || getBaseCode(i.id)] ? `<img src="${dbNahlady[i.sku || getBaseCode(i.id)]}" loading="lazy" class="w-12 h-12 object-cover rounded-lg self-center ml-2 mr-2.5 shrink-0 border border-slate-200 cursor-pointer" onclick="event.stopPropagation(); zobrazVelkyNahlad('${dbNahlady[i.sku || getBaseCode(i.id)]}','${i.id}')" onerror="this.style.display='none'">` : ''}
-            <div class="flex-1 py-1.5 pr-2 active:scale-[0.99] transition-transform cursor-pointer" onclick="openDetailModal('${i.id}')">
+            ${nahlad ? `<img src="${nahlad}" loading="lazy" class="w-11 h-11 object-cover rounded-lg self-center mr-2 shrink-0 border border-slate-200 cursor-pointer" onclick="event.stopPropagation(); zobrazVelkyNahlad('${nahlad}','${i.id}')" onerror="this.style.display='none'">` : ''}
+            <div class="flex-1 min-w-0 py-1 pr-2 active:scale-[0.99] transition-transform cursor-pointer flex flex-col justify-center" onclick="openDetailModal('${i.id}')">
                 ${titleHtml}
                 ${subtitleHtml}
-                <div class="text-[10px] text-slate-400 mt-1 font-medium flex items-center gap-1">
-                    <span class="material-icons text-[10px]">event</span> ${i.date ? i.date.substring(0,10) : ''}${(function podpracoviskoZoznam(){var p=dbPodprac[String(i.sku||'').toUpperCase()]||dbPodprac[String(getBaseCode(i.id)||'').toUpperCase()]||'';return p?'<span class="ml-2 text-indigo-600 font-bold">\u{1F3ED} '+p+'</span>':'';})()}
+                <div class="gt-meta text-[10px] text-slate-400 font-medium flex items-center gap-1.5 whitespace-nowrap overflow-hidden mt-0.5">
+                    <span>${datum}</span>${podprac ? `<span class="text-indigo-600 font-bold">\u{1F3ED} ${podprac}</span>` : ''}
                 </div>
             </div>
             <div style="${locStyle}" class="${locClasses}" onclick="openDetailModal('${i.id}')">
@@ -2471,13 +2475,14 @@
     function vypis(riadok, z){
       try{
         if(riadok.querySelector('.gt-zasoba')) return;
-        var stred = riadok.querySelector('.flex-1');
+        var meta = riadok.querySelector('.gt-meta');
+        var stred = meta || riadok.querySelector('.flex-1');
         if(!stred) return;
-        var d = document.createElement('div');
+        var d = document.createElement(meta ? 'span' : 'div');
         d.className = 'gt-zasoba';
         var ma = z && z.zasoba !== null && z.zasoba !== undefined;
         var kladna = ma && z.zasoba > 0;
-        d.style.cssText = 'font-size:10px;font-weight:700;margin-top:2px;letter-spacing:.02em;color:'
+        d.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:.02em;' + (meta ? '' : 'margin-top:2px;') + 'color:'
           + (kladna ? '#2F6B4F' : '#A63D40');
         d.textContent = ma ? (kladna ? 'skladom ' + cislo(z.zasoba) : 'vypredané') : '';
         if(d.textContent) stred.appendChild(d);
@@ -2853,42 +2858,63 @@
         var vzor = document.getElementById('tab-vzor');
         if(!vzor) return;
         var wrap = vzor.parentNode;
-        if(!document.getElementById('tab-stat')){
+        function novy(id, ikona, text, title, klik){
           var b = document.createElement('button');
-          b.id = 'tab-stat';
-          b.className = vzor.className;
-          b.title = 'Statistiky skladu';
-          b.onclick = function(){ location.href = 'statistiky.html'; };
-          b.innerHTML = '<span class="material-icons">insights<\/span> \u0160tatistiky';
-          wrap.appendChild(b);
+          b.id = id; b.className = vzor.className; b.title = title; b.onclick = klik;
+          b.classList.remove('active');
+          b.innerHTML = '<span class="material-icons">' + ikona + '<\/span> ' + text;
+          return b;
+        }
+        if(!document.getElementById('tab-stat'))
+          wrap.appendChild(novy('tab-stat','insights','\u0160tatistiky','Štatistiky skladu',function(){ location.href = 'statistiky.html'; }));
+        if(!document.getElementById('tab-trh'))
+          wrap.appendChild(novy('tab-trh','storefront','Trh','Trhovisko zamestnancov',function(){ location.href = 'trhovisko.html'; }));
+        if(!document.getElementById('tab-viac')){
+          var v = novy('tab-viac','expand_more','','Ďalšie: Vzor, Panely, Trh',function(){ prepniViac(); });
+          v.setAttribute('aria-expanded','false');
+          wrap.appendChild(v);
         }
         wrap.classList.remove('flex');
-        wrap.classList.add('grid','grid-cols-6');
-        var siroke = {'tab-scan':'col-span-2','tab-db':'col-span-2','tab-vzor':'col-span-2',
-                      'tab-panely':'col-span-2','tab-stat':'col-span-2','tab-trh':'col-span-2'};
-        Object.keys(siroke).forEach(function(id){
+        wrap.classList.add('grid');
+        wrap.style.gridTemplateColumns = 'repeat(3,minmax(0,1fr)) 44px';
+        /* poradie: 3 hlavné + tlačidlo Viac, pod nimi skryté ďalšie */
+        ['tab-scan','tab-db','tab-stat','tab-viac','tab-vzor','tab-panely','tab-trh'].forEach(function(id){
           var e = document.getElementById(id);
-          if(e) e.classList.add(siroke[id]);
+          if(!e) return;
+          wrap.appendChild(e);
+          e.classList.remove('py-4','text-sm','tracking-widest','gap-2','flex-1','col-span-2');
+          e.classList.add('py-2','text-[11px]','tracking-normal','gap-1','whitespace-nowrap');
+          var ik = e.querySelector('.material-icons');
+          if(ik) ik.style.fontSize = id === 'tab-viac' ? '22px' : '18px';
         });
-        if(!document.getElementById('tab-trh')){
-          var t = document.createElement('button');
-          t.id = 'tab-trh';
-          t.className = vzor.className;
-          t.title = 'Trhovisko zamestnancov';
-          t.onclick = function(){ location.href = 'trhovisko.html'; };
-          t.innerHTML = '<span class="material-icons">storefront<\/span> Trh';
-          wrap.appendChild(t);
+        ['tab-vzor','tab-panely','tab-trh'].forEach(function(id){
+          var e = document.getElementById(id); if(e) e.classList.add('gt-dalsie');
+        });
+        var viac = document.getElementById('tab-viac');
+        viac.classList.remove('gap-1');
+        viac.style.justifyContent = 'center';
+
+        function nastavViac(otvorit){
+          ['tab-vzor','tab-panely','tab-trh'].forEach(function(id){
+            var e = document.getElementById(id); if(e) e.style.display = otvorit ? '' : 'none';
+          });
+          viac.querySelector('.material-icons').textContent = otvorit ? 'expand_less' : 'expand_more';
+          viac.setAttribute('aria-expanded', otvorit ? 'true' : 'false');
+          viac.style.color = otvorit ? '#fff' : '';
+          try{ localStorage.setItem('gt_nav_viac', otvorit ? '1' : '0'); }catch(_e){}
         }
-        ['tab-scan','tab-db','tab-vzor','tab-panely','tab-stat','tab-trh'].forEach(function(id){
-          var e = document.getElementById(id);
-          if(e){
-            e.classList.remove('py-4','text-sm','tracking-widest','gap-2');
-            e.classList.add('py-2','text-[11px]','tracking-normal','gap-1','whitespace-nowrap');
-            var ik = e.querySelector('.material-icons');
-            if(ik) ik.style.fontSize = '18px';
-          }
-        });
-      }catch(e){ console.warn('Navigacia statistiky:', e); }
+        window.prepniViac = function(){ nastavViac(viac.getAttribute('aria-expanded') !== 'true'); };
+        var ulozene = '0'; try{ ulozene = localStorage.getItem('gt_nav_viac') || '0'; }catch(_e){}
+        nastavViac(ulozene === '1');
+        /* keď sa otvorí Vzor alebo Panely (aj z iného miesta), rozbaľ riadok */
+        if(window.MutationObserver){
+          var mo = new MutationObserver(function(){
+            var akt = ['tab-vzor','tab-panely'].some(function(id){ var e = document.getElementById(id); return e && e.classList.contains('active'); });
+            if(akt && viac.getAttribute('aria-expanded') !== 'true') nastavViac(true);
+          });
+          ['tab-vzor','tab-panely'].forEach(function(id){ var e = document.getElementById(id); if(e) mo.observe(e, {attributes:true, attributeFilter:['class']}); });
+        }
+      }catch(e){ console.warn('Navigacia:', e); }
     }
     /* Spodná lišta na prepínanie medzi časťami aplikácie */
     function pridajSpodnuListu(){
