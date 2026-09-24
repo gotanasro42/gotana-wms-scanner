@@ -481,6 +481,28 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
   else postav();
 })();
 </script>
+<script>
+/* Vlajky krajín aj na Windows (Chrome/Edge ich samy nevedia zobraziť) */
+(function(){
+  try{
+    var f='"Twemoji Mozilla","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji",sans-serif';
+    function vie(t){
+      var c=document.createElement('canvas');c.width=c.height=1;
+      var x=c.getContext('2d',{willReadFrequently:true});
+      x.textBaseline='top';x.font='100px '+f;x.scale(.01,.01);
+      function p(farba){x.clearRect(0,0,100,100);x.fillStyle=farba;x.fillText(t,0,0);return x.getImageData(0,0,1,1).data.join(',');}
+      var a=p('#fff'),b=p('#000');return a===b&&!b.startsWith('0,0,0,');
+    }
+    if(vie('\u{1F60A}')&&vie('\u{1F1E8}\u{1F1ED}')) return;
+    var st=document.createElement('style');
+    st.textContent='@font-face{font-family:"Twemoji Country Flags";unicode-range:U+1F1E6-1F1FF,U+1F3F4,U+E0062-E0063,U+E0065,U+E0067,U+E006C,U+E006E,U+E0073-E0074,U+E0077,U+E007F;'+
+      'src:url("https://cdn.jsdelivr.net/npm/country-flag-emoji-polyfill@0.1/dist/TwemojiCountryFlags.woff2") format("woff2");font-display:swap}'+
+      'body{font-family:"Twemoji Country Flags","IBM Plex Sans",system-ui,-apple-system,sans-serif}'+
+      '.rekord .stitok{font-family:"Twemoji Country Flags","IBM Plex Sans Condensed",sans-serif}';
+    document.head.appendChild(st);
+  }catch(e){}
+})();
+</script>
 </head>
 <body>
 
