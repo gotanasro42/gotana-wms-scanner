@@ -324,6 +324,16 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .riadok.klik .nazov::after{content:' ›';color:var(--safran);font-weight:700}
 .riadok.klik.otvor .nazov::after{content:' ⌄'}
 .rozbal{padding:8px 6px 12px;border-bottom:1px solid var(--linka);background:#fff}
+.odch{font-weight:700;font-family:'IBM Plex Mono',monospace;margin-left:6px}
+.alarm{background:#FBE9E9;border:1px solid var(--tehla);border-left-width:4px;border-radius:9px;padding:10px 12px;margin:0 0 10px;color:#6E2426;font-size:13px;line-height:1.45}
+.alarm b{color:var(--tehla)}
+.mr{background:#fff;border:1px solid var(--linka);border-radius:10px;padding:4px 10px}
+.mr-r{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--platno-tmavsi);font-size:12.5px}
+.mr-r:last-of-type{border-bottom:0}
+.mr-r .c{font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right;white-space:nowrap}
+.mr-r .s{font-family:'IBM Plex Mono',monospace;color:var(--sedy);text-align:right;white-space:nowrap}
+.mr-hl{font-size:9.5px;color:var(--sedy);text-transform:uppercase;letter-spacing:.1em;font-weight:700;font-family:'IBM Plex Sans Condensed',sans-serif}
+.mr-pozn{font-size:10.5px;color:var(--sedy);padding:6px 0 4px}
 
 @media (max-width:420px){
   .obnov .tx{display:none}
@@ -514,6 +524,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 
 <main>
   <div id="chyba"></div>
+  <div id="alarm"></div>
 
   <!-- PREHĽAD -->
   <section class="sekcia aktivna" id="s-prehlad">
@@ -536,6 +547,9 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
       <div class="karta"><div class="hod cislo" id="kKrajin">—</div><div class="pop">Krajín</div></div>
       <div class="karta"><div class="hod cislo" id="kHmot">—</div><div class="pop">Kg (orient.)</div></div>
     </div>
+
+    <h2>Oproti minulému roku</h2>
+    <div id="minulyRok"></div>
 
     <h2 id="trendNadpis">Denný priebeh</h2>
     <div id="graf7Prehlad"></div>
@@ -665,11 +679,17 @@ function nastavObdobie(typ){
   obdobie = {od:den(od), do:den(doD)};
 }
 
-async function nacitaj(){
+let posledneNacitanie = 0;
+async function nacitaj(tiche){
+  posledneNacitanie = Date.now();
   $('#chyba').innerHTML = '';
-  $('#hlavnaHodnota').textContent = '···';
   const dl = ['#velkosti','#krajiny','#topProdukty','#pracoviska','#extremy'];
-  dl.forEach(s => { const e = $(s); if (e) e.innerHTML = '<div class="kostra"></div>'; });
+  if(!tiche){
+    $('#hlavnaHodnota').textContent = '···';
+    dl.forEach(s => { const e = $(s); if (e) e.innerHTML = '<div class="kostra"></div>'; });
+    $('#alarm').innerHTML = '';
+    $('#minulyRok').innerHTML = '<div class="kostra"></div>';
+  }
 
   const format = new Intl.DateTimeFormat('sk-SK',{day:'numeric',month:'long',year:'numeric'});
   const a = format.format(new Date(obdobie.od+'T12:00')), b = format.format(new Date(obdobie.do+'T12:00'));
@@ -690,6 +710,7 @@ async function nacitaj(){
     vykresli();
     nacitajTop3();
     nacitaj7();
+    nacitajMinulyRok();
   }catch(e){
     $('#hlavnaHodnota').textContent = '—';
     dl.forEach(s => { const el = $(s); if (el) el.innerHTML = ''; });
@@ -997,6 +1018,7 @@ async function nacitaj7(){
     sedem = d; sedemPre = pre;
   }catch(_e){ sedem = null; sedemPre = null; }
   if(data){ if(obdobie.od === obdobie.do) vykresli7Prehlad(); vykresliKrajiny(); }
+  vykresliAlarm();
 }
 
 function popisDna(iso){
@@ -1067,7 +1089,8 @@ function vykresliKrajiny(){
     return `<div class="riadok klik${otv ? ' otvor' : ''}" data-kr="${esc(x.krajina)}" role="button" tabindex="0" style="--w:${sirka}%">
       <div class="nazov">${esc(vlajka(x.krajina) + '  ' + (KRAJINY[x.krajina] || x.krajina))}</div>
       <div class="hod cislo">${cis(h)}</div>
-      <div class="detail">${esc(`${cis(x.metre,1)} m · ${cis(x.kusy)} ks`)}</div>
+      <div class="detail">${esc(`${cis(x.metre,1)} m · ${cis(x.kusy)} ks`)}${
+        (ok7 && obdobie.od === obdobie.do) ? znackaZmeny(odchylka(sedem.krajiny[x.krajina], sedem.jeDnes), 3) : ''}</div>
     </div>${rozbal}`;
   }).join('');
 }
@@ -1083,6 +1106,75 @@ $('#krajiny').addEventListener('click', e => {
 $('#krajiny').addEventListener('keydown', e => {
   if(e.key !== 'Enter' && e.key !== ' ') return;
   const r = e.target.closest('.riadok.klik'); if(r){ e.preventDefault(); prepniKrajinu(r.dataset.kr); }
+});
+
+
+/* ---- Odchýlka od bežného stavu ---- */
+function odchylka(dni, jeDnes){
+  if(!dni || dni.length < 2) return null;
+  const posl = dni[dni.length-1], pred = dni.slice(0, -1);
+  const kluc = jeDnes ? 'objTeraz' : 'obj';
+  const priem = pred.reduce((a,x) => a + (Number(x[kluc])||0), 0) / pred.length;
+  const teraz = Number(posl.obj)||0;
+  if(!(priem > 0)) return null;
+  return { teraz, priem, pct: Math.round((teraz - priem) / priem * 100) };
+}
+function znackaZmeny(z, minPriem){
+  if(!z || z.priem < (minPriem||0)) return '';
+  return z.pct >= 0 ? `<span class="odch hore">↑ +${z.pct} %</span>` : `<span class="odch dole">↓ ${z.pct} %</span>`;
+}
+function vykresliAlarm(){
+  const el = $('#alarm');
+  if(!sedem || sedemPre !== obdobie.do || !sedem.jeDnes){ el.innerHTML = ''; return; }
+  const z = odchylka(sedem.spolu, true);
+  if(!z || z.priem < 20 || z.pct > -40){ el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="alarm">⚠ <b>Dnes je o ${Math.abs(z.pct)} % menej objednávok ako bežne.</b><br>
+    Do ${esc(sedem.cas)} prišlo ${cis(z.teraz)} objednávok, v predošlých dňoch do tejto hodiny priemerne ${cis(z.priem,0)}.
+    Oplatí sa skontrolovať web, platby a dopravu.</div>`;
+}
+
+/* ---- Oproti minulému roku ---- */
+let minulyRok = null;
+async function nacitajMinulyRok(){
+  const pre = obdobie.od + '|' + obdobie.do;
+  let d = null;
+  try{ d = await rpc('dash_minuly_rok', {p_od: obdobie.od, p_do: obdobie.do}); }catch(_e){ d = null; }
+  if(pre !== obdobie.od + '|' + obdobie.do) return;
+  minulyRok = d;
+  vykresliMinulyRok();
+}
+function vykresliMinulyRok(){
+  const el = $('#minulyRok');
+  if(!data) return;
+  const m = minulyRok;
+  if(!m){ el.innerHTML = '<div class="prazdne">Za toto obdobie ešte nemáme údaje z minulého roka.</div>'; return; }
+  const s = data.suhrn || {};
+  const f = x => new Date(x+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'numeric'});
+  const obd = m.od === m.do ? f(m.od) : `${f(m.od)} – ${f(m.do)}`;
+  const riadok = (nazov, teraz, vtedy, des) => {
+    const a = Number(teraz)||0, b = Number(vtedy)||0;
+    const z = b > 0 ? znackaZmeny({pct: Math.round((a-b)/b*100), priem: b}) : '';
+    return `<div class="mr-r"><span>${nazov}</span><span class="c">${cis(a,des)}</span><span class="s">${cis(b,des)}</span><span>${z}</span></div>`;
+  };
+  el.innerHTML = `<div class="mr">
+    <div class="mr-r"><span></span><span class="mr-hl">Teraz</span><span class="mr-hl">Minulý rok</span><span></span></div>
+    ${riadok('Predané objednávky', s.objednavok, m.obj, 0)}
+    ${riadok('Metre', s.metre, m.metre, 1)}
+    ${riadok('Kusy', s.kusy, m.kusy, 0)}
+    <div class="mr-pozn">Porovnávam s obdobím ${esc(obd)}${m.jeDnes ? `, pri dnešku do ${esc(m.cas)}` : ''} — o 52 týždňov skôr, aby sedeli dni v týždni.</div>
+  </div>`;
+}
+
+/* ---- Automatické načítanie každých 10 minút ---- */
+function tichaObnova(){
+  if(document.visibilityState !== 'visible') return;
+  if($('#zaclona').classList.contains('zobraz') || $('#obnov').disabled) return;
+  if($('#vlastne').classList.contains('zobraz')) return;
+  nacitaj(true); stavPrenosu();
+}
+setInterval(() => { if(Date.now() - posledneNacitanie >= 10*60*1000) tichaObnova(); }, 60*1000);
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible' && Date.now() - posledneNacitanie >= 10*60*1000) tichaObnova();
 });
 
 /* ---- Tlačidlo Obnoviť ---- */
