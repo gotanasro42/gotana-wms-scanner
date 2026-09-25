@@ -330,6 +330,14 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .odch{font-weight:700;font-family:'IBM Plex Mono',monospace;margin-left:6px}
 .alarm{background:#FBE9E9;border:1px solid var(--tehla);border-left-width:4px;border-radius:9px;padding:10px 12px;margin:0 0 10px;color:#6E2426;font-size:13px;line-height:1.45}
 .alarm b{color:var(--tehla)}
+.alarm.pozor{background:#FDF3E1;border-color:#D98B1F;color:#6B4510}
+.alarm.pozor b{color:#B06A0A}
+.alarm.info{background:#EEF2F8;border-color:#7A8BA8;color:#2B3A55}
+.alarm.info b{color:var(--atrament)}
+.alarm.dobre{background:#E8F3EC;border-color:var(--mach);color:#1F4A34}
+.alarm.dobre b{color:var(--mach)}
+.alarm .dalsie{margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,.08)}
+.alarm .dalsie div{margin-top:2px}
 .mr{background:#fff;border:1px solid var(--linka);border-radius:10px;padding:4px 10px}
 .mr-r{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--platno-tmavsi);font-size:12.5px}
 .mr-r:last-of-type{border-bottom:0}
@@ -994,6 +1002,8 @@ async function stavPrenosu(){
       el.innerHTML = `<span class="slovo">obnovené </span>${kedy}`;
       el.title = `Objednávky stiahnuté z Magenta pred ${minut} min`;
       el.classList.toggle('stare', minut > 90);
+      window.gtSyncMinut = minut;
+      if(typeof vykresliAlarm === 'function') vykresliAlarm();
       return;
     }
   }catch(_e){}
@@ -1147,14 +1157,61 @@ function znackaZmeny(z, minPriem){
   if(!z || z.priem < (minPriem||0)) return '';
   return z.pct >= 0 ? `<span class="odch hore">↑ +${z.pct} %</span>` : `<span class="odch dole">↓ ${z.pct} %</span>`;
 }
+/* ---- Denné hlásenie podľa situácie ---- */
 function vykresliAlarm(){
   const el = $('#alarm');
-  if(!sedem || sedemPre !== obdobie.do || !sedem.jeDnes){ el.innerHTML = ''; return; }
+  if(!el) return;
+  if(!sedem || sedemPre !== obdobie.do || !sedem.jeDnes || !data){ el.innerHTML = ''; return; }
+  const VAHA = {dobre:0, info:1, pozor:2, zle:3};
+  let uroven = 'info';
+  const zvys = u => { if(VAHA[u] > VAHA[uroven]) uroven = u; };
+  const cas = esc(sedem.cas);
   const z = odchylka(sedem.spolu, true);
-  if(!z || z.priem < 20 || z.pct > -40){ el.innerHTML = ''; return; }
-  el.innerHTML = `<div class="alarm">⚠ <b>Dnes je o ${Math.abs(z.pct)} % menej objednávok ako bežne.</b><br>
-    Do ${esc(sedem.cas)} prišlo ${cis(z.teraz)} objednávok, v predošlých dňoch do tejto hodiny priemerne ${cis(z.priem,0)}.
-    Oplatí sa skontrolovať web, platby a dopravu.</div>`;
+  let nadpis, text;
+  const teraz = z ? z.teraz : (Number((sedem.spolu[sedem.spolu.length-1]||{}).obj)||0);
+  if(!z || z.priem < 20){
+    nadpis = 'ℹ Deň sa ešte len rozbieha.';
+    text = `Do ${cas} prišlo ${cis(teraz)} objednávok — na porovnanie s bežným dňom je zatiaľ skoro.`;
+  }else if(z.pct <= -40){
+    uroven = 'zle';
+    nadpis = `⚠ Dnes je o ${Math.abs(z.pct)} % menej objednávok ako bežne.`;
+    text = `Do ${cas} prišlo ${cis(z.teraz)} objednávok, v predošlých dňoch do tejto hodiny priemerne ${cis(z.priem,0)}. Oplatí sa skontrolovať web, platby a dopravu.`;
+  }else if(z.pct <= -15){
+    uroven = 'pozor';
+    nadpis = `▼ Slabší deň: o ${Math.abs(z.pct)} % menej objednávok ako bežne.`;
+    text = `Do ${cas} prišlo ${cis(z.teraz)} objednávok, bežne ${cis(z.priem,0)}.`;
+  }else if(z.pct < 15){
+    uroven = 'info';
+    nadpis = `✓ Deň ide normálne (${z.pct >= 0 ? '+' : ''}${z.pct} %).`;
+    text = `Do ${cas} prišlo ${cis(z.teraz)} objednávok, bežne ${cis(z.priem,0)}.`;
+  }else{
+    uroven = 'dobre';
+    nadpis = `▲ Silný deň: o ${z.pct} % viac objednávok ako bežne.`;
+    text = `Do ${cas} prišlo ${cis(z.teraz)} objednávok, bežne ${cis(z.priem,0)}.`;
+  }
+
+  const dalsie = [];
+  const menoKr = k => `${vlajka(k)} ${KRAJINY[k] || k}`;
+  if(z && z.priem >= 20 && sedem.krajiny){
+    const kr = Object.keys(sedem.krajiny).map(k => ({k, z: odchylka(sedem.krajiny[k], true)}))
+      .filter(x => x.z && x.z.priem >= 5);
+    const slabe = kr.filter(x => x.z.pct <= -50).sort((a,b) => b.z.priem - a.z.priem).slice(0,3);
+    const silne = kr.filter(x => x.z.pct >= 50).sort((a,b) => b.z.priem - a.z.priem).slice(0,3);
+    if(slabe.length){ zvys('pozor'); dalsie.push(`▼ Výrazne slabšie: ${slabe.map(x => `${esc(menoKr(x.k))} ${x.z.pct} %`).join(', ')}.`); }
+    if(silne.length) dalsie.push(`▲ Výrazne lepšie: ${silne.map(x => `${esc(menoKr(x.k))} +${x.z.pct} %`).join(', ')}.`);
+  }
+  if(obdobie.od === obdobie.do && data.inestavy && data.suhrn){
+    const p = Number(data.suhrn.objednavok)||0, c = Number(data.inestavy.ceka)||0, st = Number(data.inestavy.storno)||0;
+    const sp = p + c + st;
+    if(sp > 0 && st >= 5 && st/sp >= 0.12){ zvys('pozor'); dalsie.push(`✕ Veľa storien: ${cis(st)} (${Math.round(st/sp*100)} % zo všetkých objednávok).`); }
+    if(sp > 0 && c >= 10 && c/sp >= 0.3){ zvys('pozor'); dalsie.push(`⏳ Veľa objednávok čaká na platbu: ${cis(c)} (${Math.round(c/sp*100)} %) — skontroluj platobnú bránu.`); }
+  }
+  if(typeof window.gtSyncMinut === 'number' && window.gtSyncMinut > 90){
+    zvys('pozor'); dalsie.push(`↻ Dáta sú staré ${Math.floor(window.gtSyncMinut/60)} h ${window.gtSyncMinut%60} min — stlač Obnoviť.`);
+  }
+
+  el.innerHTML = `<div class="alarm ${uroven}"><b>${nadpis}</b><br>${text}${
+    dalsie.length ? `<div class="dalsie">${dalsie.map(d => `<div>${d}</div>`).join('')}</div>` : ''}</div>`;
 }
 
 /* ---- Oproti minulému roku ---- */
