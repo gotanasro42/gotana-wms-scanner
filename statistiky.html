@@ -315,6 +315,9 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .graf7 .st.ciastocny .stlp{background:repeating-linear-gradient(135deg,var(--safran) 0 5px,#F3C77F 5px 10px)}
 .graf7 .den{font-size:9.5px;color:var(--sedy);margin-top:3px;font-family:'IBM Plex Mono',monospace;text-align:center;line-height:1.2;white-space:nowrap}
 .graf7 .st.vybr .den{color:var(--atrament);font-weight:600}
+.graf7.husty{gap:2px}
+.graf7.husty .hodn{font-size:8.5px;letter-spacing:-.04em}
+.graf7.husty .den{font-size:8.5px}
 .porov{font-size:12px;margin-top:8px;padding:7px 9px;background:var(--platno-tmavsi);border-radius:7px;line-height:1.4}
 .porov b{font-family:'IBM Plex Mono',monospace}
 .hore{color:var(--mach);font-weight:700} .dole{color:var(--tehla);font-weight:700}
@@ -599,7 +602,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 
   <!-- KRAJINY -->
   <section class="sekcia" id="s-odbyt">
-    <h2>Krajiny <span style="text-transform:none;letter-spacing:0;font-weight:500">· klikni na krajinu pre 10 dní</span></h2>
+    <h2>Krajiny <span style="text-transform:none;letter-spacing:0;font-weight:500">· klikni na krajinu pre 15 dní</span></h2>
     <div id="krajiny"></div>
   </section>
 
@@ -1023,7 +1026,7 @@ function vykresliSpolu(s, i){
 
 /* ---- 7 dní: spolu aj po krajinách ---- */
 let sedem = null, sedemPre = null, otvoreneKrajiny = new Set();
-const POCET_DNI = 10;
+const POCET_DNI = 15;
 
 async function nacitaj7(){
   const pre = obdobie.do;
@@ -1042,16 +1045,16 @@ async function nacitaj7(){
   vykresliAlarm();
 }
 
-function popisDna(iso){
+function popisDna(iso, kratko){
   const d = new Date(iso + 'T12:00');
   const nazov = d.toLocaleDateString('sk-SK',{weekday:'short'}).replace('.','');
-  return `${nazov}<br>${d.getDate()}.${d.getMonth()+1}.`;
+  return kratko ? `${nazov}<br>${d.getDate()}.` : `${nazov}<br>${d.getDate()}.${d.getMonth()+1}.`;
 }
 
 function graf7(dni, jeDnes){
   if(!dni || !dni.length) return '<div class="prazdne">Údaje za posledné dni nie sú k dispozícii.</div>';
   const max = Math.max(...dni.map(x => Number(x.obj)||0), 1);
-  return `<div class="graf7" style="grid-template-columns:repeat(${dni.length},1fr)">` + dni.map((x, idx) => {
+  return `<div class="graf7${dni.length > 10 ? ' husty' : ''}" style="grid-template-columns:repeat(${dni.length},1fr)">` + dni.map((x, idx) => {
     const posl = idx === dni.length - 1;
     const v = (Number(x.obj)||0) > 0 ? Math.max(2, (Number(x.obj)||0) / max * 100) : 0;
     const tr = 'st' + (posl ? ' vybr' : '') + (posl && jeDnes ? ' ciastocny' : '');
@@ -1060,7 +1063,7 @@ function graf7(dni, jeDnes){
         <div class="stlp" style="height:${v.toFixed(1)}%"></div>
         <div class="hodn" style="bottom:${v.toFixed(1)}%">${cis(x.obj)}</div>
       </div></div>
-      <div class="den">${popisDna(x.den)}</div>
+      <div class="den">${popisDna(x.den, dni.length > 10)}</div>
     </div>`;
   }).join('') + '</div>';
 }
