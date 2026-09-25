@@ -327,7 +327,16 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .riadok.klik .nazov::after{content:' ›';color:var(--safran);font-weight:700}
 .riadok.klik.otvor .nazov::after{content:' ⌄'}
 .rozbal{padding:8px 6px 12px;border-bottom:1px solid var(--linka);background:#fff}
-.odch{font-weight:700;font-family:'IBM Plex Mono',monospace;margin-left:6px}
+.odch{font-weight:700;font-family:'IBM Plex Mono',monospace;margin-left:6px;padding:1px 7px;border-radius:10px;font-size:10.5px;white-space:nowrap;display:inline-block;line-height:1.5}
+.odch.hore{background:#DCEFE3;color:#1F6B42}
+.odch.dole{background:#F8DEDF;color:#A1282C}
+.odch.rovno{background:#E6E9EF;color:#4A5670}
+.riadok.tr-hore::before{background:var(--mach);opacity:.2}
+.riadok.tr-dole::before{background:var(--tehla);opacity:.16}
+.riadok.tr-rovno::before{background:#7A8BA8;opacity:.16}
+.riadok.tr-hore{box-shadow:inset 3px 0 0 var(--mach)}
+.riadok.tr-dole{box-shadow:inset 3px 0 0 var(--tehla)}
+.riadok.tr-rovno{box-shadow:inset 3px 0 0 #7A8BA8}
 .alarm{background:#FBE9E9;border:1px solid var(--tehla);border-left-width:4px;border-radius:9px;padding:10px 12px;margin:0 0 10px;color:#6E2426;font-size:13px;line-height:1.45}
 .alarm b{color:var(--tehla)}
 .alarm.pozor{background:#FDF3E1;border-color:#D98B1F;color:#6B4510}
@@ -1112,6 +1121,7 @@ function vykresliKrajiny(){
     const h = Number(x.obj)||0;
     const sirka = Math.max(1,(h/max)*100).toFixed(1);
     const otv = otvoreneKrajiny.has(x.krajina);
+    const tr = (ok7 && obdobie.od === obdobie.do) ? trendKrajiny(sedem.krajiny[x.krajina], sedem.jeDnes, h) : null;
     let rozbal = '';
     if(otv){
       const dni = ok7 ? sedem.krajiny[x.krajina] : null;
@@ -1120,11 +1130,10 @@ function vykresliKrajiny(){
         : (dni ? graf7(dni, sedem.jeDnes) + porovnanie(dni, sedem.jeDnes, sedem.cas)
                : `<div class="prazdne">Za posledných ${POCET_DNI} dní žiadne objednávky.</div>`)}</div>`;
     }
-    return `<div class="riadok klik${otv ? ' otvor' : ''}" data-kr="${esc(x.krajina)}" role="button" tabindex="0" style="--w:${sirka}%">
+    return `<div class="riadok klik${otv ? ' otvor' : ''}${tr ? ' ' + tr.trieda : ''}" data-kr="${esc(x.krajina)}" role="button" tabindex="0" style="--w:${sirka}%">
       <div class="nazov">${esc(vlajka(x.krajina) + '  ' + (KRAJINY[x.krajina] || x.krajina))}</div>
       <div class="hod cislo">${cis(h)}</div>
-      <div class="detail">${esc(`${cis(x.metre,1)} m · ${cis(x.kusy)} ks`)}${
-        (ok7 && obdobie.od === obdobie.do) ? znackaZmeny(odchylka(sedem.krajiny[x.krajina], sedem.jeDnes), 3) : ''}</div>
+      <div class="detail">${esc(`${cis(x.metre,1)} m · ${cis(x.kusy)} ks`)}${tr ? tr.html : ''}</div>
     </div>${rozbal}`;
   }).join('');
 }
@@ -1158,6 +1167,15 @@ function znackaZmeny(z, minPriem){
   return z.pct >= 0 ? `<span class="odch hore">↑ +${z.pct} %</span>` : `<span class="odch dole">↓ ${z.pct} %</span>`;
 }
 /* ---- Denné hlásenie podľa situácie ---- */
+function trendKrajiny(dni, jeDnes, teraz){
+  const z = odchylka(dni, jeDnes);
+  if(!z){
+    return teraz > 0 ? {trieda:'tr-hore', html:'<span class="odch hore">nové</span>'} : null;
+  }
+  if(z.pct >= 10) return {trieda:'tr-hore', html:`<span class="odch hore">↑ +${z.pct} %</span>`};
+  if(z.pct <= -10) return {trieda:'tr-dole', html:`<span class="odch dole">↓ ${z.pct} %</span>`};
+  return {trieda:'tr-rovno', html:`<span class="odch rovno">≈ ${z.pct >= 0 ? '+' : ''}${z.pct} %</span>`};
+}
 function vykresliAlarm(){
   const el = $('#alarm');
   if(!el) return;
