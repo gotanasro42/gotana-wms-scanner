@@ -495,12 +495,13 @@
       <!-- ITEM DETAIL MODAL -->
       <div id="itemDetailModal" class="hidden fixed inset-0 z-[80] bg-slate-900/80 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm">
           <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
-              <div class="bg-slate-100 p-4 border-b border-slate-200 flex justify-between items-start">
-                  <div>
+              <div class="bg-slate-100 p-4 border-b border-slate-200 flex justify-between items-center gap-3">
+                  <img id="modalItemFoto" alt="" class="hidden w-20 h-20 rounded-xl object-cover border border-slate-300 bg-white shrink-0 cursor-pointer shadow-sm">
+                  <div class="flex-1 min-w-0">
                       <h3 id="modalItemTitle" class="text-xl font-black font-mono text-slate-800 break-all">SKU...</h3>
                       <div id="modalItemSub" class="text-sm text-slate-500 mt-1 leading-snug hidden"></div>
                   </div>
-                  <button onclick="closeDetailModal()" class="text-slate-500 hover:text-slate-800 p-2 bg-white rounded-full shadow-sm tap-feedback shrink-0 ml-4"><span class="material-icons">close</span></button>
+                  <button onclick="closeDetailModal()" aria-label="Zavrieť" class="text-slate-500 hover:text-slate-800 w-10 h-10 p-0 bg-white rounded-full shadow-sm tap-feedback shrink-0 self-start flex items-center justify-center"><span class="material-icons" style="font-size:22px;line-height:1">close</span></button>
               </div>
               <div class="p-6 space-y-5">
                   <div class="flex justify-between items-center">
@@ -1758,6 +1759,12 @@
           document.getElementById('modalItemTitle').innerText = item.id; 
           const subEl = document.getElementById('modalItemSub');
           if (displayTitle !== item.id) { subEl.innerText = displayTitle; subEl.classList.remove('hidden'); } else { subEl.classList.add('hidden'); }
+          const fotoEl = document.getElementById('modalItemFoto');
+          const fotoSrc = dbNahlady[item.sku || getBaseCode(item.id)];
+          if (fotoEl) {
+              if (fotoSrc) { fotoEl.src = fotoSrc; fotoEl.classList.remove('hidden'); fotoEl.onerror = function(){ this.classList.add('hidden'); }; fotoEl.onclick = function(){ zobrazVelkyNahlad(fotoSrc, item.id, 'ziadna'); }; }
+              else { fotoEl.removeAttribute('src'); fotoEl.classList.add('hidden'); }
+          }
           
           document.getElementById('modalItemId').value = item.id; document.getElementById('modalItemLoc').innerText = item.location; document.getElementById('modalItemLoc').style = getColorForLoc(item.location); document.getElementById('modalItemLoc').className = "px-3 py-1 rounded-lg text-xl font-extrabold shadow-sm border-2"; document.getElementById('modalItemNote').value = item.note || ""; document.getElementById('itemDetailModal').classList.remove('hidden'); 
       }
