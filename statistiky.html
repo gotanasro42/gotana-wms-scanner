@@ -29,7 +29,7 @@ body{
   color:var(--atrament);
   font-family:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
   font-size:15px;line-height:1.45;
-  padding-bottom:calc(120px + env(safe-area-inset-bottom));
+  padding-bottom:calc(134px + env(safe-area-inset-bottom));
   -webkit-font-smoothing:antialiased;
 }
 .cislo{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
@@ -191,7 +191,7 @@ h2:first-child{margin-top:2px}
 
 /* ---------- Spodná navigácia ---------- */
 nav{
-  position:fixed;bottom:calc(42px + env(safe-area-inset-bottom));left:0;right:0;z-index:60;
+  position:fixed;bottom:calc(56px + env(safe-area-inset-bottom));left:0;right:0;z-index:60;
   background:#fff;border-top:1px solid var(--linka);
   display:grid;grid-template-columns:repeat(4,1fr);
 }
@@ -202,12 +202,12 @@ nav{
   padding-bottom:env(safe-area-inset-bottom);
 }
 .appky a,.appky span{
-  display:flex;align-items:center;justify-content:center;gap:5px;min-height:42px;
+  display:flex;align-items:center;justify-content:center;gap:7px;min-height:56px;
   text-decoration:none;color:#9FB0CE;font-family:'IBM Plex Sans Condensed',sans-serif;
-  font-size:10px;font-weight:600;letter-spacing:.1em;
+  font-size:12.5px;font-weight:700;letter-spacing:.1em;
 }
 .appky .tu{color:var(--safran)}
-.appky svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+.appky svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:2}
 nav button{
   background:none;border:0;padding:7px 4px 6px;cursor:pointer;color:var(--sedy);
   display:flex;flex-direction:column;align-items:center;gap:2px;min-height:50px;
@@ -284,7 +284,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 @keyframes tocenie{to{transform:rotate(360deg)}}
 .stav-syn.stare{color:#F0B4B6}
 .hlaska{
-  position:fixed;left:50%;bottom:calc(104px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  position:fixed;left:50%;bottom:calc(118px + env(safe-area-inset-bottom));transform:translateX(-50%);
   z-index:120;background:var(--atrament);color:var(--platno);padding:9px 14px;border-radius:9px;
   font-size:12.5px;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:92vw;display:none;
 }
@@ -328,15 +328,15 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .riadok.klik.otvor .nazov::after{content:' ⌄'}
 .rozbal{padding:8px 6px 12px;border-bottom:1px solid var(--linka);background:#fff}
 .odch{font-weight:700;font-family:'IBM Plex Mono',monospace;margin-left:6px;padding:1px 7px;border-radius:10px;font-size:10.5px;white-space:nowrap;display:inline-block;line-height:1.5}
-.odch.hore{background:#DCEFE3;color:#1F6B42}
-.odch.dole{background:#F8DEDF;color:#A1282C}
-.odch.rovno{background:#E6E9EF;color:#4A5670}
-.riadok.tr-hore::before{background:var(--mach);opacity:.2}
-.riadok.tr-dole::before{background:var(--tehla);opacity:.16}
-.riadok.tr-rovno::before{background:#7A8BA8;opacity:.16}
-.riadok.tr-hore{box-shadow:inset 3px 0 0 var(--mach)}
-.riadok.tr-dole{box-shadow:inset 3px 0 0 var(--tehla)}
-.riadok.tr-rovno{box-shadow:inset 3px 0 0 #7A8BA8}
+.odch.hore{background:#2F8F5B;color:#fff}
+.odch.dole{background:#E0892F;color:#fff}
+.odch.rovno{background:#8A97AD;color:#fff}
+.riadok.tr-hore{box-shadow:inset 4px 0 0 #2F8F5B}
+.riadok.tr-dole{box-shadow:inset 4px 0 0 #E0892F}
+.riadok.tr-rovno{box-shadow:inset 4px 0 0 #8A97AD}
+.riadok.tr-hore::before{background:#2F8F5B;opacity:.12}
+.riadok.tr-dole::before{background:#E0892F;opacity:.14}
+.riadok.tr-rovno::before{background:#8A97AD;opacity:.14}
 .alarm{background:#FBE9E9;border:1px solid var(--tehla);border-left-width:4px;border-radius:9px;padding:10px 12px;margin:0 0 10px;color:#6E2426;font-size:13px;line-height:1.45}
 .alarm b{color:var(--tehla)}
 .alarm.pozor{background:#FDF3E1;border-color:#D98B1F;color:#6B4510}
