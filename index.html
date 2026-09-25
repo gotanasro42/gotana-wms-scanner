@@ -229,11 +229,11 @@
              <!-- BLOK 1: PRODUKT (HLAVNÝ) -->
              <div class="space-y-3">
                  <button onclick="initCamera()" class="w-full h-16 bg-blue-600 active:bg-blue-800 text-white rounded-xl font-black text-base sm:text-lg flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform tap-feedback">
-                      <span class="material-icons">qr_code_scanner</span> SKENOVAŤ PRODUKT
+                      <span class="material-icons">qr_code_scanner</span> SKENOVAŤ NS
                  </button>
                  <div class="flex justify-center">
                     <div class="relative w-3/4 sm:w-2/3">
-                        <input id="scanInput" type="text" autocapitalize="characters" class="w-full p-3 pl-4 pr-10 text-center border-2 border-slate-200 rounded-xl font-bold uppercase focus:border-blue-500 outline-none shadow-inner text-sm sm:text-base" placeholder="RUČNE KÓD..." oninput="handleInputChange(this)" onkeydown="if(event.key === 'Enter') handleScan()">
+                        <input id="scanInput" type="text" autocapitalize="characters" class="w-full p-3 pl-4 pr-10 text-center border-2 border-slate-200 rounded-xl font-bold uppercase focus:border-blue-500 outline-none shadow-inner text-sm sm:text-base" placeholder="ZADAJ RUČNE" oninput="handleInputChange(this)" onkeydown="if(event.key === 'Enter') handleScan()">
                         <span class="material-icons absolute right-3 top-3.5 text-slate-400">keyboard</span>
                     </div>
                  </div>
@@ -249,7 +249,7 @@
                          <span class="material-icons">fact_check</span> SKENOVAŤ POZÍCIU
                      </button>
                      <div class="relative">
-                        <input id="locInput" type="text" autocapitalize="characters" class="w-full p-2 pl-2 pr-8 text-center border-2 border-slate-200 rounded-xl font-bold uppercase focus:border-teal-500 outline-none shadow-inner text-xs sm:text-sm" placeholder="RUČNE..." onkeydown="if(event.key === 'Enter') handleLocScan(this)">
+                        <input id="locInput" type="text" autocapitalize="characters" class="w-full p-2 pl-2 pr-8 text-center border-2 border-slate-200 rounded-xl font-bold uppercase focus:border-teal-500 outline-none shadow-inner text-xs sm:text-sm" placeholder="ZADAJ RUČNE" onkeydown="if(event.key === 'Enter') handleLocScan(this)">
                         <span class="material-icons absolute right-2 top-2 text-slate-400 text-sm sm:text-base">keyboard</span>
                      </div>
                  </div>
@@ -2942,27 +2942,44 @@
         }
         wrap.classList.remove('flex');
         wrap.classList.add('grid');
-        wrap.style.gridTemplateColumns = 'repeat(3,minmax(0,1fr)) 44px';
+        wrap.style.gridTemplateColumns = 'repeat(3,minmax(0,1fr)) 52px';
         /* poradie: 3 hlavné + tlačidlo Viac, pod nimi skryté ďalšie */
         ['tab-scan','tab-db','tab-stat','tab-viac','tab-vzor','tab-panely','tab-trh'].forEach(function(id){
           var e = document.getElementById(id);
           if(!e) return;
           wrap.appendChild(e);
           e.classList.remove('py-4','text-sm','tracking-widest','gap-2','flex-1','col-span-2');
-          e.classList.add('py-2','text-[11px]','tracking-normal','gap-1','whitespace-nowrap');
+          e.classList.add('py-3','text-xs','tracking-normal','gap-1.5','whitespace-nowrap');
+          e.style.minHeight = '48px';
           var ik = e.querySelector('.material-icons');
-          if(ik) ik.style.fontSize = id === 'tab-viac' ? '22px' : '18px';
+          if(ik) ik.style.fontSize = id === 'tab-viac' ? '26px' : '20px';
         });
         ['tab-vzor','tab-panely','tab-trh'].forEach(function(id){
           var e = document.getElementById(id); if(e) e.classList.add('gt-dalsie');
         });
         var viac = document.getElementById('tab-viac');
-        viac.classList.remove('gap-1');
+        viac.classList.remove('gap-1','gap-1.5');
+        /* nástroje z hlavičky (katalóg, zdroj dát, nastavenia) presunieme do rozbaľovacej časti */
+        var nastroje = document.getElementById('gt-nastroje');
+        if(!nastroje){
+          nastroje = document.createElement('div');
+          nastroje.id = 'gt-nastroje';
+          nastroje.style.cssText = 'grid-column:1/-1;display:flex;gap:8px;justify-content:center;padding:8px 8px 10px;border-top:1px solid rgba(255,255,255,.08)';
+          [['synchronizujKatalog()','Katalóg'],['prepniZdroj()','Zdroj dát'],['zmenApiAdresu()','Nastavenia']].forEach(function(p){
+            var b = document.querySelector('button[onclick="' + p[0] + '"]');
+            if(!b) return;
+            b.className = 'bg-slate-800 text-slate-300 px-3 py-2 rounded-lg border border-slate-700 hover:bg-slate-700 hover:text-white flex items-center gap-1.5 text-xs font-bold transition-colors';
+            var ik = b.querySelector('.material-icons'); if(ik){ ik.className = 'material-icons'; ik.style.fontSize = '18px'; }
+            b.appendChild(document.createTextNode(p[1]));
+            nastroje.appendChild(b);
+          });
+        }
+        wrap.appendChild(nastroje);
         viac.style.justifyContent = 'center';
 
         function nastavViac(otvorit){
-          ['tab-vzor','tab-panely','tab-trh'].forEach(function(id){
-            var e = document.getElementById(id); if(e) e.style.display = otvorit ? '' : 'none';
+          ['tab-vzor','tab-panely','tab-trh','gt-nastroje'].forEach(function(id){
+            var e = document.getElementById(id); if(e) e.style.display = otvorit ? (id === 'gt-nastroje' ? 'flex' : '') : 'none';
           });
           viac.querySelector('.material-icons').textContent = otvorit ? 'expand_less' : 'expand_more';
           viac.setAttribute('aria-expanded', otvorit ? 'true' : 'false');
@@ -2991,11 +3008,11 @@
           'background:#14213D;display:grid;grid-template-columns:repeat(2,1fr);' +
           'padding-bottom:env(safe-area-inset-bottom)}' +
           '#appky-lista a,#appky-lista span{display:flex;align-items:center;justify-content:center;' +
-          'gap:5px;min-height:42px;text-decoration:none;color:#9FB0CE;font-size:10px;' +
+          'gap:7px;min-height:56px;text-decoration:none;color:#9FB0CE;font-size:12.5px;' +
           'font-weight:700;letter-spacing:.1em;font-family:inherit}' +
           '#appky-lista .tu{color:#E8A33D}' +
-          '#appky-lista .material-icons{font-size:16px}' +
-          'body{padding-bottom:calc(50px + env(safe-area-inset-bottom))!important}';
+          '#appky-lista .material-icons{font-size:22px}' +
+          'body{padding-bottom:calc(64px + env(safe-area-inset-bottom))!important}';
         document.head.appendChild(st);
         var d = document.createElement('div');
         d.id = 'appky-lista';
