@@ -28,6 +28,7 @@
       /* Checkbox štýl */
       .custom-checkbox { width: 24px; height: 24px; border-radius: 6px; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
       .custom-checkbox.checked { background-color: #2563eb; border-color: #2563eb; }
+      .gt-filter.aktivny { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
       .custom-checkbox span { display: none; color: white; font-size: 18px; }
       .custom-checkbox.checked span { display: block; }
 
@@ -391,13 +392,23 @@
           <div class="sticky z-40 bg-slate-100 pb-2 -mx-4 px-4 shadow-sm" style="top:var(--hlavicka,120px)" style="margin-top: -1rem; padding-top: 1rem;">
              <div class="bg-white p-1.5 rounded-xl shadow-md border border-slate-200 grid grid-cols-2 gap-1.5">
                  <div class="relative">
-                    <input type="text" id="dbSearchCode" autocapitalize="characters" oninput="filterDb()" placeholder="KÓD / LOKÁCIA" class="w-full pl-8 p-2 text-sm sm:text-base border-2 border-slate-100 rounded-lg focus:outline-none focus:border-blue-500 font-bold uppercase">
+                    <input type="text" id="dbSearchCode" autocapitalize="characters" oninput="filterDb()" placeholder="NS / POZÍCIA" class="w-full pl-8 p-2 text-sm sm:text-base border-2 border-slate-100 rounded-lg focus:outline-none focus:border-blue-500 font-bold uppercase">
                     <span class="material-icons absolute left-2 top-2.5 text-slate-400 text-lg">qr_code_2</span>
                  </div>
                  <div class="relative">
                     <input type="text" id="dbSearchName" oninput="filterDb()" placeholder="NÁZOV LÁTKY" class="w-full pl-8 p-2 text-sm sm:text-base border-2 border-slate-100 rounded-lg focus:outline-none focus:border-blue-500 font-bold uppercase">
                     <span class="material-icons absolute left-2 top-2.5 text-slate-400 text-lg">search</span>
                  </div>
+             </div>
+             <div class="grid grid-cols-2 gap-1.5 mt-1.5">
+                 <select id="dbFilterPodprac" onchange="filterDb()" class="gt-filter w-full px-2 py-1.5 text-xs font-bold text-slate-600 bg-white border-2 border-slate-200 rounded-lg focus:outline-none focus:border-blue-500">
+                     <option value="">Všetky pracoviská</option>
+                 </select>
+                 <select id="dbFilterSklad" onchange="filterDb()" class="gt-filter w-full px-2 py-1.5 text-xs font-bold text-slate-600 bg-white border-2 border-slate-200 rounded-lg focus:outline-none focus:border-blue-500">
+                     <option value="">Sklad: všetko</option>
+                     <option value="skladom">Len skladom</option>
+                     <option value="vypredane">Len vypredané</option>
+                 </select>
              </div>
              <div id="dbStats" class="flex justify-between items-center mt-1.5 px-2 py-1 text-xs font-bold text-slate-500 uppercase tracking-wide bg-slate-200/50 rounded-lg"><span>Načítavam...</span></div>
           </div>
@@ -1535,6 +1546,7 @@
 
       let renderGen = 0;
       function renderDb(items) {
+         if (items === dbData) items = gtFiltruj(dbData);
          const gen = ++renderGen;
          const list = document.getElementById('dbList');
          document.getElementById('dbStats').innerHTML = `<span class="text-slate-700">Počet: ${items.length} ks</span>`;
@@ -1626,38 +1638,68 @@
          </div>`;
       }
       
-      function filterDb() {
+      function gtKodSkladu(i) { return String(i.id || '').split('_')[0]; }
+      function gtPodprac(i) { return dbPodprac[String(i.sku||'').toUpperCase()] || dbPodprac[String(getBaseCode(i.id)||'').toUpperCase()] || ''; }
+      function gtNaplnPodprac() {
+          const sel = document.getElementById('dbFilterPodprac'); if (!sel) return;
+          const hodnoty = [...new Set(dbData.map(gtPodprac).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'sk', {numeric:true}));
+          const kluc = hodnoty.join('|');
+          if (sel.dataset.kluc === kluc) return;
+          const vybrane = sel.value;
+          sel.innerHTML = '<option value="">Všetky pracoviská</option>' + hodnoty.map(h => `<option value="${h}">${h}</option>`).join('');
+          sel.value = hodnoty.includes(vybrane) ? vybrane : '';
+          sel.dataset.kluc = kluc;
+      }
+      let gtCakaZasoby = false;
+      function gtFiltruj(zdroj) {
+          gtNaplnPodprac();
           const codeQ = document.getElementById('dbSearchCode').value.toUpperCase().trim();
           const nameQ = document.getElementById('dbSearchName').value.trim();
+          const selP = document.getElementById('dbFilterPodprac'), selS = document.getElementById('dbFilterSklad');
+          const podprac = selP ? selP.value : '', sklad = selS ? selS.value : '';
+          if (selP) selP.classList.toggle('aktivny', !!podprac);
+          if (selS) selS.classList.toggle('aktivny', !!sklad);
 
           const normalize = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() : "";
-
           const codeTerms = codeQ.split(/\s+/).filter(t => t.length > 0);
           const nameTerms = nameQ.split(/\s+/).filter(t => t.length > 0).map(normalize);
+          if (codeTerms.length === 0 && nameTerms.length === 0 && !podprac && !sklad) return zdroj;
 
-          if(codeTerms.length === 0 && nameTerms.length === 0) { renderDb(dbData); return; }
+          /* zásoby: ak ich ešte nemáme pre všetky produkty, dotiahneme a prekreslíme */
+          const pamat = window.gtZasobyPamat || {};
+          if (sklad && window.gtNacitajZasoby) {
+              const chyba = [...new Set(zdroj.map(gtKodSkladu))].filter(k => !(k in pamat));
+              if (chyba.length && !gtCakaZasoby) {
+                  gtCakaZasoby = true;
+                  document.getElementById('dbStats').innerHTML = '<span class="text-slate-700">Načítavam stav skladu…</span>';
+                  window.gtNacitajZasoby(chyba).finally(() => { gtCakaZasoby = false; renderDb(dbData); });
+              }
+          }
 
-          const filtered = dbData.filter(i => {
-              let matchCode = true;
+          return zdroj.filter(i => {
+              if (podprac && gtPodprac(i) !== podprac) return false;
+              if (sklad) {
+                  const z = pamat[gtKodSkladu(i)];
+                  if (!z || z.zasoba === null || z.zasoba === undefined) return false;
+                  if (sklad === 'skladom' && !(z.zasoba > 0)) return false;
+                  if (sklad === 'vypredane' && z.zasoba > 0) return false;
+              }
               if (codeTerms.length > 0) {
-                  matchCode = codeTerms.every(term => {
+                  const ok = codeTerms.every(term => {
                       const safeTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                       const prefixRegex = new RegExp(`(^|[^a-zA-Z0-9])${safeTerm}`);
                       return prefixRegex.test(i.id) || (i.location ? prefixRegex.test(i.location) : false) || (i.note ? i.note.toUpperCase().includes(term) : false);
                   });
+                  if (!ok) return false;
               }
-
-              let matchName = true;
               if (nameTerms.length > 0) {
-                  let itemName = normalize(i.name || dbCatalog[i.sku || getBaseCode(i.id)] || "");
-                  matchName = nameTerms.every(term => itemName.includes(term));
+                  const itemName = normalize(i.name || dbCatalog[i.sku || getBaseCode(i.id)] || "");
+                  if (!nameTerms.every(term => itemName.includes(term))) return false;
               }
-
-              return matchCode && matchName;
+              return true;
           });
-          
-          renderDb(filtered);
       }
+      function filterDb() { renderDb(dbData); }
 
       function prepareNew(id, isDuplicate, parts = []) {
           let finalId = id; if(isDuplicate) finalId = id + "_" + Math.floor(Math.random() * 1000);
@@ -2473,6 +2515,23 @@
     var SUP = 'https://gduarwvhxlffrasuuxqw.supabase.co';
     var KLUC = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkdWFyd3ZoeGxmZnJhc3V1eHF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDUxMTMsImV4cCI6MjEwMTQ4MTExM30.xGnlwd5XPVSIkd9X1PlsxlTldiwuul410B8EX-VftLQ';
     var pamat = {};      /* SKU -> zásoba, aby sme sa nepýtali dvakrát */
+    window.gtZasobyPamat = pamat;
+    window.gtNacitajZasoby = async function(kody){
+      var nove = kody.filter(function(k){ return !(k in pamat); });
+      while(nove.length){
+        var davka = nove.splice(0, 200);
+        try{
+          var r = await fetch(SUP + '/rest/v1/rpc/dash_zasoby', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json', apikey: KLUC, Authorization: 'Bearer ' + KLUC},
+            body: JSON.stringify({ p_sku: davka })
+          });
+          if(!r.ok) return;
+          var d = await r.json();
+          davka.forEach(function(s){ pamat[s] = d[s.toUpperCase()] || null; });
+        }catch(e){ return; }
+      }
+    };
     var caka = false;
 
     function cislo(n){
