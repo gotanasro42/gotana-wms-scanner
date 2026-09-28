@@ -663,13 +663,17 @@
       function loadNahlady() {
           const stored = localStorage.getItem('gotana_nahlady');
           if (stored) { try { dbNahlady = JSON.parse(stored); } catch(e){} }
-          fetch('./nahlady.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(data => {
+          /* náhľady (~1,2 MB): keď ich máme v pamäti telefónu, aktualizujeme ich až po štarte a len ak sa zmenili */
+          const stiahniNahlady = () => fetch('./nahlady.json', { cache: 'no-cache' }).then(r => r.ok ? r.text() : null).then(text => {
+              if (!text || text === stored) return;
+              let data = null; try { data = JSON.parse(text); } catch(e) { return; }
               if (data && typeof data === 'object' && Object.keys(data).length > 0) {
                   dbNahlady = data;
-                  try { localStorage.setItem('gotana_nahlady', JSON.stringify(data)); } catch(e) {}
+                  try { localStorage.setItem('gotana_nahlady', text); } catch(e) {}
                   if (!document.getElementById('view-db').classList.contains('hidden')) renderDb(dbData);
               }
           }).catch(e => {});
+          if (stored) setTimeout(stiahniNahlady, 6000); else stiahniNahlady();
           const sp = localStorage.getItem('gotana_podprac');
           if (sp) { try { dbPodprac = JSON.parse(sp); } catch(e){} }
           fetch('./podpracoviska.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(data => {
@@ -1858,8 +1862,16 @@
     </script>
     <script type="module">
       // ================= VZOR FINDER v4 (CLIP v prehliadaci) =================
-      import { AutoProcessor, CLIPVisionModelWithProjection, RawImage, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
-      env.allowLocalModels = false;
+      /* AI knižnica (~0,9 MB) sa načíta až pri prvom použití vyhľadávania podľa fotky, nie pri štarte appky */
+      let AutoProcessor, CLIPVisionModelWithProjection, RawImage, env;
+      let tfSlub = null;
+      function nacitajTf() {
+          if (!tfSlub) tfSlub = import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2').then(m => {
+              ({ AutoProcessor, CLIPVisionModelWithProjection, RawImage, env } = m);
+              env.allowLocalModels = false;
+          }).catch(e => { tfSlub = null; throw e; });
+          return tfSlub;
+      }
 
       const VZOR_INDEX_URL = './index.json';
       const VZOR_FALLBACK_MODEL = 'Xenova/clip-vit-base-patch32';
@@ -1916,6 +1928,7 @@
 
       async function loadVzorModel() {
           setVzorStatus('Sťahujem AI model...');
+          await nacitajTf();
           const cb = (d) => { if (d.status === 'progress' && d.total) vzorProgress('Sťahujem AI model...', (d.loaded / d.total) * 100); };
           vzorProcessor = await AutoProcessor.from_pretrained(vzorModelId, { progress_callback: cb });
           vzorModel = await CLIPVisionModelWithProjection.from_pretrained(vzorModelId, { quantized: true, progress_callback: cb });
@@ -2067,6 +2080,7 @@
 
       // ---------- FOTKA ----------
       async function vzorEmbedUrl(url) {
+          await nacitajTf();
           const image = await RawImage.read(url);
           const inputs = await vzorProcessor(image);
           const { image_embeds } = await vzorModel(inputs);
@@ -2519,7 +2533,7 @@
     window.gtNacitajZasoby = async function(kody){
       var nove = kody.filter(function(k){ return !(k in pamat); });
       while(nove.length){
-        var davka = nove.splice(0, 200);
+        var davka = nove.splice(0, 3000);
         try{
           var r = await fetch(SUP + '/rest/v1/rpc/dash_zasoby', {
             method: 'POST',
@@ -2555,8 +2569,16 @@
       }catch(e){}
     }
 
+    var vsetkyNacitane = false;
     async function doplnZasoby(){
       try{
+        /* prvýkrát stiahneme zásoby pre celý sklad naraz (jeden dopyt, ~0,2 s) */
+        if(!vsetkyNacitane && typeof dbData !== 'undefined' && dbData && dbData.length){
+          vsetkyNacitane = true;
+          var vsetky = [];
+          dbData.forEach(function(i){ var k = String(i.id || '').split('_')[0]; if(k && !(k in pamat) && vsetky.indexOf(k) < 0) vsetky.push(k); });
+          await window.gtNacitajZasoby(vsetky);
+        }
         var kandidati = document.querySelectorAll('#view-db .space-y-2');
         var zoznam = null;
         for(var i = 0; i < kandidati.length; i++){
@@ -2568,7 +2590,8 @@
 
         var mapa = [], nove = [];
         riadky.forEach(function(r){
-          var m = (r.innerText || '').match(/^\s*([A-Z]{1,4}-[\w.]+)/);
+          var kEl = r.querySelector('.font-mono');
+          var m = ((kEl ? kEl.textContent : r.innerText) || '').match(/^\s*([A-Z]{1,4}-[\w.]+)/);
           if(!m) return;
           /* čo je za podčiarknikom je len dodatok, sklad vedie základný kód */
           var kod = m[1].split('_')[0];
@@ -2602,7 +2625,8 @@
           for(var j = 0; j < deti.length; j++){
             var r = deti[j];
             if(r.querySelector('.gt-zasoba')) continue;
-            var m = (r.innerText || '').match(/^\s*([A-Z]{1,4}-[\w.]+)/);
+            var kEl = r.querySelector('.font-mono');
+            var m = ((kEl ? kEl.textContent : r.innerText) || '').match(/^\s*([A-Z]{1,4}-[\w.]+)/);
             if(!m) continue;
             var kod = m[1].split('_')[0];
             if(kod in pamat) vypis(r, pamat[kod]);
