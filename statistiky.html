@@ -311,10 +311,15 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .graf7 .vnutro{position:absolute;left:0;right:0;bottom:0;top:15px}
 .graf7 .hodn{position:absolute;left:-2px;right:-2px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;white-space:nowrap;line-height:1;margin-bottom:2px}
 .graf7 .stlp{position:absolute;left:0;right:0;bottom:0;background:var(--atrament-svetly);border-radius:3px 3px 0 0;min-height:2px}
-.graf7 .stlp{background:var(--fd,var(--atrament-svetly))}
-.graf7 .st.vybr .stlp{box-shadow:0 0 0 2px var(--atrament)}
-.graf7 .st.ciastocny .stlp{background:repeating-linear-gradient(135deg,var(--fd) 0 5px,rgba(255,255,255,.55) 5px 8px),var(--fd)}
-.graf7 .den i{display:inline-block;width:7px;height:7px;border-radius:2px;background:var(--fd);margin-bottom:1px}
+.graf7 .st{cursor:pointer;transition:opacity .15s}
+.graf7 .stlp{background:#D5DCE7;border:2px solid var(--fd,#9AA3B2);border-bottom:0;box-sizing:border-box}
+.graf7 .st.ciastocny .stlp{background:repeating-linear-gradient(135deg,#D5DCE7 0 5px,#fff 5px 8px)}
+.graf7.utlm .st{opacity:.28}
+.graf7.utlm .st.zvyr{opacity:1}
+.graf7 .st.zvyr .stlp{background:var(--fd)}
+.graf7 .st.zvyr .hodn{color:var(--atrament);font-weight:700}
+.graf-info{font-size:12px;margin-top:6px;padding:6px 9px;border-radius:7px;background:#fff;border:1px solid var(--linka);border-left:4px solid var(--fd,#9AA3B2);line-height:1.4}
+.graf-info b{font-family:'IBM Plex Mono',monospace}
 .graf7.velmihusty{gap:1px}
 .graf7.velmihusty .hodn{font-size:7.5px;letter-spacing:-.06em}
 .graf7.velmihusty .den{font-size:7.5px;letter-spacing:-.03em}
@@ -1076,7 +1081,7 @@ function popisDna(iso, kratko){
 }
 
 /* farba podľa dňa v týždni: rovnaké dni = rovnaká farba */
-const FARBY_DNI = ['#9AA3B2','#2F5D9E','#2F8F5B','#8A5BB8','#E0892F','#C9A227','#4FA3A5']; /* ne, po, ut, st, št, pi, so */
+const FARBY_DNI = ['#9AA3B2','#4A6FA5','#4E9A6E','#8B6BB1','#D08A3E','#BFA23A','#4F9C9E']; /* ne, po, ut, st, št, pi, so */
 function graf7(dni, jeDnes){
   if(!dni || !dni.length) return '<div class="prazdne">Údaje za posledné dni nie sú k dispozícii.</div>';
   const max = Math.max(...dni.map(x => Number(x.obj)||0), 1);
@@ -1084,8 +1089,9 @@ function graf7(dni, jeDnes){
     const posl = idx === dni.length - 1;
     const v = (Number(x.obj)||0) > 0 ? Math.max(2, (Number(x.obj)||0) / max * 100) : 0;
     const tr = 'st' + (posl ? ' vybr' : '') + (posl && jeDnes ? ' ciastocny' : '');
-    const fd = FARBY_DNI[new Date(x.den + 'T12:00').getDay()];
-    return `<div class="${tr}" style="--fd:${fd}" title="${new Date(x.den + 'T12:00').toLocaleDateString('sk-SK',{weekday:'long', day:'numeric', month:'numeric'})}: ${cis(x.obj)} obj. · ${cis(x.metre,1)} m · ${cis(x.kusy)} ks">
+    const dow = new Date(x.den + 'T12:00').getDay();
+    const fd = FARBY_DNI[dow];
+    return `<div class="${tr}" data-dow="${dow}" data-obj="${Number(x.obj)||0}" data-dnes="${posl && jeDnes ? 1 : 0}" style="--fd:${fd}" title="${new Date(x.den + 'T12:00').toLocaleDateString('sk-SK',{weekday:'long', day:'numeric', month:'numeric'})}: ${cis(x.obj)} obj. · ${cis(x.metre,1)} m · ${cis(x.kusy)} ks">
       <div class="plocha"><div class="vnutro">
         <div class="stlp" style="height:${v.toFixed(1)}%"></div>
         <div class="hodn" style="bottom:${v.toFixed(1)}%">${cis(x.obj)}</div>
@@ -1339,6 +1345,32 @@ async function obnov(){
   nacitaj(); stavPrenosu();
 }
 $('#obnov').addEventListener('click', obnov);
+
+/* ---- Klik na stĺpec: zvýrazni rovnaké dni v týždni ---- */
+const MENA_DNI = ['nedele','pondelky','utorky','stredy','štvrtky','piatky','soboty'];
+document.addEventListener('click', e => {
+  const st = e.target.closest('.graf7 .st');
+  if(!st) return;
+  const g = st.closest('.graf7');
+  const dow = st.dataset.dow;
+  let info = g.nextElementSibling && g.nextElementSibling.classList.contains('graf-info') ? g.nextElementSibling : null;
+  if(g.dataset.vyber === dow){
+    delete g.dataset.vyber; g.classList.remove('utlm');
+    g.querySelectorAll('.st.zvyr').forEach(x => x.classList.remove('zvyr'));
+    if(info) info.remove();
+    return;
+  }
+  g.dataset.vyber = dow; g.classList.add('utlm');
+  const rovnake = [...g.querySelectorAll('.st')].filter(x => x.dataset.dow === dow);
+  g.querySelectorAll('.st').forEach(x => x.classList.toggle('zvyr', x.dataset.dow === dow));
+  const cele = rovnake.filter(x => x.dataset.dnes !== '1').map(x => Number(x.dataset.obj)||0);
+  const priem = cele.length ? cele.reduce((a,b) => a+b, 0) / cele.length : 0;
+  if(!info){ info = document.createElement('div'); info.className = 'graf-info'; g.after(info); }
+  info.style.setProperty('--fd', FARBY_DNI[dow]);
+  info.innerHTML = `<b style="font-family:inherit">${MENA_DNI[dow].charAt(0).toUpperCase() + MENA_DNI[dow].slice(1)}:</b> ${
+    rovnake.map(x => `<b>${cis(Number(x.dataset.obj)||0)}</b>${x.dataset.dnes === '1' ? ' (dnes, zatiaľ)' : ''}`).join(' → ')}${
+    cele.length > 1 ? ` · priemer <b>${cis(priem,0)}</b>` : ''}<br><span style="color:var(--sedy);font-size:11px">Ťukni znova na stĺpec pre zrušenie.</span>`;
+});
 
 /* ---- Ovládanie ---- */
 $('#obdobia').addEventListener('click', e => {
