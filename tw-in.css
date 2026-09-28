@@ -1,0 +1,4 @@
+/* Vzhľad appky – Netlify z tohto pri každom nasadení vyrobí hotový súbor tailwind.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
