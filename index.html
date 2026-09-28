@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" href="/icon-192.png">
     <title>Gotana Scanner (Standalone)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/tailwind.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <style>
@@ -31,6 +31,7 @@
       /* Checkbox štýl */
       .custom-checkbox { width: 24px; height: 24px; border-radius: 6px; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
       .custom-checkbox.checked { background-color: #2563eb; border-color: #2563eb; }
+      #dbList > div { content-visibility: auto; contain-intrinsic-size: auto 58px; }
       .gt-filter.aktivny { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
       .custom-checkbox span { display: none; color: white; font-size: 18px; }
       .custom-checkbox.checked span { display: block; }
@@ -1558,22 +1559,49 @@
          const list = document.getElementById('dbList');
          document.getElementById('dbStats').innerHTML = `<span class="text-slate-700">Počet: ${items.length} ks</span>`;
          list.innerHTML = "";
+         const rezerva = document.getElementById('dbRezerva'); if (rezerva) rezerva.style.height = '0px';
          if(items.length === 0) { list.innerHTML = `<div class="text-center text-slate-400 py-10 font-bold">Žiadne záznamy.</div>`; return; }
          const allItems = [...items].reverse(); const firstBatch = allItems.slice(0, 50); let html = "";
          firstBatch.forEach(i => html += createRowHtml(i)); list.innerHTML = html; updateBulkUI();
          if(allItems.length > 50) { renderRemaining(allItems.slice(50), gen); }
       }
 
+      /* Zoznam sa dokresľuje postupne pri scrollovaní. Pod zoznamom je rezerva s výškou
+         zvyšných produktov, takže posuvník ukazuje celý zoznam a dá sa skočiť aj rovno na koniec. */
       function renderRemaining(items, gen) {
-          const list = document.getElementById('dbList'); const chunkSize = 100; let index = 0;
-          function nextChunk() {
-              if (gen !== renderGen) return;
-              const limit = Math.min(index + chunkSize, items.length); let html = "";
-              for (let i = index; i < limit; i++) { html += createRowHtml(items[i]); }
-              list.insertAdjacentHTML('beforeend', html); updateBulkUI(); index += chunkSize;
-              if (index < items.length) { setTimeout(nextChunk, 10); }
+          const list = document.getElementById('dbList');
+          const DOPREDU = 300, UZ = 50;
+          let index = 0, planovane = false;
+          let rezerva = document.getElementById('dbRezerva');
+          if (!rezerva) { rezerva = document.createElement('div'); rezerva.id = 'dbRezerva'; list.parentNode.insertBefore(rezerva, list.nextSibling); }
+          if (window._dbScroll) window.removeEventListener('scroll', window._dbScroll);
+          const vyskaRiadku = () => { const n = list.children.length; return n ? Math.max(40, list.scrollHeight / n) : 70; };
+          const nastavRezervu = () => { rezerva.style.height = Math.round((items.length - index) * vyskaRiadku()) + 'px'; };
+          function ciel() {
+              const top = list.getBoundingClientRect().top;
+              const vidno = Math.max(0, Math.ceil((window.innerHeight - top) / vyskaRiadku()));
+              return Math.min(items.length, Math.max(0, vidno + DOPREDU - UZ));
           }
-          setTimeout(nextChunk, 10);
+          function krok() {
+              planovane = false;
+              if (gen !== renderGen) { window.removeEventListener('scroll', onScroll); return; }
+              const c = ciel();
+              if (index >= c) return;
+              /* pri veľkom skoku (napr. posuvník rovno dole) kreslí vo väčších dávkach */
+              const davka = Math.max(40, Math.ceil((c - index) / 3));
+              const limit = Math.min(index + davka, c); let html = "";
+              for (let i = index; i < limit; i++) { html += createRowHtml(items[i]); }
+              list.insertAdjacentHTML('beforeend', html); updateBulkUI(); index = limit;
+              nastavRezervu();
+              if (index >= items.length) { rezerva.style.height = '0px'; window.removeEventListener('scroll', onScroll); return; }
+              if (index < c) naplanuj();
+          }
+          function naplanuj() { if (!planovane) { planovane = true; requestAnimationFrame(krok); } }
+          function onScroll() { naplanuj(); }
+          window._dbScroll = onScroll;
+          window.addEventListener('scroll', onScroll, { passive: true });
+          nastavRezervu();
+          naplanuj();
       }
       
       function zobrazVelkyNahlad(src, kod, rezim) {
