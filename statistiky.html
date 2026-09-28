@@ -312,8 +312,8 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .graf7 .hodn{position:absolute;left:-2px;right:-2px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;white-space:nowrap;line-height:1;margin-bottom:2px}
 .graf7 .stlp{position:absolute;left:0;right:0;bottom:0;background:var(--atrament-svetly);border-radius:3px 3px 0 0;min-height:2px}
 .graf7 .st{cursor:pointer;transition:opacity .15s}
-.graf7 .stlp{background:#D5DCE7;border:2px solid var(--fd,#9AA3B2);border-bottom:0;box-sizing:border-box}
-.graf7 .st.ciastocny .stlp{background:repeating-linear-gradient(135deg,#D5DCE7 0 5px,#fff 5px 8px)}
+.graf7 .stlp{background:#F7DDB0;border:2px solid var(--fd,#9AA3B2);border-bottom:0;box-sizing:border-box}
+.graf7 .st.ciastocny .stlp{background:repeating-linear-gradient(135deg,#F7DDB0 0 5px,#fff 5px 8px)}
 .graf7.utlm .st{opacity:.28}
 .graf7.utlm .st.zvyr{opacity:1}
 .graf7 .st.zvyr .stlp{background:var(--fd)}
@@ -629,7 +629,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 
   <!-- KRAJINY -->
   <section class="sekcia" id="s-odbyt">
-    <h2>Krajiny <span style="text-transform:none;letter-spacing:0;font-weight:500">· klikni na krajinu pre 20 dní</span></h2>
+    <h2>Krajiny <span style="text-transform:none;letter-spacing:0;font-weight:500">· klikni na krajinu pre 21 dní</span></h2>
     <div id="krajiny"></div>
   </section>
 
@@ -1055,7 +1055,7 @@ function vykresliSpolu(s, i){
 
 /* ---- 7 dní: spolu aj po krajinách ---- */
 let sedem = null, sedemPre = null, otvoreneKrajiny = new Set();
-const POCET_DNI = 20;
+const POCET_DNI = 21;
 
 async function nacitaj7(){
   const pre = obdobie.do;
