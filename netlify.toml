@@ -1,3 +1,8 @@
+# Pri každom nasadení sa z tw-in.css vyrobí hotový súbor so štýlmi tailwind.css
+[build]
+  publish = "."
+  command = "npx --yes tailwindcss@3.4.19 -i ./tw-in.css -o ./tailwind.css --minify"
+
 [[headers]]
   for = "/index.html"
   [headers.values]
@@ -8,3 +13,7 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
