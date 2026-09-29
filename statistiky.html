@@ -361,6 +361,13 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .alarm.dobre b{color:var(--mach)}
 .alarm .dalsie{margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,.08)}
 .alarm .dalsie div{margin-top:2px}
+.pred{background:#fff;border:1px solid var(--linka);border-left:4px solid var(--safran);border-radius:10px;padding:9px 11px;margin-bottom:6px;font-size:12.5px;line-height:1.45}
+.pred-hl{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.pred-hl .t{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sedy);font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700}
+.pred-hl b{font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;letter-spacing:-.03em}
+.pred .pasmo{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sedy)}
+.pred .pozn2{font-size:11px;color:var(--sedy);margin-top:5px}
+.pred .spat{margin-top:6px;padding-top:6px;border-top:1px solid var(--platno-tmavsi);font-size:11.5px}
 .mr{background:#fff;border:1px solid var(--linka);border-radius:10px;padding:4px 10px}
 .mr-r{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--platno-tmavsi);font-size:12.5px}
 .mr-r:last-of-type{border-bottom:0}
@@ -595,6 +602,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
       </div>
       <div class="pozn">Metre, kusy a ostatné čísla nižšie sú len z predaných objednávok.</div>
     </div>
+    <div id="predikcia"></div>
     <div class="mriezka">
       <div class="karta"><div class="hod cislo" id="kKusy">—</div><div class="pop">Kusov</div></div>
       <div class="karta"><div class="hod cislo" id="kPol">—</div><div class="pop">Položiek</div></div>
@@ -766,6 +774,7 @@ async function nacitaj(tiche){
     nacitajTop3();
     nacitaj7();
     nacitajMinulyRok();
+    nacitajPredikciu();
   }catch(e){
     $('#hlavnaHodnota').textContent = '—';
     dl.forEach(s => { const el = $(s); if (el) el.innerHTML = ''; });
@@ -1260,6 +1269,36 @@ async function nacitajMinulyRok(){
   minulyRok = d;
   vykresliMinulyRok();
 }
+/* ---- Odhad objednávok na zajtra (len pri „Dnes“) ---- */
+async function nacitajPredikciu(){
+  const el = $('#predikcia');
+  const dnes = den(new Date());
+  if(obdobie.od !== dnes || obdobie.do !== dnes){ el.innerHTML = ''; return; }
+  let p = null;
+  try{ p = await rpc('dash_predikcia'); }catch(_e){ p = null; }
+  if(obdobie.od !== dnes || obdobie.do !== dnes) return;
+  const z = p && p.zajtra;
+  if(!z){ el.innerHTML = ''; return; }
+  const dt = x => new Date(x + 'T12:00');
+  const menoDna = x => dt(x).toLocaleDateString('sk-SK',{weekday:'long'});
+  const datum = x => dt(x).toLocaleDateString('sk-SK',{weekday:'short', day:'numeric', month:'numeric'});
+  const idx = Number(z.indexDna) || 0;
+  const idxTxt = idx === 0 ? `${menoDna(z.den)} býva priemerný deň týždňa`
+    : `${menoDna(z.den).charAt(0).toUpperCase() + menoDna(z.den).slice(1)} býva o ${Math.abs(idx)} % ${idx > 0 ? 'nad' : 'pod'} priemerom týždňa`;
+  let spat = '';
+  const v = p.vcera;
+  if(v && v.odhad && v.skutocnost){
+    const r = Math.round((v.skutocnost - v.odhad) / v.odhad * 100);
+    spat = `<div class="spat">Včera (${esc(datum(v.den))}) sme odhadovali <b>${cis(v.odhad)}</b>, prišlo <b>${cis(v.skutocnost)}</b> (${r >= 0 ? '+' : ''}${r} %).</div>`;
+  }
+  el.innerHTML = `<div class="pred">
+    <div class="pred-hl"><span class="t">Odhad na zajtra · ${esc(datum(z.den))}</span><b>~${cis(z.odhad)}</b></div>
+    <div class="pasmo">zvyčajne ${cis(z.od)} – ${cis(z.do)} predaných objednávok</div>
+    <div class="pozn2">Posledných 7 dní priemerne ${cis(z.uroven)} obj./deň · ${esc(idxTxt)}.</div>
+    ${spat}
+  </div>`;
+}
+
 function vykresliMinulyRok(){
   const el = $('#minulyRok');
   if(!data) return;
