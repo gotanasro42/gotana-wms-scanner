@@ -365,9 +365,12 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .pred-hl{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .pred-hl .t{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sedy);font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700}
 .pred-hl b{font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;letter-spacing:-.03em}
-.pred .pasmo{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sedy)}
-.pred .pozn2{font-size:11px;color:var(--sedy);margin-top:5px}
-.pred .spat{margin-top:6px;padding-top:6px;border-top:1px solid var(--platno-tmavsi);font-size:11.5px}
+.pred .pruh{position:relative;height:8px;border-radius:4px;background:var(--platno-tmavsi);margin:7px 0 5px;overflow:hidden}
+.pred .pruh .pasm{position:absolute;top:0;bottom:0;background:rgba(232,163,61,.22)}
+.pred .pruh .napl{position:absolute;left:0;top:0;bottom:0;background:var(--atrament);border-radius:4px}
+.pred .pruh .ciel{position:absolute;top:-1px;bottom:-1px;width:2px;background:var(--safran)}
+.pred .riadok2{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--sedy)}
+.pred .riadok2 b{color:var(--atrament);font-family:'IBM Plex Mono',monospace}
 .mr{background:#fff;border:1px solid var(--linka);border-radius:10px;padding:4px 10px}
 .mr-r{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--platno-tmavsi);font-size:12.5px}
 .mr-r:last-of-type{border-bottom:0}
@@ -1296,29 +1299,31 @@ function vykresliPredikciu(){
 
   /* priebeh dňa: koľko už prišlo a kam smerujeme podľa tempa */
   const teraz = Number((data.suhrn || {}).objednavok) || 0;
-  let priebeh = `Zatiaľ prišlo <b>${cis(teraz)}</b> (${Math.round(teraz / z.odhad * 100)} % odhadu)`;
+  let tempo = '';
   if(sedem && sedemPre === obdobie.do && sedem.jeDnes){
     const pred = sedem.spolu.slice(0, -1);
     const sucTeraz = pred.reduce((a,x) => a + (Number(x.objTeraz)||0), 0);
     const sucCely = pred.reduce((a,x) => a + (Number(x.obj)||0), 0);
     const podiel = sucCely ? sucTeraz / sucCely : 0;
-    if(podiel >= 0.15 && podiel < 0.98){
-      priebeh += ` · do ${esc(sedem.cas)} býva hotových ${Math.round(podiel*100)} % dňa, podľa tempa smerujeme k <b>~${cis(Math.round(teraz / podiel))}</b>`;
-    }
+    if(podiel >= 0.15 && podiel < 0.98) tempo = ` · tempo → <b>~${cis(Math.round(teraz / podiel))}</b>`;
   }
-
-  let spat = '';
+  const max = Math.max(z.do, teraz) * 1.02;
+  const pct = x => Math.min(100, x / max * 100).toFixed(1);
+  let vcera = '';
   const v = predikcia.vcera;
   if(v && v.odhad && v.skutocnost){
     const r = Math.round((v.skutocnost - v.odhad) / v.odhad * 100);
-    spat = `<div class="spat">Včera (${esc(datum(v.den))}) sme odhadovali <b>${cis(v.odhad)}</b>, prišlo <b>${cis(v.skutocnost)}</b> (${r >= 0 ? '+' : ''}${r} %).</div>`;
+    vcera = `<span>Včera ${cis(v.odhad)} → ${cis(v.skutocnost)} (${r >= 0 ? '+' : ''}${r} %)</span>`;
   }
-  el.innerHTML = `<div class="pred">
+  el.innerHTML = `<div class="pred" title="Odhad: priemer posledných 7 dní (${cis(z.uroven)} obj./deň) × typický ${esc(md)} (${idx >= 0 ? '+' : ''}${idx} % oproti priemeru týždňa). Pásmo ${cis(z.od)}–${cis(z.do)} zachytí zhruba 8 z 10 dní.">
     <div class="pred-hl"><span class="t">Odhad na dnes · ${esc(datum(z.den))}</span><b>~${cis(z.odhad)}</b></div>
-    <div class="pasmo">zvyčajne ${cis(z.od)} – ${cis(z.do)} predaných objednávok</div>
-    <div class="pozn2">Posledných 7 dní priemerne ${cis(z.uroven)} obj./deň · ${esc(idxTxt)}.</div>
-    <div class="spat">${priebeh}.</div>
-    ${spat}
+    <div class="pruh">
+      <div class="pasm" style="left:${pct(z.od)}%;width:${(pct(z.do) - pct(z.od)).toFixed(1)}%"></div>
+      <div class="napl" style="width:${pct(teraz)}%"></div>
+      <div class="ciel" style="left:${pct(z.odhad)}%"></div>
+    </div>
+    <div class="riadok2"><span>Zatiaľ <b>${cis(teraz)}</b>${tempo}</span><span>pásmo ${cis(z.od)}–${cis(z.do)}</span></div>
+    ${vcera ? `<div class="riadok2" style="margin-top:3px">${vcera}</div>` : ''}
   </div>`;
 }
 
