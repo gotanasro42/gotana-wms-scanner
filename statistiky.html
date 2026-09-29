@@ -919,7 +919,7 @@ function priemTxt(v, v30){
   if(v === null || v === undefined) return '';
   const n = Number(v);
   const t = n === 0 ? '0' : (n < 0.1 ? '<0,1' : cis(n, n < 10 ? 1 : 0));
-  const tip = v30 !== null && v30 !== undefined ? ` title="Denný priemer za 14 dní. Za 30 dní: ${cis(v30, v30 < 10 ? 1 : 0)}/deň"` : ' title="Denný priemer predaja za 14 dní (Magento)"';
+  const tip = v30 !== null && v30 !== undefined ? ` title="Denný priemer za posledných 14 dní vrátane dneška. Za 30 dní: ${cis(v30, v30 < 10 ? 1 : 0)}/deň"` : ' title="Denný priemer predaja za posledných 14 dní vrátane dneška"';
   return `<span class="priem"${tip}>Ø ${t}/deň</span>`;
 }
 

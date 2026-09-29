@@ -2651,7 +2651,7 @@
           var p = document.createElement('span');
           p.style.cssText = 'color:#64748b;font-weight:600;margin-left:' + (d.textContent ? '6px' : '0');
           p.textContent = pr;
-          if(z && z.priemer30 !== null && z.priemer30 !== undefined) p.title = 'Denný priemer za 14 dní (Magento). Za 30 dní: ' + cislo(z.priemer30) + '/deň';
+          if(z && z.priemer30 !== null && z.priemer30 !== undefined) p.title = 'Denný priemer za posledných 14 dní vrátane dneška. Za 30 dní: ' + cislo(z.priemer30) + '/deň';
           d.appendChild(p);
         }
         if(d.textContent) stred.appendChild(d);
