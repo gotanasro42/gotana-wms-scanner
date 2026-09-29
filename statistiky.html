@@ -308,7 +308,19 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .spolu .karta.zvyraznena{background:#2F8F5B;border-color:#2F8F5B;border-left:4px solid #236B44;color:#fff}
 .spolu .karta.zvyraznena .pop{color:#DCEFE3}
 .spolu .pozn{font-size:10px;color:var(--sedy);margin-top:7px}
-#tPozn{font-size:10px;color:var(--sedy);margin-top:6px}
+#tPozn,#noPozn{font-size:10px;color:var(--sedy);margin-top:6px}
+.dnes-riadok{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;background:#fff;border:1px solid var(--linka);border-left:3px solid var(--mach);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:12px}
+.dnes-riadok b{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600}
+.dnes-riadok .ms{color:var(--sedy);font-size:10.5px}
+#noDni{margin-top:8px;background:#fff;border:1px solid var(--linka);border-radius:8px;overflow:hidden}
+#noDni:empty{display:none}
+.den-r{position:relative;display:flex;align-items:baseline;gap:8px;padding:6px 10px;border-bottom:1px solid var(--linka);font-size:12.5px}
+.den-r:last-child{border-bottom:0}
+.den-r::before{content:'';position:absolute;left:0;top:0;bottom:0;width:var(--w,0%);background:var(--safran);opacity:.13}
+.den-r > *{position:relative}
+.den-r .dn{flex:1;font-weight:500}
+.den-r .dt{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--sedy)}
+.den-r b{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;min-width:34px;text-align:right}
 
 /* ---------- 7-dňový graf ---------- */
 .graf7{display:grid;gap:3px;height:140px}
@@ -641,6 +653,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
     <div class="prepinac">
       <button data-p="metre" aria-pressed="true">Na metre</button>
       <button data-p="kusy" aria-pressed="false">Na kusy</button>
+      <button data-p="objednavka" aria-pressed="false">Na objednávku</button>
     </div>
     <div id="topProdukty"></div>
   </section>
@@ -653,6 +666,15 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 
   <!-- SKLAD -->
   <section class="sekcia" id="s-sklad">
+    <h2>Na objednávku <span style="text-transform:none;letter-spacing:0;font-weight:500" id="noObdobie">· pribudlo</span></h2>
+    <div class="mriezka">
+      <div class="karta zvyraznena"><div class="hod cislo" id="noObj">—</div><div class="pop">Objednávok</div></div>
+      <div class="karta"><div class="hod cislo" id="noKusy">—</div><div class="pop">Panelov NST (ks)</div></div>
+      <div class="karta"><div class="hod cislo" id="noMetre">—</div><div class="pop">Metráže MAT (m)</div></div>
+    </div>
+    <div id="noDnes"></div>
+    <div id="noDni"></div>
+
     <h2>Čaká na tlač <span style="text-transform:none;letter-spacing:0;font-weight:500">· teraz</span></h2>
     <div class="mriezka">
       <div class="karta zvyraznena"><div class="hod cislo" id="tObj">—</div><div class="pop">Objednávok</div></div>
@@ -789,6 +811,7 @@ async function nacitaj(tiche){
     nacitaj7();
     nacitajMinulyRok();
     nacitajPredikciu();
+    nacitajTlacObdobie();
   }catch(e){
     $('#hlavnaHodnota').textContent = '—';
     dl.forEach(s => { const el = $(s); if (el) el.innerHTML = ''; });
@@ -841,7 +864,9 @@ async function nacitajZasoby(skus){
 }
 
 function vykresliProdukty(){
-  const pole = zobrazUdaj === 'metre' ? data.topMetre : data.topKusy;
+  const naObj = zobrazUdaj === 'objednavka';
+  if(naObj && !tlacObd){ $('#topProdukty').innerHTML = '<div class="kostra"></div>'; return; }
+  const pole = naObj ? tlacObd.top : (zobrazUdaj === 'metre' ? data.topMetre : data.topKusy);
   const chybaju = (pole||[]).map(x=>x.sku).filter(x => !(x in zasoby));
   if(chybaju.length){ nacitajZasoby(chybaju).then(() => { if(data) vykresliProdukty(); }); }
   const jed = zobrazUdaj === 'metre' ? 'm' : 'ks';
@@ -862,7 +887,7 @@ function vykresliProdukty(){
           return v;
         })()}</div>
       </div>
-      <div class="hod">${cis(p.mnozstvo,1)}<small>${jed} · ${cis(p.obj)}×</small></div>
+      <div class="hod">${cis(p.mnozstvo, naObj && !p.je_meter ? 0 : 1)}<small>${naObj ? (p.je_meter ? 'm' : 'ks') : jed} · ${cis(p.obj)}×</small></div>
     </div>`).join('');
 }
 
@@ -1371,6 +1396,58 @@ setInterval(() => { if(Date.now() - posledneNacitanie >= 10*60*1000) tichaObnova
 document.addEventListener('visibilitychange', () => {
   if(document.visibilityState === 'visible' && Date.now() - posledneNacitanie >= 10*60*1000) tichaObnova();
 });
+
+/* ---- Na objednávku (NST, MAT) – pribudlo za obdobie + dnes ---- */
+let tlacObd = null;
+async function nacitajTlacObdobie(){
+  const od = obdobie.od, dd = obdobie.do;
+  tlacObd = null;
+  if(zobrazUdaj === 'objednavka' && data) vykresliProdukty();
+  let t = null;
+  try{ t = await rpc('dash_tlac_obdobie', {p_od: od, p_do: dd}); }catch(_e){ t = null; }
+  if(obdobie.od !== od || obdobie.do !== dd) return;
+  tlacObd = t || {spolu:{}, dni:[], top:[], dnes:null};
+  vykresliTlacObdobie();
+  if(zobrazUdaj === 'objednavka' && data) vykresliProdukty();
+}
+function vykresliTlacObdobie(){
+  const t = tlacObd; if(!t) return;
+  const s = t.spolu || {};
+  const jedenDen = obdobie.od === obdobie.do;
+  const dnes = den(new Date());
+  const fmt = x => new Date(x + 'T12:00').toLocaleDateString('sk-SK',{day:'numeric', month:'numeric'});
+  $('#noObdobie').textContent = '· pribudlo ' + (jedenDen ? (obdobie.od === dnes ? 'dnes' : fmt(obdobie.od)) : fmt(obdobie.od) + ' – ' + fmt(obdobie.do));
+  $('#noObj').textContent = cis(s.obj);
+  $('#noKusy').textContent = cis(s.kusy);
+  $('#noMetre').textContent = cis(s.metre, Number(s.metre) % 1 ? 1 : 0);
+
+  const d = t.dnes;
+  if(d){
+    const obj = Number(d.obj)||0, pr = Number(d.priemObjDoTeraz)||0;
+    let porov = '';
+    if(pr > 0){
+      const r = Math.round((obj - pr) / pr * 100);
+      porov = r === 0 ? 'ako bežne' : (r > 0 ? `o ${r} % viac ako bežne` : `o ${Math.abs(r)} % menej ako bežne`);
+    }
+    $('#noDnes').innerHTML = `<div class="dnes-riadok">
+      <span>Dnes do ${esc(d.cas)}</span>
+      <span><b class="cislo">${cis(obj)}</b> obj.</span>
+      <span><b class="cislo">${cis(d.kusy)}</b> ks</span>
+      <span><b class="cislo">${cis(d.metre, Number(d.metre) % 1 ? 1 : 0)}</b> m</span>
+      <span class="ms">bežne ${cis(pr,1)} do tejto hodiny, ${cis(d.priemObjDen,0)} za deň${porov ? ' · ' + porov : ''}</span>
+    </div>`;
+  } else $('#noDnes').innerHTML = '';
+
+  const dni = (t.dni || []).slice().reverse();
+  if(!jedenDen && dni.length){
+    const max = Math.max(...dni.map(x => Number(x.obj)||0), 1);
+    $('#noDni').innerHTML = dni.map(x => `<div class="den-r" style="--w:${((Number(x.obj)||0)/max*100).toFixed(1)}%">
+      <span class="dn">${esc(new Date(x.den + 'T12:00').toLocaleDateString('sk-SK',{weekday:'short', day:'numeric', month:'numeric'}))}</span>
+      <span class="dt">${cis(x.kusy)} ks · ${cis(x.metre, Number(x.metre) % 1 ? 1 : 0)} m</span>
+      <b class="cislo">${cis(x.obj)}</b>
+    </div>`).join('');
+  } else $('#noDni').innerHTML = '';
+}
 
 /* ---- Čaká na tlač (NST, MAT) – aktuálny stav ---- */
 async function nacitajTlac(){
