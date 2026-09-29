@@ -367,7 +367,8 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .pred-hl b{font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;letter-spacing:-.03em}
 .pred .pruh{position:relative;height:8px;border-radius:4px;background:var(--platno-tmavsi);margin:7px 0 5px;overflow:hidden}
 .pred .pruh .pasm{position:absolute;top:0;bottom:0;background:rgba(232,163,61,.22)}
-.pred .pruh .napl{position:absolute;left:0;top:0;bottom:0;background:var(--atrament);border-radius:4px}
+.pred .pruh .napl{position:absolute;left:0;top:0;bottom:0;background:#2F8F5B;border-radius:4px}
+.pred .riadok2 .dnes-pocet{background:#2F8F5B;color:#fff;padding:2px 9px;border-radius:11px;font-size:14px;font-weight:700;margin-left:2px}
 .pred .pruh .ciel{position:absolute;top:-1px;bottom:-1px;width:2px;background:var(--safran)}
 .pred .riadok2{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--sedy)}
 .pred .riadok2 b{color:var(--atrament);font-family:'IBM Plex Mono',monospace}
@@ -1322,7 +1323,7 @@ function vykresliPredikciu(){
       <div class="napl" style="width:${pct(teraz)}%"></div>
       <div class="ciel" style="left:${pct(z.odhad)}%"></div>
     </div>
-    <div class="riadok2"><span>Zatiaľ <b>${cis(teraz)}</b>${tempo}</span><span>pásmo ${cis(z.od)}–${cis(z.do)}</span></div>
+    <div class="riadok2"><span>Zatiaľ <b class="dnes-pocet">${cis(teraz)}</b>${tempo}</span><span>pásmo ${cis(z.od)}–${cis(z.do)}</span></div>
     ${vcera ? `<div class="riadok2" style="margin-top:3px">${vcera}</div>` : ''}
   </div>`;
 }
