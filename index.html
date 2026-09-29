@@ -1499,6 +1499,7 @@
          html += `<div class="p-4 bg-white border-t border-slate-200"><button onclick="startInventory('${locId}', '${expectedStr}')" class="w-full bg-teal-600 active:bg-teal-800 text-white py-4 rounded-xl font-bold shadow-lg text-lg tap-feedback flex items-center justify-center gap-2"><span class="material-icons">fact_check</span> Spustiť inventúru tejto pozície</button></div></div>`;
          
          area.innerHTML = html;
+         if (window.gtDoplnOblast) window.gtDoplnOblast(area);
       }
 
       function renderProductView(scannedId, matches, rawParts) {
@@ -1516,7 +1517,7 @@
                 ${displayName !== scannedId ? `<div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 leading-snug">${displayName}</div>` : ''}
                 ${dbNahlady[scannedId] ? `<img src="${dbNahlady[scannedId]}" loading="lazy" onclick="zobrazVelkyNahlad('${dbNahlady[scannedId]}','${scannedId}','ziadna')" class="w-20 h-20 object-cover rounded-xl border border-slate-200 mb-2 shadow-sm cursor-pointer" onerror="this.style.display='none'">` : ''}
                 <h2 class="text-3xl font-black font-mono text-slate-900 leading-tight mb-1 break-words tracking-tight">${scannedId}</h2>
-                <button onclick="vzorPodobne('${scannedId}')" class="mt-2 bg-pink-50 border border-pink-200 text-pink-700 px-3 py-2 rounded-lg text-xs font-bold inline-flex items-center gap-1 tap-feedback active:bg-pink-100"><span class="material-icons text-sm">image_search</span> Podobné vzory</button>${(dbPodprac[scannedId] || dbPodprac[getBaseCode(scannedId)]) ? `<div class="mt-2"><span class="text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-1 rounded-lg inline-flex items-center gap-1"><span class="material-icons text-sm">factory</span> Podpracovisko: ${dbPodprac[scannedId] || dbPodprac[getBaseCode(scannedId)]}</span></div>` : ''}
+                <button onclick="vzorPodobne('${scannedId}')" class="mt-2 bg-pink-50 border border-pink-200 text-pink-700 px-3 py-2 rounded-lg text-xs font-bold inline-flex items-center gap-1 tap-feedback active:bg-pink-100"><span class="material-icons text-sm">image_search</span> Podobné vzory</button><div id="gtPredajInfo" data-kod="${getBaseCode(scannedId)}"></div>${(dbPodprac[scannedId] || dbPodprac[getBaseCode(scannedId)]) ? `<div class="mt-2"><span class="text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-1 rounded-lg inline-flex items-center gap-1"><span class="material-icons text-sm">factory</span> Podpracovisko: ${dbPodprac[scannedId] || dbPodprac[getBaseCode(scannedId)]}</span></div>` : ''}
              </div>`;
          
          if (count > 0) {
@@ -1536,7 +1537,7 @@
              html += `<div class="p-10 text-center bg-slate-50"><h3 class="text-xl font-bold text-slate-700 mb-1">Nenájdené</h3><p class="text-sm text-slate-400 mb-6">Tento kód neevidujeme.</p><button onclick="prepareNew('${scannedId}', false)" class="w-full bg-green-600 active:bg-green-800 text-white py-4 rounded-xl font-bold shadow-lg text-lg tap-feedback">Naskladniť nové</button></div>`; 
          }
          html += `</div>`;
-         if(count === 0 && rawParts.length > 2) prepareNew(scannedId, false, rawParts); else area.innerHTML = html;
+         if(count === 0 && rawParts.length > 2) prepareNew(scannedId, false, rawParts); else { area.innerHTML = html; if (window.gtPredajInfo) window.gtPredajInfo(scannedId); }
       }
       
       // Úprava funkcie pre výpočet farby, aby bola vhodná pre ľavý hrubý okraj celého bloku
@@ -2583,6 +2584,55 @@
       return Number(n).toLocaleString('sk-SK', { maximumFractionDigits: 1 });
     }
 
+    function priemer(z){
+      if(!z || z.priemer === null || z.priemer === undefined) return '';
+      var n = Number(z.priemer);
+      return 'Ø ' + (n === 0 ? '0' : (n < 0.1 ? '<0,1' : cislo(n))) + '/deň';
+    }
+    window.gtPriemerText = priemer;
+
+    /* zásoba + priemer aj pre riadky mimo zoznamu Skladu (napr. obsah pozície po naskenovaní) */
+    window.gtDoplnOblast = async function(el){
+      try{
+        if(!el) return;
+        var riadky = [].slice.call(el.querySelectorAll('.flex-1')).map(function(f){ return f.parentElement; })
+          .filter(function(r){ return r && !r.querySelector('.gt-zasoba') && r.querySelector('.font-mono'); });
+        var mapa = [], kody = [];
+        riadky.forEach(function(r){
+          var m = (r.querySelector('.font-mono').textContent || '').match(/^\s*([A-Z]{1,4}-[\w.]+)/);
+          if(!m) return;
+          var kod = m[1].split('_')[0];
+          mapa.push([r, kod]); if(kody.indexOf(kod) < 0) kody.push(kod);
+        });
+        if(!mapa.length) return;
+        await window.gtNacitajZasoby(kody);
+        mapa.forEach(function(p){ vypis(p[0], pamat[p[1]]); });
+      }catch(e){}
+    };
+
+    /* karta produktu po naskenovaní: zásoba a denný priemer z Magenta */
+    window.gtPredajInfo = async function(kod){
+      try{
+        var el = document.getElementById('gtPredajInfo');
+        if(!el) return;
+        kod = String(kod || '').split('_')[0];
+        await window.gtNacitajZasoby([kod]);
+        el = document.getElementById('gtPredajInfo');
+        if(!el || el.dataset.kod !== kod) return;
+        var z = pamat[kod];
+        if(!z) return;
+        var casti = [];
+        if(z.zasoba !== null && z.zasoba !== undefined)
+          casti.push('<span style="color:' + (z.zasoba > 0 ? '#2F6B4F' : '#A63D40') + '">' + (z.zasoba > 0 ? 'Skladom ' + cislo(z.zasoba) : 'Vypredané') + '</span>');
+        if(z.priemer !== null && z.priemer !== undefined)
+          casti.push('<span>Denný priemer ' + priemer(z).replace('Ø ', '') + '</span>');
+        if(z.priemer30 !== null && z.priemer30 !== undefined)
+          casti.push('<span style="color:#94a3b8">30 dní: ' + cislo(z.priemer30) + '/deň</span>');
+        if(!casti.length) return;
+        el.innerHTML = '<div class="mt-2 inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-600"><span class="material-icons text-sm text-slate-400">trending_up</span>' + casti.join('') + '</div>';
+      }catch(e){}
+    };
+
     function vypis(riadok, z){
       try{
         if(riadok.querySelector('.gt-zasoba')) return;
@@ -2596,6 +2646,14 @@
         d.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:.02em;' + (meta ? '' : 'margin-top:2px;') + 'color:'
           + (kladna ? '#2F6B4F' : '#A63D40');
         d.textContent = ma ? (kladna ? 'skladom ' + cislo(z.zasoba) : 'vypredané') : '';
+        var pr = priemer(z);
+        if(pr){
+          var p = document.createElement('span');
+          p.style.cssText = 'color:#64748b;font-weight:600;margin-left:' + (d.textContent ? '6px' : '0');
+          p.textContent = pr;
+          if(z && z.priemer30 !== null && z.priemer30 !== undefined) p.title = 'Denný priemer za 14 dní (Magento). Za 30 dní: ' + cislo(z.priemer30) + '/deň';
+          d.appendChild(p);
+        }
         if(d.textContent) stred.appendChild(d);
       }catch(e){}
     }
