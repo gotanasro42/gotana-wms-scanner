@@ -308,6 +308,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .spolu .karta.zvyraznena{background:#2F8F5B;border-color:#2F8F5B;border-left:4px solid #236B44;color:#fff}
 .spolu .karta.zvyraznena .pop{color:#DCEFE3}
 .spolu .pozn{font-size:10px;color:var(--sedy);margin-top:7px}
+#tPozn{font-size:10px;color:var(--sedy);margin-top:6px}
 
 /* ---------- 7-dňový graf ---------- */
 .graf7{display:grid;gap:3px;height:140px}
@@ -652,6 +653,14 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 
   <!-- SKLAD -->
   <section class="sekcia" id="s-sklad">
+    <h2>Čaká na tlač <span style="text-transform:none;letter-spacing:0;font-weight:500">· teraz</span></h2>
+    <div class="mriezka">
+      <div class="karta zvyraznena"><div class="hod cislo" id="tObj">—</div><div class="pop">Objednávok</div></div>
+      <div class="karta"><div class="hod cislo" id="tKusy">—</div><div class="pop">Panelov NST (ks)</div></div>
+      <div class="karta"><div class="hod cislo" id="tMetre">—</div><div class="pop">Metráže MAT (m)</div></div>
+    </div>
+    <div class="pozn" id="tPozn">Nevybavené zaplatené objednávky s produktmi na objednávku (NST, MAT).</div>
+
     <h2>Vyťaženie podpracovísk</h2>
     <div id="pracoviska"></div>
     <h2>Kam sa doručovalo</h2>
@@ -1356,12 +1365,30 @@ function tichaObnova(){
   if(document.visibilityState !== 'visible') return;
   if($('#zaclona').classList.contains('zobraz') || $('#obnov').disabled) return;
   if($('#vlastne').classList.contains('zobraz')) return;
-  nacitaj(true); stavPrenosu();
+  nacitaj(true); stavPrenosu(); nacitajTlac();
 }
 setInterval(() => { if(Date.now() - posledneNacitanie >= 10*60*1000) tichaObnova(); }, 60*1000);
 document.addEventListener('visibilitychange', () => {
   if(document.visibilityState === 'visible' && Date.now() - posledneNacitanie >= 10*60*1000) tichaObnova();
 });
+
+/* ---- Čaká na tlač (NST, MAT) – aktuálny stav ---- */
+async function nacitajTlac(){
+  try{
+    const t = await rpc('dash_tlac');
+    if(!t) return;
+    $('#tObj').textContent = cis(t.objednavok);
+    $('#tKusy').textContent = cis(t.kusy);
+    $('#tMetre').textContent = cis(t.metre, Number(t.metre) % 1 ? 1 : 0);
+    let txt = `${cis(t.poloziek)} položiek v nevybavených zaplatených objednávkach.`;
+    if(t.najstarsia){
+      const d = new Date(t.najstarsia);
+      const dni = Math.floor((Date.now() - d.getTime())/86400000);
+      txt += ` Najstaršia od ${d.toLocaleDateString('sk-SK',{day:'numeric',month:'numeric'})} (${dni} dní).`;
+    }
+    $('#tPozn').textContent = txt;
+  }catch(_e){}
+}
 
 /* ---- Tlačidlo Obnoviť ---- */
 function hlaska(t, ms=3500){
@@ -1415,7 +1442,7 @@ async function obnov(){
     zavriObnovu(4000);
   }
   b.disabled = false; b.classList.remove('bezi'); b.querySelector('.tx').textContent = 'Obnoviť';
-  nacitaj(); stavPrenosu();
+  nacitaj(); stavPrenosu(); nacitajTlac();
 }
 $('#obnov').addEventListener('click', obnov);
 
@@ -1504,7 +1531,7 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape') zavriObjednav
 kresliStupnicu();
 nastavObdobie('vcera');
 nacitaj();
-stavPrenosu();
+stavPrenosu(); nacitajTlac();
 </script>
 </body>
 </html>
