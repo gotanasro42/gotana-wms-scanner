@@ -669,19 +669,20 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
     <h2>Na objednávku <span style="text-transform:none;letter-spacing:0;font-weight:500" id="noObdobie">· pribudlo</span></h2>
     <div class="mriezka">
       <div class="karta zvyraznena"><div class="hod cislo" id="noObj">—</div><div class="pop">Objednávok</div></div>
-      <div class="karta"><div class="hod cislo" id="noKusy">—</div><div class="pop">Panelov NST (ks)</div></div>
-      <div class="karta"><div class="hod cislo" id="noMetre">—</div><div class="pop">Metráže MAT (m)</div></div>
+      <div class="karta"><div class="hod cislo" id="noKusy">—</div><div class="pop">Kusy (ks)</div></div>
+      <div class="karta"><div class="hod cislo" id="noMetre">—</div><div class="pop">Metráž (m)</div></div>
     </div>
     <div id="noDnes"></div>
     <div id="noDni"></div>
+    <div class="pozn" id="noPozn">Počíta sa: panely z vlastnej tlače, NST, MAT a tovar predaný bez zásoby.</div>
 
     <h2>Čaká na tlač <span style="text-transform:none;letter-spacing:0;font-weight:500">· teraz</span></h2>
     <div class="mriezka">
       <div class="karta zvyraznena"><div class="hod cislo" id="tObj">—</div><div class="pop">Objednávok</div></div>
-      <div class="karta"><div class="hod cislo" id="tKusy">—</div><div class="pop">Panelov NST (ks)</div></div>
-      <div class="karta"><div class="hod cislo" id="tMetre">—</div><div class="pop">Metráže MAT (m)</div></div>
+      <div class="karta"><div class="hod cislo" id="tKusy">—</div><div class="pop">Kusy (ks)</div></div>
+      <div class="karta"><div class="hod cislo" id="tMetre">—</div><div class="pop">Metráž (m)</div></div>
     </div>
-    <div class="pozn" id="tPozn">Nevybavené zaplatené objednávky s produktmi na objednávku (NST, MAT).</div>
+    <div class="pozn" id="tPozn">Nevybavené zaplatené objednávky s tovarom na objednávku.</div>
 
     <h2>Vyťaženie podpracovísk</h2>
     <div id="pracoviska"></div>
@@ -1397,7 +1398,7 @@ document.addEventListener('visibilitychange', () => {
   if(document.visibilityState === 'visible' && Date.now() - posledneNacitanie >= 10*60*1000) tichaObnova();
 });
 
-/* ---- Na objednávku (NST, MAT) – pribudlo za obdobie + dnes ---- */
+/* ---- Na objednávku (panely vlastnej tlače, NST, MAT, predané bez zásoby) – pribudlo za obdobie + dnes ---- */
 let tlacObd = null;
 async function nacitajTlacObdobie(){
   const od = obdobie.od, dd = obdobie.do;
@@ -1449,7 +1450,7 @@ function vykresliTlacObdobie(){
   } else $('#noDni').innerHTML = '';
 }
 
-/* ---- Čaká na tlač (NST, MAT) – aktuálny stav ---- */
+/* ---- Čaká na tlač (panely vlastnej tlače, NST, MAT, predané bez zásoby) – aktuálny stav ---- */
 async function nacitajTlac(){
   try{
     const t = await rpc('dash_tlac');
