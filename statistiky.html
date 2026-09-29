@@ -1085,6 +1085,7 @@ async function nacitaj7(){
   }catch(_e){ sedem = null; sedemPre = null; }
   if(data){ if(obdobie.od === obdobie.do) vykresli7Prehlad(); vykresliKrajiny(); }
   vykresliAlarm();
+  vykresliPredikciu();
 }
 
 function popisDna(iso, kratko){
@@ -1269,32 +1270,54 @@ async function nacitajMinulyRok(){
   minulyRok = d;
   vykresliMinulyRok();
 }
-/* ---- Odhad objednávok na zajtra (len pri „Dnes“) ---- */
+/* ---- Odhad objednávok na dnes (len pri „Dnes“) ---- */
+let predikcia = null;
 async function nacitajPredikciu(){
-  const el = $('#predikcia');
   const dnes = den(new Date());
-  if(obdobie.od !== dnes || obdobie.do !== dnes){ el.innerHTML = ''; return; }
+  if(obdobie.od !== dnes || obdobie.do !== dnes){ predikcia = null; $('#predikcia').innerHTML = ''; return; }
   let p = null;
   try{ p = await rpc('dash_predikcia'); }catch(_e){ p = null; }
   if(obdobie.od !== dnes || obdobie.do !== dnes) return;
-  const z = p && p.zajtra;
-  if(!z){ el.innerHTML = ''; return; }
+  predikcia = p;
+  vykresliPredikciu();
+}
+function vykresliPredikciu(){
+  const el = $('#predikcia');
+  const dnes = den(new Date());
+  const z = predikcia && predikcia.dnes;
+  if(!z || obdobie.od !== dnes || obdobie.do !== dnes || !data){ el.innerHTML = ''; return; }
   const dt = x => new Date(x + 'T12:00');
   const menoDna = x => dt(x).toLocaleDateString('sk-SK',{weekday:'long'});
   const datum = x => dt(x).toLocaleDateString('sk-SK',{weekday:'short', day:'numeric', month:'numeric'});
   const idx = Number(z.indexDna) || 0;
-  const idxTxt = idx === 0 ? `${menoDna(z.den)} býva priemerný deň týždňa`
-    : `${menoDna(z.den).charAt(0).toUpperCase() + menoDna(z.den).slice(1)} býva o ${Math.abs(idx)} % ${idx > 0 ? 'nad' : 'pod'} priemerom týždňa`;
+  const md = menoDna(z.den);
+  const idxTxt = idx === 0 ? `${md.charAt(0).toUpperCase() + md.slice(1)} býva priemerný deň týždňa`
+    : `${md.charAt(0).toUpperCase() + md.slice(1)} býva o ${Math.abs(idx)} % ${idx > 0 ? 'nad' : 'pod'} priemerom týždňa`;
+
+  /* priebeh dňa: koľko už prišlo a kam smerujeme podľa tempa */
+  const teraz = Number((data.suhrn || {}).objednavok) || 0;
+  let priebeh = `Zatiaľ prišlo <b>${cis(teraz)}</b> (${Math.round(teraz / z.odhad * 100)} % odhadu)`;
+  if(sedem && sedemPre === obdobie.do && sedem.jeDnes){
+    const pred = sedem.spolu.slice(0, -1);
+    const sucTeraz = pred.reduce((a,x) => a + (Number(x.objTeraz)||0), 0);
+    const sucCely = pred.reduce((a,x) => a + (Number(x.obj)||0), 0);
+    const podiel = sucCely ? sucTeraz / sucCely : 0;
+    if(podiel >= 0.15 && podiel < 0.98){
+      priebeh += ` · do ${esc(sedem.cas)} býva hotových ${Math.round(podiel*100)} % dňa, podľa tempa smerujeme k <b>~${cis(Math.round(teraz / podiel))}</b>`;
+    }
+  }
+
   let spat = '';
-  const v = p.vcera;
+  const v = predikcia.vcera;
   if(v && v.odhad && v.skutocnost){
     const r = Math.round((v.skutocnost - v.odhad) / v.odhad * 100);
     spat = `<div class="spat">Včera (${esc(datum(v.den))}) sme odhadovali <b>${cis(v.odhad)}</b>, prišlo <b>${cis(v.skutocnost)}</b> (${r >= 0 ? '+' : ''}${r} %).</div>`;
   }
   el.innerHTML = `<div class="pred">
-    <div class="pred-hl"><span class="t">Odhad na zajtra · ${esc(datum(z.den))}</span><b>~${cis(z.odhad)}</b></div>
+    <div class="pred-hl"><span class="t">Odhad na dnes · ${esc(datum(z.den))}</span><b>~${cis(z.odhad)}</b></div>
     <div class="pasmo">zvyčajne ${cis(z.od)} – ${cis(z.do)} predaných objednávok</div>
     <div class="pozn2">Posledných 7 dní priemerne ${cis(z.uroven)} obj./deň · ${esc(idxTxt)}.</div>
+    <div class="spat">${priebeh}.</div>
     ${spat}
   </div>`;
 }
