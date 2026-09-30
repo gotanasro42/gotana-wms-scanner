@@ -462,6 +462,11 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .ht-lezi .hl span{font-weight:400;color:var(--sedy)}
 .ht-viac{display:block;width:100%;margin:6px 0 8px;padding:9px;border:1px solid var(--linka);background:var(--platno);border-radius:7px;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--atrament);min-height:40px;cursor:pointer}
 .graf7 .hfcast{position:absolute;left:0;right:0;top:0;background:var(--hf);opacity:.85;border-radius:2px 2px 0 0}
+.graf7.svrat .st{grid-template-rows:1fr auto 13px}
+.graf7 .vr{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--tehla);text-align:center;line-height:13px;white-space:nowrap}
+.graf7 .vr.ma{background:#F6DADB;border-radius:3px}
+.vr-txt{color:var(--tehla);font-weight:600}
+.ht-riadok .h span .vr-txt{margin-left:0;font-size:inherit}
 .priem{color:var(--sedy);font-weight:500;margin-left:5px;white-space:nowrap}
 .ht-prepinac{display:flex;gap:6px;margin-bottom:4px}
 .ht-prepinac button{flex:1;padding:8px;border:1px solid var(--linka);background:#fff;border-radius:7px;font-size:12.5px;font-weight:500;min-height:38px;color:var(--atrament);font-family:inherit;cursor:pointer}
@@ -1623,7 +1628,11 @@ document.addEventListener('click', e => {
   info.style.setProperty('--fd', FARBY_DNI[dow]);
   info.innerHTML = `<b style="font-family:inherit">${MENA_DNI[dow].charAt(0).toUpperCase() + MENA_DNI[dow].slice(1)}:</b> ${
     rovnake.map(x => `<b>${cis(Number(x.dataset.obj)||0)}</b>${x.dataset.dnes === '1' ? ' (dnes, zatiaľ)' : ''}`).join(' → ')}${
-    cele.length > 1 ? ` · priemer <b>${cis(priem,0)}</b>` : ''}<br><span style="color:var(--sedy);font-size:11px">Ťukni znova na stĺpec pre zrušenie.</span>`;
+    cele.length > 1 ? ` · priemer <b>${cis(priem,0)}</b>` : ''}${
+    rovnake[0].dataset.vr !== undefined ? (function(){
+      const v = rovnake.map(x => Number(x.dataset.vr)||0), sv = v.reduce((a,b)=>a+b,0), sp = rovnake.reduce((a,x)=>a+(Number(x.dataset.obj)||0),0);
+      return `<br><span class="vr-txt">Vrátené: ${v.map(x => '<b>' + cis(x) + '</b>').join(' → ')}${sp ? ` · ${cis(sv/sp*100, 1)} % z predaných` : ''}</span>`;
+    })() : ''}<br><span style="color:var(--sedy);font-size:11px">Ťukni znova na stĺpec pre zrušenie.</span>`;
 });
 
 /* ---- Ovládanie ---- */
@@ -1756,25 +1765,27 @@ function htKrajGraf(dni){
   if(!dni || !dni.length) return '<div class="prazdne">Bez údajov.</div>';
   const dnes = den(new Date());
   const max = Math.max(...dni.map(d => +d[1] + +d[2]), 1);
-  let sHT = 0, sHF = 0;
+  let sHT = 0, sHF = 0, sVR = 0;
   const stlpce = dni.map((d, idx) => {
-    const a = +d[1], b = +d[2], sp = a + b; sHT += a; sHF += b;
+    const a = +d[1], b = +d[2], sp = a + b, vr = +(d[3]||0); sHT += a; sHF += b; sVR += vr;
     const posl = idx === dni.length - 1, jeDnes = posl && d[0] === dnes;
     const v = sp > 0 ? Math.max(2, sp / max * 100) : 0;
     const dow = new Date(d[0] + 'T12:00').getDay();
     const tr = 'st' + (posl ? ' vybr' : '') + (jeDnes ? ' ciastocny' : '');
     const nazovDna = new Date(d[0] + 'T12:00').toLocaleDateString('sk-SK',{weekday:'long', day:'numeric', month:'numeric'});
-    return `<div class="${tr}" data-dow="${dow}" data-obj="${sp}" data-dnes="${jeDnes ? 1 : 0}" style="--fd:${FARBY_DNI[dow]}" title="${nazovDna}: ${htF(sp)} ks (HT ${htF(a)} · HF ${htF(b)})">
+    return `<div class="${tr}" data-dow="${dow}" data-obj="${sp}" data-vr="${vr}" data-dnes="${jeDnes ? 1 : 0}" style="--fd:${FARBY_DNI[dow]}" title="${nazovDna}: ${htF(sp)} ks (HT ${htF(a)} · HF ${htF(b)})${vr ? ' · vrátené ' + htF(vr) + ' ks' : ''}">
       <div class="plocha"><div class="vnutro">
         <div class="stlp" style="height:${v.toFixed(1)}%">${b > 0 ? `<div class="hfcast" style="height:${(b / sp * 100).toFixed(1)}%"></div>` : ''}</div>
         <div class="hodn" style="bottom:${v.toFixed(1)}%">${htF(sp)}</div>
       </div></div>
       <div class="den">${popisDna(d[0], true)}</div>
+      <div class="vr${vr ? ' ma' : ''}">${vr ? '↩' + htF(vr) : ''}</div>
     </div>`;
   }).join('');
-  return `<div class="ht-denny"><div class="suhrn"><span>21 dní: <b>${htF(sHT + sHF)}</b> ks</span><span><i style="background:#F7DDB0;border:1px solid #9AA3B2"></i>HT <b>${htF(sHT)}</b></span><span><i style="background:var(--hf)"></i>HF <b>${htF(sHF)}</b></span></div>
-    <div class="graf7 husty velmihusty" style="grid-template-columns:repeat(${dni.length},1fr)">${stlpce}</div>
-    <div class="ht-pozn" style="margin-top:4px">Ťukni na stĺpec – zvýraznia sa rovnaké dni v týždni.</div></div>`;
+  const pomer = (sHT + sHF) ? (sVR / (sHT + sHF) * 100) : 0;
+  return `<div class="ht-denny"><div class="suhrn"><span>21 dní: <b>${htF(sHT + sHF)}</b> ks</span><span><i style="background:#F7DDB0;border:1px solid #9AA3B2"></i>HT <b>${htF(sHT)}</b></span><span><i style="background:var(--hf)"></i>HF <b>${htF(sHF)}</b></span><span class="vr-txt">↩ vrátené <b style="color:var(--tehla)">${htF(sVR)}</b> ks · ${cis(pomer, 1)} %</span></div>
+    <div class="graf7 husty velmihusty svrat" style="grid-template-columns:repeat(${dni.length},1fr)">${stlpce}</div>
+    <div class="ht-pozn" style="margin-top:4px">↩ = vrátené kusy v daný deň (dobropis po odoslaní tovaru). Ťukni na stĺpec – zvýraznia sa rovnaké dni v týždni.</div></div>`;
 }
 
 function htRozbalovacie(pole, nazov, obsah){
@@ -1782,7 +1793,7 @@ function htRozbalovacie(pole, nazov, obsah){
   const max = Math.max(...pole.map(r => +r.ht + +r.hf), 1);
   return pole.map((r, i) => {
     const s = +r.ht + +r.hf;
-    return `<div class="ht-riadok" data-i="${i}"><div class="pruh" style="width:${(s/max*100).toFixed(1)}%"><i style="width:${s ? (r.ht/s*100).toFixed(1) : 0}%;background:var(--safran)"></i><i style="width:${s ? (r.hf/s*100).toFixed(1) : 0}%;background:var(--hf)"></i></div><span class="n">${nazov(r)}</span><b class="h">${htF(s)}<span>HT ${htF(r.ht)} · HF ${htF(r.hf)}</span></b></div><div class="ht-rozbal" data-i="${i}"></div>`;
+    return `<div class="ht-riadok" data-i="${i}"><div class="pruh" style="width:${(s/max*100).toFixed(1)}%"><i style="width:${s ? (r.ht/s*100).toFixed(1) : 0}%;background:var(--safran)"></i><i style="width:${s ? (r.hf/s*100).toFixed(1) : 0}%;background:var(--hf)"></i></div><span class="n">${nazov(r)}</span><b class="h">${htF(s)}<span>HT ${htF(r.ht)} · HF ${htF(r.hf)}${r.vrat !== undefined && +r.vrat > 0 ? ` · <span class="vr-txt">↩${htF(r.vrat)} (${cis(r.vrat / s * 100, 1)} %)</span>` : ''}</span></b></div><div class="ht-rozbal" data-i="${i}"></div>`;
   }).join('');
 }
 function htPripojRozbal(sel, pole, obsah){
