@@ -23,7 +23,7 @@
   --tehla:#A63D40;
   --linka:#DED8CE;
   --sedy:#6B6660;
-  --r:10px;
+  --r:8px;
   --hlavicka:0px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -98,17 +98,17 @@ header{
 .hlavne{background:var(--atrament);color:var(--platno);padding:2px 12px 0}
 .hlavne-cislo{display:flex;align-items:flex-end;gap:7px}
 .hlavne-cislo .hodnota{
-  font-family:'IBM Plex Mono',monospace;font-size:44px;font-weight:600;
-  line-height:.92;letter-spacing:-.035em;
+  font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:600;
+  line-height:1;letter-spacing:-.03em;
 }
-.hlavne-cislo .jednotka{font-size:16px;color:var(--safran);font-weight:600;padding-bottom:5px}
-.hlavne-cislo .vedlajsie{margin-left:auto;padding-bottom:5px;font-size:12px;color:#9FB0CE;white-space:nowrap}
-.hlavne-cislo .vedlajsie b{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:var(--platno);letter-spacing:-.02em;margin-right:2px}
+.hlavne-cislo .jednotka{font-size:13px;color:var(--safran);font-weight:600;padding-bottom:3px}
+.hlavne-cislo .vedlajsie{margin-left:auto;padding-bottom:3px;font-size:11px;color:#9FB0CE;white-space:nowrap}
+.hlavne-cislo .vedlajsie b{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:var(--platno);letter-spacing:-.02em;margin-right:2px}
 .hlavne-popis{
-  font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:#9FB0CE;
-  margin-top:5px;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:600;
+  font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#9FB0CE;
+  margin-top:3px;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:600;
 }
-.meter{height:18px;margin:6px -12px 0;position:relative;overflow:hidden;background:var(--safran)}
+.meter{height:8px;margin:5px -12px 0;position:relative;overflow:hidden;background:var(--safran)}
 .meter svg{display:block;width:100%;height:100%}
 
 /* ---------- Obsah ---------- */
@@ -295,7 +295,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .hlaska.zobraz{display:block}
 
 /* ---------- Všetky objednávky spolu ---------- */
-.spolu{background:#fff;border:1px solid var(--linka);border-radius:10px;padding:9px 9px 10px;margin-bottom:6px}
+.spolu{background:#fff;border:1px solid var(--linka);border-radius:8px;padding:9px 9px 10px;margin-bottom:6px}
 .spolu-hlava{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px}
 .spolu-hlava .t{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sedy);font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700}
 .spolu-hlava b{font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;letter-spacing:-.03em}
@@ -365,7 +365,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .riadok.tr-hore::before{background:#2F8F5B;opacity:.12}
 .riadok.tr-dole::before{background:#E0892F;opacity:.14}
 .riadok.tr-rovno::before{background:#8A97AD;opacity:.14}
-.alarm{background:#FBE9E9;border:1px solid var(--tehla);border-left-width:4px;border-radius:9px;padding:10px 12px;margin:0 0 10px;color:#6E2426;font-size:13px;line-height:1.45}
+.alarm{background:#FBE9E9;border:1px solid var(--tehla);border-left-width:4px;border-radius:8px;padding:10px 12px;margin:0 0 10px;color:#6E2426;font-size:13px;line-height:1.45}
 .alarm b{color:var(--tehla)}
 .alarm.pozor{background:#FDF3E1;border-color:#D98B1F;color:#6B4510}
 .alarm.pozor b{color:#B06A0A}
@@ -375,7 +375,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .alarm.dobre b{color:var(--mach)}
 .alarm .dalsie{margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,.08)}
 .alarm .dalsie div{margin-top:2px}
-.pred{background:#fff;border:1px solid var(--linka);border-left:4px solid var(--safran);border-radius:10px;padding:9px 11px;margin-bottom:6px;font-size:12.5px;line-height:1.45}
+.pred{background:#fff;border:1px solid var(--linka);border-left:4px solid var(--safran);border-radius:8px;padding:9px 11px;margin-bottom:6px;font-size:12.5px;line-height:1.45}
 .pred-hl{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .pred-hl .t{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sedy);font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700}
 .pred-hl b{font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;letter-spacing:-.03em}
@@ -386,7 +386,6 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .pred .pruh .ciel{position:absolute;top:-1px;bottom:-1px;width:2px;background:var(--safran)}
 .pred .riadok2{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--sedy)}
 .pred .riadok2 b{color:var(--atrament);font-family:'IBM Plex Mono',monospace}
-.mr{background:#fff;border:1px solid var(--linka);border-radius:10px;padding:4px 10px}
 .mr-r{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--platno-tmavsi);font-size:12.5px}
 .mr-r:last-of-type{border-bottom:0}
 .mr-r .c{font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right;white-space:nowrap}
@@ -422,7 +421,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .ht-blok .rad b{font-family:'IBM Plex Mono',monospace;color:var(--atrament);font-weight:600}
 .ht-obj{background:#2F8F5B;color:#fff;padding:2px 9px;border-radius:11px;font-size:14px;font-weight:700;font-family:'IBM Plex Mono',monospace;display:inline-block;line-height:1.3}
 .ht-rad-obj{background:#2F8F5B;color:#fff !important;padding:1px 8px;border-radius:10px}
-.ht-nacit{background:#fff;border:1px solid var(--linka);border-left:4px solid var(--safran);border-radius:10px;padding:14px 14px 12px;margin-bottom:8px}
+.ht-nacit{background:#fff;border:1px solid var(--linka);border-left:4px solid var(--safran);border-radius:8px;padding:14px 14px 12px;margin-bottom:8px}
 .ht-nacit .r{display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:600}
 .ht-nacit .kr{width:18px;height:18px;border:3px solid var(--platno-tmavsi);border-top-color:var(--safran);border-radius:50%;animation:htkr .8s linear infinite;flex:0 0 auto}
 .ht-nacit .t{font-size:11.5px;color:var(--sedy);margin-top:6px;line-height:1.4}
@@ -467,9 +466,6 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .ht-denny .suhrn{display:flex;gap:14px;font-size:11px;color:var(--sedy);padding:6px 0 4px;flex-wrap:wrap}
 .ht-denny .suhrn b{font-family:'IBM Plex Mono',monospace;color:var(--atrament)}
 .ht-denny .suhrn i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:3px}
-.ht-lezi{background:#fff;border:1px solid var(--linka);border-left:3px solid var(--sedy);border-radius:8px;padding:4px 10px}
-.ht-lezi .hl{font-size:12px;font-weight:600;padding:6px 0 2px}
-.ht-lezi .hl span{font-weight:400;color:var(--sedy)}
 .ht-viac{display:block;width:100%;margin:6px 0 8px;padding:9px;border:1px solid var(--linka);background:var(--platno);border-radius:7px;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--atrament);min-height:40px;cursor:pointer}
 .graf7 .hfcast{position:absolute;left:0;right:0;top:0;background:var(--hf);opacity:.85;border-radius:2px 2px 0 0}
 .graf7.svrat .st{grid-template-rows:1fr auto 13px}
@@ -481,6 +477,59 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .ht-prepinac{display:flex;gap:6px;margin-bottom:4px}
 .ht-prepinac button{flex:1;padding:8px;border:1px solid var(--linka);background:#fff;border-radius:7px;font-size:12.5px;font-weight:500;min-height:38px;color:var(--atrament);font-family:inherit;cursor:pointer}
 .ht-prepinac button[aria-pressed="true"]{background:var(--atrament);color:var(--platno)}
+
+/* ---------- Spoločné doplnky ---------- */
+.h2-pozn{text-transform:none;letter-spacing:0;font-weight:500}
+.mriezka.male{gap:5px}
+.mriezka.male .karta{padding:5px 7px}
+.mriezka.male .hod{font-size:14px}
+.mriezka.male .pop{font-size:9.5px;margin-top:1px}
+@media (min-width:640px){.mriezka.male{grid-template-columns:repeat(6,1fr)}}
+.ht-spolu{background:#fff;border:1px solid var(--linka);border-top:3px solid var(--atrament);border-radius:8px;padding:10px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ht-spolu .velke{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;letter-spacing:-.03em;line-height:1}
+.ht-spolu .velke small{font-size:12px;color:var(--sedy);font-weight:400;margin-left:3px}
+.ht-spolu .pod{font-size:12px;color:var(--sedy)}
+.ht-spolu .pomer{flex-basis:100%;height:8px;display:flex;border-radius:4px;overflow:hidden;margin-top:2px}
+
+/* Oproti minulému roku */
+.mr{background:#fff;border:1px solid var(--linka);border-radius:8px;padding:2px 10px}
+.mr-m{padding:8px 0;border-bottom:1px solid var(--platno-tmavsi)}
+.mr-m:last-of-type{border-bottom:0}
+.mr-m .hl{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:600;margin-bottom:5px}
+.mr-m .hl .odch{margin-left:0}
+.mr-p{display:grid;grid-template-columns:44px 1fr auto;gap:8px;align-items:center;margin-top:3px}
+.mr-p .rok{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;padding:1px 0;border-radius:4px;text-align:center}
+.mr-p .tr{height:10px;background:var(--platno-tmavsi);border-radius:5px;overflow:hidden}
+.mr-p .tr i{display:block;height:100%;border-radius:5px}
+.mr-p .c{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;text-align:right;white-space:nowrap;min-width:62px}
+.mr-p.ted .rok{background:var(--atrament);color:var(--platno)}
+.mr-p.ted .tr i{background:var(--safran)}
+.mr-p.vtedy .rok{background:var(--platno-tmavsi);color:var(--sedy)}
+.mr-p.vtedy .tr i{background:#B9B2A6}
+.mr-p.vtedy .c{color:var(--sedy);font-weight:500;font-size:13px}
+.mr-leg{display:flex;gap:12px;font-size:10.5px;color:var(--sedy);padding:7px 0 2px}
+.mr-leg b{font-family:'IBM Plex Mono',monospace;color:var(--atrament)}
+
+/* Hometextil – vývoj v čase */
+.ht-vyber{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;margin-bottom:6px}
+.ht-vyber::-webkit-scrollbar{display:none}
+.ht-vyber button,.ht-krok button{flex:0 0 auto;border:1px solid var(--linka);background:#fff;color:var(--atrament);padding:6px 11px;border-radius:999px;font-size:12px;font-weight:500;min-height:32px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.ht-vyber button[aria-pressed="true"]{background:var(--atrament);border-color:var(--atrament);color:var(--platno);font-weight:600}
+.ht-vlastne{display:none;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.ht-vlastne.zobraz{display:flex}
+.ht-vlastne input{border:1px solid var(--linka);background:#fff;border-radius:7px;padding:6px 8px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;min-height:34px;color:var(--atrament)}
+.ht-vlastne button{background:var(--safran);border:0;color:var(--atrament);padding:7px 14px;border-radius:7px;font-weight:600;font-size:12.5px;min-height:34px;cursor:pointer;font-family:inherit}
+.ht-graf-hl{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 4px 4px}
+.ht-krok{display:flex;border:1px solid var(--linka);border-radius:999px;overflow:hidden}
+.ht-krok button{border:0;border-radius:0;padding:4px 9px;min-height:26px;font-size:11px;background:#fff}
+.ht-krok button+button{border-left:1px solid var(--linka)}
+.ht-krok button[aria-pressed="true"]{background:var(--safran);color:var(--atrament);font-weight:600}
+.ht-graf .obal{position:relative}
+.ht-graf .zony{position:absolute;inset:0;display:flex}
+.ht-graf .zony i{flex:1;cursor:pointer}
+.ht-graf .zony i.akt{background:rgba(20,33,61,.06)}
+.ht-graf-info{font-size:12px;margin-top:6px;padding:6px 9px;border-radius:7px;background:var(--platno);border:1px solid var(--linka);line-height:1.4;min-height:32px}
+.ht-graf-info b{font-family:'IBM Plex Mono',monospace}
 </style>
 <script>
 /* ---- Prihlásenie do aplikácie Gotana ---- */
@@ -694,7 +743,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
       <div class="pozn">Metre, kusy a ostatné čísla nižšie sú len z predaných objednávok.</div>
     </div>
     <div id="predikcia"></div>
-    <div class="mriezka">
+    <div class="mriezka male">
       <div class="karta"><div class="hod cislo" id="kKusy">—</div><div class="pop">Kusov</div></div>
       <div class="karta"><div class="hod cislo" id="kPol">—</div><div class="pop">Položiek</div></div>
       <div class="karta"><div class="hod cislo" id="kMetreObj">—</div><div class="pop">Metrov / obj.</div></div>
@@ -733,13 +782,13 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 
   <!-- KRAJINY -->
   <section class="sekcia" id="s-odbyt">
-    <h2>Krajiny <span style="text-transform:none;letter-spacing:0;font-weight:500">· klikni na krajinu pre 21 dní</span></h2>
+    <h2>Krajiny <span class="h2-pozn">· klikni na krajinu pre 21 dní</span></h2>
     <div id="krajiny"></div>
   </section>
 
   <!-- SKLAD -->
   <section class="sekcia" id="s-sklad">
-    <h2>Na objednávku <span style="text-transform:none;letter-spacing:0;font-weight:500" id="noObdobie">· pribudlo</span></h2>
+    <h2>Na objednávku <span class="h2-pozn" id="noObdobie">· pribudlo</span></h2>
     <div class="mriezka">
       <div class="karta zvyraznena"><div class="hod cislo" id="noObj">—</div><div class="pop">Objednávok</div></div>
       <div class="karta"><div class="hod cislo" id="noKusy">—</div><div class="pop">Kusy (ks)</div></div>
@@ -749,7 +798,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
     <div id="noDni"></div>
     <div class="pozn" id="noPozn">Počíta sa: NST, MAT a tovar predaný bez zásoby (okrem hotového tovaru HT). Tovar zo skladu sa nepočíta.</div>
 
-    <h2>Čaká na tlač <span style="text-transform:none;letter-spacing:0;font-weight:500">· teraz</span></h2>
+    <h2>Čaká na tlač <span class="h2-pozn">· teraz</span></h2>
     <div class="mriezka">
       <div class="karta zvyraznena"><div class="hod cislo" id="tObj">—</div><div class="pop">Objednávok</div></div>
       <div class="karta"><div class="hod cislo" id="tKusy">—</div><div class="pop">Kusy (ks)</div></div>
@@ -1463,17 +1512,19 @@ function vykresliMinulyRok(){
   const s = data.suhrn || {};
   const f = x => new Date(x+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'numeric'});
   const obd = m.od === m.do ? f(m.od) : `${f(m.od)} – ${f(m.do)}`;
-  const riadok = (nazov, teraz, vtedy, des) => {
-    const a = Number(teraz)||0, b = Number(vtedy)||0;
+  const rokTeraz = String(obdobie.do).slice(0,4), rokVtedy = String(m.do).slice(0,4);
+  const blok = (nazov, teraz, vtedy, des, jed) => {
+    const a = Number(teraz)||0, b = Number(vtedy)||0, mx = Math.max(a, b, 1e-9);
     const z = b > 0 ? znackaZmeny({pct: Math.round((a-b)/b*100), priem: b}) : '';
-    return `<div class="mr-r"><span>${nazov}</span><span class="c">${cis(a,des)}</span><span class="s">${cis(b,des)}</span><span>${z}</span></div>`;
+    const pr = (cls, rok, v) => `<div class="mr-p ${cls}"><span class="rok">${rok}</span><span class="tr"><i style="width:${(v/mx*100).toFixed(1)}%"></i></span><span class="c">${cis(v,des)}${jed}</span></div>`;
+    return `<div class="mr-m"><div class="hl"><span>${nazov}</span>${z}</div>${pr('ted', rokTeraz, a)}${pr('vtedy', rokVtedy, b)}</div>`;
   };
   el.innerHTML = `<div class="mr">
-    <div class="mr-r"><span></span><span class="mr-hl">Teraz</span><span class="mr-hl">Minulý rok</span><span></span></div>
-    ${riadok('Predané objednávky', s.objednavok, m.obj, 0)}
-    ${riadok('Metre', s.metre, m.metre, 1)}
-    ${riadok('Kusy', s.kusy, m.kusy, 0)}
-    <div class="mr-pozn">Porovnávam s obdobím ${esc(obd)}${m.jeDnes ? `, pri dnešku do ${esc(m.cas)}` : ''} — o 52 týždňov skôr, aby sedeli dni v týždni.</div>
+    <div class="mr-leg"><span><b>${rokTeraz}</b> = teraz</span><span><b>${rokVtedy}</b> = minulý rok</span></div>
+    ${blok('Predané objednávky', s.objednavok, m.obj, 0, '')}
+    ${blok('Metre', s.metre, m.metre, 1, ' m')}
+    ${blok('Kusy', s.kusy, m.kusy, 0, ' ks')}
+    <div class="mr-pozn">Minulý rok = ${esc(obd)}${m.jeDnes ? `, pri dnešku do ${esc(m.cas)}` : ''} — o 52 týždňov skôr, aby sedeli dni v týždni.</div>
   </div>`;
 }
 
@@ -1704,7 +1755,7 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape') zavriObjednav
 
 
 /* ====== HOMETEXTIL (HT + HF) ====== */
-let htData = null, htKluc = '', htTop = 'HT', htLeziN = 10, htNacitava = false;
+let htData = null, htKluc = '', htTop = 'HT', htNacitava = false;
 const htF = n => Number(n||0).toLocaleString('sk-SK',{maximumFractionDigits:0});
 const htImg = u => u ? esc(u) : '';
 const htDatum = d => { if(!d) return ''; const [y,m,dd] = String(d).split('-'); return `${+dd}. ${+m}.`; };
@@ -1728,7 +1779,7 @@ async function nacitajHT(){
   const htCasovac = setInterval(htStav, 1000);
   try{
     const d = await rpc('dash_hometextil', {p_od: obdobie.od, p_do: obdobie.do});
-    htData = d; htKluc = kluc; htLeziN = 10;
+    htData = d; htKluc = kluc;
     vykresliHT();
   }catch(e){
     $('#htObsah').innerHTML = `<div class="chyba"><b>Hometextil sa nenačítal.</b><br>${esc(e.message)}<br><br>Skús to o chvíľu znova.</div>`;
@@ -1748,22 +1799,111 @@ function htProdukt(r, i, sObj){
   return `<div class="ht-produkt"><span class="por">${i+1}.</span><img src="${htImg(r[2])}" alt="" loading="lazy" onerror="${HT_BEZ_OBR}"><div><div class="nazov">${esc(r[1]||r[0])}</div><div class="meta">${esc(r[0])}${zas}${priemTxt(r[6])}</div></div><div class="hod">${htF(r[3])} ks${sObj ? `<small>${htF(r[4])} obj.</small>` : ''}</div></div>`;
 }
 
-function htGrafTyzdne(t){
-  if(!t || !t.length) return '<div class="prazdne">Bez údajov.</div>';
+/* ---- Vývoj v čase: vlastné obdobie a krok (dni / týždne / mesiace) ---- */
+const HT_PRESETY = [['4t','4 týždne'],['3m','3 mesiace'],['6m','6 mesiacov'],['1r','1 rok'],['vl','Od – do…']];
+let htV = {preset:'6m', od:null, do:null, krok:null, auto:true, data:null, kluc:'', akt:-1};
+function htAutoKrok(od, dd){
+  const dni = (new Date(dd+'T12:00') - new Date(od+'T12:00')) / 864e5 + 1;
+  return dni <= 45 ? 'den' : (dni <= 240 ? 'tyzden' : 'mesiac');
+}
+function htNastavPreset(k){
+  const d0 = new Date(); d0.setHours(12,0,0,0);
+  const od = new Date(d0);
+  if(k === '4t') od.setDate(od.getDate() - 27);
+  else if(k === '3m') od.setMonth(od.getMonth() - 3);
+  else if(k === '6m') od.setDate(od.getDate() - 7*26 + 1);
+  else if(k === '1r') od.setFullYear(od.getFullYear() - 1);
+  htV.preset = k;
+  if(k !== 'vl'){ htV.od = den(od); htV.do = den(d0); }
+  if(htV.auto) htV.krok = htAutoKrok(htV.od, htV.do);
+}
+function htPopisBodu(zac, krok, dlhy){
+  const d = new Date(zac+'T12:00');
+  if(krok === 'mesiac'){
+    const t = d.toLocaleDateString('sk-SK',{month: dlhy ? 'long' : 'short', year: dlhy ? 'numeric' : '2-digit'});
+    return t.replace('.', '');
+  }
+  if(krok === 'tyzden' && dlhy){
+    const k = new Date(d); k.setDate(k.getDate() + 6);
+    return `týždeň ${d.getDate()}. ${d.getMonth()+1}. – ${k.getDate()}. ${k.getMonth()+1}. ${k.getFullYear()}`;
+  }
+  if(dlhy) return d.toLocaleDateString('sk-SK',{weekday:'short', day:'numeric', month:'numeric', year:'numeric'});
+  return `${d.getDate()}. ${d.getMonth()+1}.`;
+}
+function htVyvojHtml(){
+  const vyber = HT_PRESETY.map(([k,t]) => `<button type="button" data-v="${k}" aria-pressed="${htV.preset === k}">${t}</button>`).join('');
+  return `<div class="ht-vyber" id="htVyber">${vyber}</div>
+    <div class="ht-vlastne${htV.preset === 'vl' ? ' zobraz' : ''}" id="htVlastne">
+      <input type="date" id="htOd" value="${htV.od}" aria-label="Od"><input type="date" id="htDo" value="${htV.do}" aria-label="Do">
+      <button type="button" id="htPouzi">Zobraziť</button>
+    </div>
+    <div id="htGraf"><div class="kostra" style="height:190px"></div></div>`;
+}
+async function nacitajVyvoj(){
+  const kluc = htV.od + '|' + htV.do + '|' + htV.krok;
+  if(htV.data && htV.kluc === kluc){ htKresliVyvoj(); return; }
+  const el = $('#htGraf'); if(el && !htV.data) el.innerHTML = '<div class="kostra" style="height:190px"></div>';
+  else if(el) el.style.opacity = '.5';
+  try{
+    const d = await rpc('dash_ht_vyvoj', {p_od: htV.od, p_do: htV.do, p_krok: htV.krok});
+    if(kluc !== htV.od + '|' + htV.do + '|' + htV.krok) return;
+    htV.data = d; htV.kluc = kluc; htV.akt = -1;
+    htKresliVyvoj();
+  }catch(e){
+    if(el) el.innerHTML = `<div class="chyba"><b>Graf sa nenačítal.</b><br>${esc(e.message)}</div>`;
+  }finally{ const g = $('#htGraf'); if(g) g.style.opacity = ''; }
+}
+function htKresliVyvoj(){
+  const el = $('#htGraf'); if(!el || !htV.data) return;
+  const t = htV.data.body || [], krok = htV.data.krok;
+  const krokPrep = `<div class="ht-krok" id="htKrok">${[['den','Dni'],['tyzden','Týždne'],['mesiac','Mesiace']].map(([k,n]) => `<button type="button" data-k="${k}" aria-pressed="${krok === k}">${n}</button>`).join('')}</div>`;
+  const legenda = `<div class="ht-legenda" style="margin:0"><span><i style="background:var(--safran)"></i>HT</span><span><i style="background:var(--hf)"></i>HF</span></div>`;
+  if(!t.length){ el.innerHTML = `<div class="ht-graf"><div class="ht-graf-hl">${legenda}${krokPrep}</div><div class="prazdne">Bez údajov.</div></div>`; return; }
   const W = 400, H = 150, p = 8, n = t.length;
   const max = Math.max(...t.map(x => Math.max(+x[1], +x[2])), 10) * 1.1;
-  const kroky = [0.25, 0.5, 0.75].map(k => Math.round(max * k / 10) * 10);
-  const x = i => p + i * (W - 2*p) / Math.max(n - 1, 1), y = v => H - p - (v / max) * (H - 2*p);
+  const kroky = [0.25, 0.5, 0.75].map(k => { const v = max * k; const r = v > 100 ? 10 : 1; return Math.round(v / r) * r; });
+  const x = i => n === 1 ? W/2 : p + i * (W - 2*p) / (n - 1), y = v => H - p - (v / max) * (H - 2*p);
   const cesta = k => t.map((d, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(+d[k]).toFixed(1)).join(' ');
   let s = '';
   kroky.forEach(v => s += `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#F0EAE0" vector-effect="non-scaling-stroke"/><text x="2" y="${y(v) - 2}" font-size="9" fill="#6B6660" font-family="IBM Plex Mono">${v}</text>`);
   s += `<path d="${cesta(1)} L${x(n-1)} ${H-p} L${x(0)} ${H-p}Z" fill="#E8A33D" opacity=".12"/>`;
   s += `<path d="${cesta(1)}" fill="none" stroke="#E8A33D" stroke-width="2.2" vector-effect="non-scaling-stroke"/>`;
   s += `<path d="${cesta(2)}" fill="none" stroke="#5B7DB1" stroke-width="2.2" vector-effect="non-scaling-stroke"/>`;
-  const stred = t[Math.floor(n / 2)][0];
-  return `<div class="ht-graf"><div class="ht-legenda"><span><i style="background:var(--safran)"></i>HT</span><span><i style="background:var(--hf)"></i>HF</span></div>
-    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${s}</svg>
-    <div class="ht-os"><span>${htDatum(t[0][0])}</span><span>${htDatum(stred)}</span><span>${htDatum(t[n-1][0])}</span></div></div>`;
+  if(htV.akt >= 0 && htV.akt < n) s += `<line x1="${x(htV.akt)}" x2="${x(htV.akt)}" y1="${p}" y2="${H-p}" stroke="#14213D" stroke-dasharray="3 3" opacity=".5" vector-effect="non-scaling-stroke"/>`;
+  const stred = t[Math.floor((n - 1) / 2)][0];
+  let sHT = 0, sHF = 0; t.forEach(d => { sHT += +d[1]; sHF += +d[2]; });
+  const odTxt = new Date(htV.data.od+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'numeric'});
+  const doTxt = new Date(htV.data.do+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'numeric'});
+  const a = htV.akt >= 0 && htV.akt < n ? t[htV.akt] : null;
+  const info = a
+    ? `<b>${esc(htPopisBodu(a[0], krok, true))}</b>: spolu <b>${htF(+a[1] + +a[2])}</b> ks · HT <b>${htF(a[1])}</b> · HF <b>${htF(a[2])}</b>`
+    : `${esc(odTxt)} – ${esc(doTxt)}: spolu <b>${htF(sHT + sHF)}</b> ks · HT <b>${htF(sHT)}</b> · HF <b>${htF(sHF)}</b> <span style="color:var(--sedy)">· ťukni do grafu pre detail</span>`;
+  el.innerHTML = `<div class="ht-graf"><div class="ht-graf-hl">${legenda}${krokPrep}</div>
+    <div class="obal"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${s}</svg><div class="zony" id="htZony">${t.map((_, i) => `<i data-i="${i}"${i === htV.akt ? ' class="akt"' : ''}></i>`).join('')}</div></div>
+    <div class="ht-os"><span>${htPopisBodu(t[0][0], krok)}</span><span>${n > 2 ? htPopisBodu(stred, krok) : ''}</span><span>${htPopisBodu(t[n-1][0], krok)}</span></div>
+    <div class="ht-graf-info">${info}</div></div>`;
+}
+function htPripojVyvoj(){
+  $('#htVyber').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    document.querySelectorAll('#htVyber button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    if(b.dataset.v === 'vl'){ htV.preset = 'vl'; $('#htVlastne').classList.add('zobraz'); return; }
+    $('#htVlastne').classList.remove('zobraz');
+    htV.auto = true; htNastavPreset(b.dataset.v); nacitajVyvoj();
+  });
+  $('#htPouzi').addEventListener('click', () => {
+    let od = $('#htOd').value, dd = $('#htDo').value;
+    if(!od || !dd) return;
+    if(od > dd) [od, dd] = [dd, od];
+    htV.od = od; htV.do = dd; htV.auto = true; htV.krok = htAutoKrok(od, dd);
+    nacitajVyvoj();
+  });
+  $('#htGraf').addEventListener('click', e => {
+    const k = e.target.closest('#htKrok button');
+    if(k){ htV.krok = k.dataset.k; htV.auto = false; nacitajVyvoj(); return; }
+    const z = e.target.closest('#htZony i');
+    if(z){ const i = +z.dataset.i; htV.akt = htV.akt === i ? -1 : i; htKresliVyvoj(); }
+  });
 }
 
 function htDenny(dni){
@@ -1833,34 +1973,21 @@ function htKresliTop(){
   document.querySelectorAll('#htPrepinac button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === htTop)));
 }
 
-function htKresliLezi(){
-  const l = htData.lezi || {pocet:0, zoznam:[]};
-  const z = l.zoznam || [];
-  $('#htLezi').innerHTML = z.length ? z.slice(0, htLeziN).map((r, i) =>
-    `<div class="ht-produkt"><span class="por">${i+1}.</span><img src="${htImg(r[2])}" alt="" loading="lazy" onerror="${HT_BEZ_OBR}"><div><div class="nazov">${esc(r[1]||r[0])}</div><div class="meta">${esc(r[0])} · ${r[4] ? 'naposledy ' + htDatum(r[4]) + String(r[4]).slice(0,4) : 'zatiaľ nepredané'}${priemTxt(r[5])}</div></div><div class="hod">${htF(r[3])} ks<small>na sklade</small></div></div>`).join('')
-    : '<div class="prazdne">Nič neleží — všetko sa predáva.</div>';
-  const zost = z.length - htLeziN;
-  const btn = $('#htLeziViac');
-  btn.style.display = zost > 0 ? 'block' : 'none';
-  btn.textContent = `Zobraziť ďalších ${Math.min(10, zost)} · zostáva ${zost}`;
-}
-
 function vykresliHT(){
   const d = htData;
   const k = {}; (d.kpi || []).forEach(x => k[x.t] = x);
   const ht = k.HT || {ks:0,obj:0,sku:0,ks_pred:0}, hf = k.HF || {ks:0,obj:0,sku:0,ks_pred:0};
   const spolu = +ht.ks + +hf.ks;
   const podielHT = spolu ? (ht.ks / spolu * 100) : 50;
-  const l = d.lezi || {pocet:0, ks:0};
   $('#htObsah').innerHTML = `
     <h2>Hometextil spolu</h2>
-    <div class="ht-blok" style="border-top-color:var(--atrament);display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-      <span class="velke" style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;letter-spacing:-.03em">${htF(spolu)}<small style="font-size:13px;color:var(--sedy);font-weight:400;margin-left:3px">ks</small></span>
-      <span style="font-size:12px;color:var(--sedy)"><b class="ht-obj">${htF(d.obj)}</b> objednávok</span>
-      <div style="flex-basis:100%;height:8px;display:flex;border-radius:4px;overflow:hidden;margin-top:2px"><i style="width:${podielHT.toFixed(1)}%;background:var(--safran)"></i><i style="width:${(100-podielHT).toFixed(1)}%;background:var(--hf)"></i></div>
+    <div class="ht-spolu">
+      <span class="velke">${htF(spolu)}<small>ks</small></span>
+      <span class="pod"><b class="ht-obj">${htF(d.obj)}</b> objednávok</span>
+      <div class="pomer"><i style="width:${podielHT.toFixed(1)}%;background:var(--safran)"></i><i style="width:${(100-podielHT).toFixed(1)}%;background:var(--hf)"></i></div>
     </div>
 
-    <h2>HT vs HF <span style="text-transform:none;letter-spacing:0;font-weight:500">· oproti predošlému obdobiu</span></h2>
+    <h2>HT vs HF <span class="h2-pozn">· oproti predošlému obdobiu</span></h2>
     <div class="ht-dve">
       <div class="ht-blok"><div class="typ">HT<span>hotový tovar zo skladu</span></div>
         <div class="velke">${htF(ht.ks)}<small>ks</small></div>${htDeltaHtml(+ht.ks, +ht.ks_pred)}
@@ -1870,33 +1997,27 @@ function vykresliHT(){
         <div class="rad"><span>Objednávok</span><b class="ht-rad-obj">${htF(hf.obj)}</b></div><div class="rad"><span>Rôznych produktov</span><b>${htF(hf.sku)}</b></div></div>
     </div>
 
-    <h2>Vývoj po týždňoch <span style="text-transform:none;letter-spacing:0;font-weight:500">· 26 týždňov</span></h2>
-    ${htGrafTyzdne(d.tyzdne)}
+    <h2>Vývoj v čase <span class="h2-pozn">· vlastné obdobie</span></h2>
+    ${htVyvojHtml()}
 
     <h2>Najpredávanejšie</h2>
     <div class="ht-prepinac" id="htPrepinac"><button data-t="HT" aria-pressed="true">HT</button><button data-t="HF" aria-pressed="false">HF</button></div>
     <div class="ht-zoznam" id="htTop"></div>
     <div class="ht-pozn" id="htTopPozn"></div>
 
-    <h2>Podľa typu produktu <span style="text-transform:none;letter-spacing:0;font-weight:500">· klikni pre top produkty</span></h2>
+    <h2>Podľa typu produktu <span class="h2-pozn">· klikni pre top produkty</span></h2>
     <div class="ht-zoznam" id="htTypy">${htRozbalovacie(d.typy, r => esc(r.typ))}</div>
     <div class="ht-pozn">Typ sa určuje automaticky podľa názvu produktu.</div>
 
-    <h2>Krajiny <span style="text-transform:none;letter-spacing:0;font-weight:500">· klikni pre 21 dní</span></h2>
-    <div class="ht-zoznam" id="htKrajiny">${htRozbalovacie(d.krajiny, r => (r.k === '??' ? 'Neuvedená krajina' : (vlajka(r.k) + ' ' + esc(KRAJINY[r.k] || r.k)).trim()))}</div>
-
-    <h2>Leží na sklade <span style="text-transform:none;letter-spacing:0;font-weight:500">· HT bez predaja 90 dní</span></h2>
-    <div class="ht-lezi">
-      <div class="hl">${htF(l.pocet)} produktov · ${htF(l.ks)} ks <span>— zoradené podľa počtu kusov</span></div>
-      <div id="htLezi"></div>
-      <button class="ht-viac" id="htLeziViac" type="button"></button>
-    </div>
-    <div class="ht-pozn">Stav k dnešku (nezávisí od zvoleného obdobia). Produkty kratšie ako 90 dní v ponuke sa nepočítajú.</div>`;
+    <h2>Krajiny <span class="h2-pozn">· klikni pre 21 dní</span></h2>
+    <div class="ht-zoznam" id="htKrajiny">${htRozbalovacie(d.krajiny, r => (r.k === '??' ? 'Neuvedená krajina' : (vlajka(r.k) + ' ' + esc(KRAJINY[r.k] || r.k)).trim()))}</div>`;
 
   htKresliTop();
-  htKresliLezi();
   $('#htPrepinac').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; htTop = b.dataset.t; htKresliTop(); });
-  $('#htLeziViac').addEventListener('click', () => { htLeziN += 10; htKresliLezi(); });
+  htPripojVyvoj();
+  if(!htV.od) htNastavPreset(htV.preset);
+  if(htV.data) htKresliVyvoj();
+  nacitajVyvoj();
   htPripojRozbal('#htTypy', d.typy, r => (r.top || []).map((p, i) => htProdukt(p, i, true)).join('') || '<div class="prazdne">Žiadne predaje.</div>');
   htPripojRozbal('#htKrajiny', d.krajiny, r => htKrajGraf(r.dni || []));
 }
