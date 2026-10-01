@@ -542,6 +542,8 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .ht-graf .zony i.akt{background:rgba(20,33,61,.06)}
 .ht-graf-info{font-size:12px;margin-top:6px;padding:6px 9px;border-radius:7px;background:var(--platno);border:1px solid var(--linka);line-height:1.4;min-height:32px}
 .ht-graf-info b{font-family:'IBM Plex Mono',monospace}
+#pvGraf .ht-graf-hl{gap:6px;margin:0 0 4px}
+#pvGraf .ht-krok button{padding:4px 7px;font-size:11px}
 </style>
 <script>
 /* ---- Prihlásenie do aplikácie Gotana ---- */
@@ -773,6 +775,9 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
       <div class="trend" id="trend"></div>
       <div class="trend-popis"><span id="trendOd"></span><span id="trendDo"></span></div>
     </div>
+
+    <h2>Vývoj v čase <span class="h2-pozn">· vlastné obdobie</span></h2>
+    <div id="pvObsah"></div>
 
     <h2>Rekordy obdobia</h2>
     <div id="extremy"></div>
@@ -1554,6 +1559,7 @@ function tichaObnova(){
   if($('#zaclona').classList.contains('zobraz') || $('#obnov').disabled) return;
   if($('#vlastne').classList.contains('zobraz')) return;
   nacitaj(true); stavPrenosu(); nacitajTlac();
+  if(pv.data) nacitajPV(true);
 }
 setInterval(() => { if(Date.now() - posledneNacitanie >= 10*60*1000) tichaObnova(); }, 60*1000);
 document.addEventListener('visibilitychange', () => {
@@ -1845,8 +1851,8 @@ function htNastavPreset(k){
 function htPopisBodu(zac, krok, dlhy){
   const d = new Date(zac+'T12:00');
   if(krok === 'mesiac'){
-    const t = d.toLocaleDateString('sk-SK',{month: dlhy ? 'long' : 'short', year: dlhy ? 'numeric' : '2-digit'});
-    return t.replace('.', '');
+    const MES = ['január','február','marec','apríl','máj','jún','júl','august','september','október','november','december'];
+    return dlhy ? `${MES[d.getMonth()]} ${d.getFullYear()}` : `${MES[d.getMonth()].slice(0,3)} ${String(d.getFullYear()).slice(2)}`;
   }
   if(krok === 'tyzden' && dlhy){
     const k = new Date(d); k.setDate(k.getDate() + 6);
@@ -2057,9 +2063,108 @@ function vykresliHT(){
   htPripojRozbal('#htKrajiny', d.krajiny, r => htKrajGraf(r.dni || []));
 }
 
+/* ====== PREHĽAD: vývoj v čase (vlastné obdobie, ako pri hometextile) ====== */
+let pv = {preset:'4t', od:null, do:null, krok:null, auto:true, data:null, kluc:'', akt:-1, ukaz:'obj'};
+const PV_UKAZ = [['obj','Objednávky',0,'obj.'],['metre','Metre',1,'m'],['kusy','Kusy',2,'ks']];
+function pvNastavPreset(k){
+  const d0 = new Date(); d0.setHours(12,0,0,0);
+  const od = new Date(d0);
+  if(k === '4t') od.setDate(od.getDate() - 27);
+  else if(k === '3m') od.setMonth(od.getMonth() - 3);
+  else if(k === '6m') od.setDate(od.getDate() - 7*26 + 1);
+  else if(k === '1r') od.setFullYear(od.getFullYear() - 1);
+  pv.preset = k;
+  if(k !== 'vl'){ pv.od = den(od); pv.do = den(d0); }
+  if(pv.auto) pv.krok = htAutoKrok(pv.od, pv.do);
+}
+function pvPostav(){
+  const el = $('#pvObsah'); if(!el) return;
+  if(!pv.od) pvNastavPreset(pv.preset);
+  el.innerHTML = `<div class="ht-vyber" id="pvVyber">${HT_PRESETY.map(([k,t]) => `<button type="button" data-v="${k}" aria-pressed="${pv.preset === k}">${t}</button>`).join('')}</div>
+    <div class="ht-vlastne${pv.preset === 'vl' ? ' zobraz' : ''}" id="pvVlastne">
+      <input type="date" id="pvOd" value="${pv.od}" aria-label="Od"><input type="date" id="pvDo" value="${pv.do}" aria-label="Do">
+      <button type="button" id="pvPouzi">Zobraziť</button>
+    </div>
+    <div id="pvGraf"><div class="kostra" style="height:190px"></div></div>`;
+  $('#pvVyber').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    document.querySelectorAll('#pvVyber button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    if(b.dataset.v === 'vl'){ pv.preset = 'vl'; $('#pvVlastne').classList.add('zobraz'); return; }
+    $('#pvVlastne').classList.remove('zobraz');
+    pv.auto = true; pvNastavPreset(b.dataset.v); nacitajPV();
+  });
+  $('#pvPouzi').addEventListener('click', () => {
+    let od = $('#pvOd').value, dd = $('#pvDo').value;
+    if(!od || !dd) return;
+    if(od > dd) [od, dd] = [dd, od];
+    pv.od = od; pv.do = dd; pv.auto = true; pv.krok = htAutoKrok(od, dd);
+    nacitajPV();
+  });
+  $('#pvGraf').addEventListener('click', e => {
+    const k = e.target.closest('#pvKrok button');
+    if(k){ pv.krok = k.dataset.k; pv.auto = false; nacitajPV(); return; }
+    const u = e.target.closest('#pvUkaz button');
+    if(u){ pv.ukaz = u.dataset.u; kresliPV(); return; }
+    const z = e.target.closest('#pvZony i');
+    if(z){ const i = +z.dataset.i; pv.akt = pv.akt === i ? -1 : i; kresliPV(); }
+  });
+  nacitajPV();
+}
+async function nacitajPV(tiche){
+  const kluc = pv.od + '|' + pv.do + '|' + pv.krok;
+  if(!tiche && pv.data && pv.kluc === kluc){ kresliPV(); return; }
+  const el = $('#pvGraf'); if(el && pv.data && !tiche) el.style.opacity = '.5';
+  try{
+    const d = await rpc('dash_vyvoj', {p_od: pv.od, p_do: pv.do, p_krok: pv.krok});
+    if(kluc !== pv.od + '|' + pv.do + '|' + pv.krok) return;
+    if(pv.kluc !== kluc) pv.akt = -1;
+    pv.data = d; pv.kluc = kluc;
+    kresliPV();
+  }catch(e){
+    if(el && !tiche) el.innerHTML = `<div class="chyba"><b>Graf sa nenačítal.</b><br>${esc(e.message)}</div>`;
+  }finally{ const g = $('#pvGraf'); if(g) g.style.opacity = ''; }
+}
+function kresliPV(){
+  const el = $('#pvGraf'); if(!el || !pv.data) return;
+  const t = pv.data.body || [], krok = pv.data.krok;
+  const [uk, , idx, jed] = PV_UKAZ.find(x => x[0] === pv.ukaz);
+  const des = uk === 'metre' ? 1 : 0;
+  const prep = (id, pole, akt, atr) => `<div class="ht-krok" id="${id}">${pole.map(([k,n]) => `<button type="button" data-${atr}="${k}" aria-pressed="${akt === k}">${n}</button>`).join('')}</div>`;
+  const hl = `<div class="ht-graf-hl" style="flex-wrap:wrap">${prep('pvUkaz', [['obj','Obj.'],['metre','Metre'],['kusy','Kusy']], pv.ukaz, 'u')}${prep('pvKrok', [['den','Dni'],['tyzden','Týždne'],['mesiac','Mesiace']], krok, 'k')}</div>`;
+  if(!t.length){ el.innerHTML = `<div class="ht-graf">${hl}<div class="prazdne">Bez údajov.</div></div>`; return; }
+  const hod = d => +d[idx + 1];
+  const W = 400, H = 150, p = 8, n = t.length;
+  const max = Math.max(...t.map(hod), 10) * 1.1;
+  const kroky = [0.25, 0.5, 0.75].map(k => { const v = max * k; const r = v > 1000 ? 100 : (v > 100 ? 10 : 1); return Math.round(v / r) * r; });
+  const x = i => n === 1 ? W/2 : p + i * (W - 2*p) / (n - 1), y = v => H - p - (v / max) * (H - 2*p);
+  const cesta = t.map((d, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(hod(d)).toFixed(1)).join(' ');
+  const dnes = den(new Date());
+  let s = '';
+  kroky.forEach(v => s += `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#F0EAE0" vector-effect="non-scaling-stroke"/><text x="2" y="${y(v) - 2}" font-size="9" fill="#6B6660" font-family="IBM Plex Mono">${cis(v)}</text>`);
+  s += `<path d="${cesta} L${x(n-1)} ${H-p} L${x(0)} ${H-p}Z" fill="#E8A33D" opacity=".14"/>`;
+  s += `<path d="${cesta}" fill="none" stroke="#E8A33D" stroke-width="2.4" vector-effect="non-scaling-stroke"/>`;
+  if(pv.akt >= 0 && pv.akt < n) s += `<line x1="${x(pv.akt)}" x2="${x(pv.akt)}" y1="${p}" y2="${H-p}" stroke="#14213D" stroke-dasharray="3 3" opacity=".5" vector-effect="non-scaling-stroke"/>`;
+  const sum = t.reduce((a, d) => a + hod(d), 0);
+  const neuplny = pv.data.do === dnes; /* posledný bod (deň/týždeň/mesiac) ešte nie je ukončený */
+  const plne = neuplny && n > 1 ? t.slice(0, -1) : t;
+  const priem = plne.length ? plne.reduce((a, d) => a + hod(d), 0) / plne.length : 0;
+  const menoKroku = {den:'deň', tyzden:'týždeň', mesiac:'mesiac'}[krok];
+  const f = iso => new Date(iso+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'numeric'});
+  const a = pv.akt >= 0 && pv.akt < n ? t[pv.akt] : null;
+  const info = a
+    ? `<b>${esc(htPopisBodu(a[0], krok, true))}</b>: <b>${cis(+a[1])}</b> obj. · <b>${cis(+a[2],1)}</b> m · <b>${cis(+a[3])}</b> ks${pv.akt === n-1 && neuplny ? ' <span style="color:var(--sedy)">(zatiaľ)</span>' : ''}`
+    : `${esc(f(pv.data.od))} – ${esc(f(pv.data.do))}: spolu <b>${cis(sum, des)}</b> ${jed} · priemer <b>${cis(priem, des || (priem < 10 ? 1 : 0))}</b> ${jed} / ${menoKroku}${neuplny ? '<span style="color:var(--sedy)"> (bez neukončeného)</span>' : ''} <span style="color:var(--sedy)">· ťukni do grafu pre detail</span>`;
+  const stred = t[Math.floor((n - 1) / 2)][0];
+  el.innerHTML = `<div class="ht-graf">${hl}
+    <div class="obal"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${s}</svg><div class="zony" id="pvZony">${t.map((_, i) => `<i data-i="${i}"${i === pv.akt ? ' class="akt"' : ''}></i>`).join('')}</div></div>
+    <div class="ht-os"><span>${htPopisBodu(t[0][0], krok)}</span><span>${n > 2 ? htPopisBodu(stred, krok) : ''}</span><span>${htPopisBodu(t[n-1][0], krok)}</span></div>
+    <div class="ht-graf-info">${info}</div></div>`;
+}
+
 kresliStupnicu();
 nastavObdobie('dnes');
 nacitaj();
+pvPostav();
 setTimeout(() => { if(!htData) nacitajHT(); }, 1200); /* hometextil sa dotiahne vopred na pozadí */
 stavPrenosu(); nacitajTlac();
 </script>
