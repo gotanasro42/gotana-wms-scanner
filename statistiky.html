@@ -1964,6 +1964,16 @@ function htKresliTop(){
   document.querySelectorAll('#htPrepinac button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === htTop)));
 }
 
+/* text, s akým obdobím sa porovnáva (rovnako dlhé obdobie tesne pred tým; pri dnešku len po rovnaký čas) */
+function htPredTxt(d){
+  const od = new Date(d.od+'T12:00'), dd = new Date(d.do+'T12:00');
+  const L = Math.round((dd - od) / 864e5) + 1;
+  const po = new Date(od); po.setDate(po.getDate() - L);
+  const pd = new Date(od); pd.setDate(pd.getDate() - 1);
+  const f = x => `${x.getDate()}. ${x.getMonth()+1}.`;
+  const t = new Date(), cas = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+  return 'oproti ' + (L === 1 ? f(po) : f(po) + ' – ' + f(pd)) + (d.do === den(t) ? ` (do ${cas})` : '');
+}
 function vykresliHT(){
   const d = htData;
   const k = {}; (d.kpi || []).forEach(x => k[x.t] = x);
@@ -1978,7 +1988,7 @@ function vykresliHT(){
       <div class="pomer"><i style="width:${podielHT.toFixed(1)}%;background:var(--safran)"></i><i style="width:${(100-podielHT).toFixed(1)}%;background:var(--hf)"></i></div>
     </div>
 
-    <h2>HT vs HF <span class="h2-pozn">· oproti predošlému obdobiu</span></h2>
+    <h2>HT vs HF <span class="h2-pozn">· ${htPredTxt(d)}</span></h2>
     <div class="ht-dve">
       <div class="ht-blok"><div class="typ">HT<span>hotový tovar zo skladu</span></div>
         <div class="velke">${htF(ht.ks)}<small>ks</small></div>${htDeltaHtml(+ht.ks, +ht.ks_pred)}
