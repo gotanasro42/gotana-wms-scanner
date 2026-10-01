@@ -493,22 +493,15 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 
 /* Oproti minulému roku */
 .mr{background:#fff;border:1px solid var(--linka);border-radius:8px;padding:2px 10px}
-.mr-m{padding:8px 0;border-bottom:1px solid var(--platno-tmavsi)}
-.mr-m:last-of-type{border-bottom:0}
-.mr-m .hl{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:600;margin-bottom:5px}
-.mr-m .hl .odch{margin-left:0}
-.mr-p{display:grid;grid-template-columns:44px 1fr auto;gap:8px;align-items:center;margin-top:3px}
-.mr-p .rok{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;padding:1px 0;border-radius:4px;text-align:center}
-.mr-p .tr{height:10px;background:var(--platno-tmavsi);border-radius:5px;overflow:hidden}
-.mr-p .tr i{display:block;height:100%;border-radius:5px}
-.mr-p .c{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;text-align:right;white-space:nowrap;min-width:62px}
-.mr-p.ted .rok{background:var(--atrament);color:var(--platno)}
-.mr-p.ted .tr i{background:var(--safran)}
-.mr-p.vtedy .rok{background:var(--platno-tmavsi);color:var(--sedy)}
-.mr-p.vtedy .tr i{background:#B9B2A6}
-.mr-p.vtedy .c{color:var(--sedy);font-weight:500;font-size:13px}
-.mr-leg{display:flex;gap:12px;font-size:10.5px;color:var(--sedy);padding:7px 0 2px}
-.mr-leg b{font-family:'IBM Plex Mono',monospace;color:var(--atrament)}
+.mr-t{display:grid;grid-template-columns:1fr auto auto auto;gap:3px 10px;align-items:center;font-size:12px;padding:6px 0 4px}
+.mr-t .rk{font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;padding:0 5px;border-radius:3px;justify-self:end}
+.mr-t .rk.ted{background:var(--atrament);color:var(--platno)}
+.mr-t .rk.vtedy{background:var(--platno-tmavsi);color:var(--sedy)}
+.mr-t .c{font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right;white-space:nowrap}
+.mr-t .s{font-family:'IBM Plex Mono',monospace;color:var(--sedy);text-align:right;white-space:nowrap}
+.mr-t .z{text-align:right;min-width:62px}
+.mr-t .z .odch{margin-left:0;font-size:10px;padding:0 6px}
+.mr .mr-pozn{font-size:9.5px;padding:0 0 5px}
 
 /* Hometextil – vývoj v čase */
 .ht-vyber{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;margin-bottom:6px}
@@ -1513,19 +1506,17 @@ function vykresliMinulyRok(){
   const f = x => new Date(x+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'numeric'});
   const obd = m.od === m.do ? f(m.od) : `${f(m.od)} – ${f(m.do)}`;
   const rokTeraz = String(obdobie.do).slice(0,4), rokVtedy = String(m.do).slice(0,4);
-  const blok = (nazov, teraz, vtedy, des, jed) => {
-    const a = Number(teraz)||0, b = Number(vtedy)||0, mx = Math.max(a, b, 1e-9);
+  const riadok = (nazov, teraz, vtedy, des, jed) => {
+    const a = Number(teraz)||0, b = Number(vtedy)||0;
     const z = b > 0 ? znackaZmeny({pct: Math.round((a-b)/b*100), priem: b}) : '';
-    const pr = (cls, rok, v) => `<div class="mr-p ${cls}"><span class="rok">${rok}</span><span class="tr"><i style="width:${(v/mx*100).toFixed(1)}%"></i></span><span class="c">${cis(v,des)}${jed}</span></div>`;
-    return `<div class="mr-m"><div class="hl"><span>${nazov}</span>${z}</div>${pr('ted', rokTeraz, a)}${pr('vtedy', rokVtedy, b)}</div>`;
+    return `<span>${nazov}</span><span class="c">${cis(a,des)}${jed}</span><span class="s">${cis(b,des)}${jed}</span><span class="z">${z}</span>`;
   };
-  el.innerHTML = `<div class="mr">
-    <div class="mr-leg"><span><b>${rokTeraz}</b> = teraz</span><span><b>${rokVtedy}</b> = minulý rok</span></div>
-    ${blok('Predané objednávky', s.objednavok, m.obj, 0, '')}
-    ${blok('Metre', s.metre, m.metre, 1, ' m')}
-    ${blok('Kusy', s.kusy, m.kusy, 0, ' ks')}
-    <div class="mr-pozn">Minulý rok = ${esc(obd)}${m.jeDnes ? `, pri dnešku do ${esc(m.cas)}` : ''} — o 52 týždňov skôr, aby sedeli dni v týždni.</div>
-  </div>`;
+  el.innerHTML = `<div class="mr"><div class="mr-t">
+    <span></span><span class="rk ted">${rokTeraz}</span><span class="rk vtedy">${rokVtedy}</span><span></span>
+    ${riadok('Objednávky', s.objednavok, m.obj, 0, '')}
+    ${riadok('Metre', s.metre, m.metre, 1, ' m')}
+    ${riadok('Kusy', s.kusy, m.kusy, 0, ' ks')}
+  </div><div class="mr-pozn">${rokVtedy} = ${esc(obd)}${m.jeDnes ? ` do ${esc(m.cas)}` : ''} (rovnaký deň v týždni)</div></div>`;
 }
 
 /* ---- Automatické načítanie každých 10 minút ---- */
