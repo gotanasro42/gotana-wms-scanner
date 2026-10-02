@@ -169,6 +169,7 @@ h2:first-child{margin-top:2px}
   width:40px;height:40px;object-fit:cover;border-radius:6px;background:var(--platno-tmavsi);
   border:1px solid var(--linka);
 }
+.produkt img,.ht-produkt img{cursor:zoom-in}
 .produkt .nazov{font-size:12.5px;font-weight:500;line-height:1.25;margin-bottom:1px;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .produkt .meta{font-size:10px;color:var(--sedy);font-family:'IBM Plex Mono',monospace}
@@ -2185,6 +2186,53 @@ nastavObdobie('dnes');
 nacitaj();
 pvPostav();
 setTimeout(() => { if(!htData) nacitajHT(); }, 1200); /* hometextil sa dotiahne vopred na pozadí */
+
+/* ---- Veľký náhľad obrázka po kliknutí (rovnako ako v sklade) ---- */
+function velkyObrUrl(u){ return String(u||'').replace(/\/catalog\/product\/cache\/[^\/]+\//, '/catalog/product/'); }
+function zobrazVelkyNahlad(src, kod, nazov){
+  var o = document.createElement('div');
+  o.id = 'velkyNahlad';
+  o.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.93);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;';
+  var zavri = function(){ o.remove(); document.removeEventListener('keydown', esc_); };
+  var esc_ = function(e){ if(e.key === 'Escape') zavri(); };
+  o.onclick = function(e){ if(e.target === o) zavri(); };
+  var img = document.createElement('img');
+  var velky = velkyObrUrl(src);
+  img.src = velky;
+  if(velky !== src) img.onerror = function(){ img.onerror = null; img.src = src; };
+  img.style.cssText = 'max-width:100%;max-height:68vh;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.5);background:#fff;';
+  img.onclick = zavri;
+  o.appendChild(img);
+  if(nazov){
+    var n = document.createElement('div');
+    n.textContent = nazov;
+    n.style.cssText = 'color:#e2e8f0;font-weight:600;margin-top:12px;font-size:14px;text-align:center;max-width:520px;line-height:1.3;';
+    o.appendChild(n);
+  }
+  if(kod){
+    var k = document.createElement('div');
+    k.textContent = kod;
+    k.style.cssText = 'color:#fff;font-weight:800;font-family:monospace;margin-top:8px;font-size:18px;text-align:center;word-break:break-all;';
+    o.appendChild(k);
+  }
+  var b = document.createElement('button');
+  b.textContent = 'Zavrieť';
+  b.style.cssText = 'background:#334155;color:#fff;border:0;padding:12px 22px;border-radius:12px;font-weight:700;font-size:15px;margin-top:16px;';
+  b.onclick = zavri;
+  o.appendChild(b);
+  document.addEventListener('keydown', esc_);
+  document.body.appendChild(o);
+}
+document.addEventListener('click', function(e){
+  var img = e.target.closest && e.target.closest('.produkt img, .ht-produkt img');
+  if(!img || !img.getAttribute('src') || img.style.visibility === 'hidden') return;
+  e.stopPropagation(); e.preventDefault();
+  var riadok = img.closest('.produkt, .ht-produkt');
+  var nazovEl = riadok && riadok.querySelector('.nazov');
+  var metaEl = riadok && riadok.querySelector('.meta');
+  var kod = metaEl ? ((metaEl.firstChild && metaEl.firstChild.nodeType === 3 ? metaEl.firstChild.textContent : metaEl.textContent) || '').trim().split(/\s/)[0] : '';
+  zobrazVelkyNahlad(img.getAttribute('src'), kod, nazovEl ? nazovEl.textContent.trim() : '');
+}, true);
 stavPrenosu(); nacitajTlac();
 </script>
 </body>
