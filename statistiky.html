@@ -544,8 +544,8 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .ht-graf .zony i.akt{background:rgba(20,33,61,.06)}
 .ht-graf-info{font-size:12px;margin-top:6px;padding:6px 9px;border-radius:7px;background:var(--platno);border:1px solid var(--linka);line-height:1.4;min-height:32px}
 .ht-graf-info b{font-family:'IBM Plex Mono',monospace}
-#pvGraf .ht-graf-hl{gap:6px;margin:0 0 4px}
-#pvGraf .ht-krok button{padding:4px 7px;font-size:11px}
+#pvGraf .ht-graf-hl,#htGraf .ht-graf-hl{gap:6px;margin:0 0 4px}
+#pvGraf .ht-krok button,#htGraf .ht-krok button{padding:4px 7px;font-size:11px}
 </style>
 <script>
 /* ---- Prihlásenie do aplikácie Gotana ---- */
@@ -1834,7 +1834,7 @@ function htProdukt(r, i, sObj){
 
 /* ---- Vývoj v čase: vlastné obdobie a krok (dni / týždne / mesiace) ---- */
 const HT_PRESETY = [['4t','4 týždne'],['3m','3 mesiace'],['6m','6 mesiacov'],['1r','1 rok'],['vl','Od – do…']];
-let htV = {preset:'4t', od:null, do:null, krok:null, auto:true, data:null, kluc:'', akt:-1};
+let htV = {preset:'4t', od:null, do:null, krok:null, auto:true, data:null, kluc:'', akt:-1, ukaz:'HT'};
 function htAutoKrok(od, dd){
   const dni = (new Date(dd+'T12:00') - new Date(od+'T12:00')) / 864e5 + 1;
   return dni <= 45 ? 'den' : (dni <= 240 ? 'tyzden' : 'mesiac');
@@ -1889,30 +1889,34 @@ async function nacitajVyvoj(){
 function htKresliVyvoj(){
   const el = $('#htGraf'); if(!el || !htV.data) return;
   const t = htV.data.body || [], krok = htV.data.krok;
-  const krokPrep = `<div class="ht-krok" id="htKrok">${[['den','Dni'],['tyzden','Týždne'],['mesiac','Mesiace']].map(([k,n]) => `<button type="button" data-k="${k}" aria-pressed="${krok === k}">${n}</button>`).join('')}</div>`;
-  const legenda = `<div class="ht-legenda" style="margin:0"><span><i style="background:var(--safran)"></i>HT</span><span><i style="background:var(--hf)"></i>HF</span><span><i style="background:var(--atrament)"></i>Obj.</span></div>`;
-  if(!t.length){ el.innerHTML = `<div class="ht-graf"><div class="ht-graf-hl">${legenda}${krokPrep}</div><div class="prazdne">Bez údajov.</div></div>`; return; }
+  const UK = {HT:[1,'#E8A33D','ks'], HF:[2,'#5B7DB1','ks'], obj:[3,'#14213D','obj.']};
+  const [idx, farba, jed] = UK[htV.ukaz] || UK.HT;
+  const prep = (id, pole, akt, atr) => `<div class="ht-krok" id="${id}">${pole.map(([k,n]) => `<button type="button" data-${atr}="${k}" aria-pressed="${akt === k}">${n}</button>`).join('')}</div>`;
+  const hl = `<div class="ht-graf-hl" style="flex-wrap:wrap">${prep('htUkaz', [['HT','HT'],['HF','HF'],['obj','Obj.']], htV.ukaz, 'u')}${prep('htKrok', [['den','Dni'],['tyzden','Týždne'],['mesiac','Mesiace']], krok, 'k')}</div>`;
+  if(!t.length){ el.innerHTML = `<div class="ht-graf">${hl}<div class="prazdne">Bez údajov.</div></div>`; return; }
+  const hod = d => +(d[idx] || 0);
   const W = 400, H = 150, p = 8, n = t.length;
-  const max = Math.max(...t.map(x => Math.max(+x[1], +x[2], +(x[3]||0))), 10) * 1.1;
-  const kroky = [0.25, 0.5, 0.75].map(k => { const v = max * k; const r = v > 100 ? 10 : 1; return Math.round(v / r) * r; });
+  const max = Math.max(...t.map(hod), 10) * 1.1;
+  const kroky = [0.25, 0.5, 0.75].map(k => { const v = max * k; const r = v > 1000 ? 100 : (v > 100 ? 10 : 1); return Math.round(v / r) * r; });
   const x = i => n === 1 ? W/2 : p + i * (W - 2*p) / (n - 1), y = v => H - p - (v / max) * (H - 2*p);
-  const cesta = k => t.map((d, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(+d[k]).toFixed(1)).join(' ');
+  const cesta = t.map((d, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(hod(d)).toFixed(1)).join(' ');
   let s = '';
-  kroky.forEach(v => s += `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#F0EAE0" vector-effect="non-scaling-stroke"/><text x="2" y="${y(v) - 2}" font-size="9" fill="#6B6660" font-family="IBM Plex Mono">${v}</text>`);
-  s += `<path d="${cesta(1)} L${x(n-1)} ${H-p} L${x(0)} ${H-p}Z" fill="#E8A33D" opacity=".12"/>`;
-  s += `<path d="${cesta(1)}" fill="none" stroke="#E8A33D" stroke-width="2.2" vector-effect="non-scaling-stroke"/>`;
-  s += `<path d="${cesta(2)}" fill="none" stroke="#5B7DB1" stroke-width="2.2" vector-effect="non-scaling-stroke"/>`;
-  if(t[0].length > 3) s += `<path d="${cesta(3)}" fill="none" stroke="#14213D" stroke-width="1.8" stroke-dasharray="5 3" vector-effect="non-scaling-stroke"/>`;
+  kroky.forEach(v => s += `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#F0EAE0" vector-effect="non-scaling-stroke"/><text x="2" y="${y(v) - 2}" font-size="9" fill="#6B6660" font-family="IBM Plex Mono">${htF(v)}</text>`);
+  s += `<path d="${cesta} L${x(n-1)} ${H-p} L${x(0)} ${H-p}Z" fill="${farba}" opacity=".13"/>`;
+  s += `<path d="${cesta}" fill="none" stroke="${farba}" stroke-width="2.4" vector-effect="non-scaling-stroke"/>`;
   if(htV.akt >= 0 && htV.akt < n) s += `<line x1="${x(htV.akt)}" x2="${x(htV.akt)}" y1="${p}" y2="${H-p}" stroke="#14213D" stroke-dasharray="3 3" opacity=".5" vector-effect="non-scaling-stroke"/>`;
   const stred = t[Math.floor((n - 1) / 2)][0];
-  let sHT = 0, sHF = 0, sOb = 0; t.forEach(d => { sHT += +d[1]; sHF += +d[2]; sOb += +(d[3]||0); });
-  const odTxt = new Date(htV.data.od+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'numeric'});
-  const doTxt = new Date(htV.data.do+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'numeric'});
+  const sum = t.reduce((a, d) => a + hod(d), 0);
+  const neuplny = htV.data.do === den(new Date());
+  const plne = neuplny && n > 1 ? t.slice(0, -1) : t;
+  const priem = plne.length ? plne.reduce((a, d) => a + hod(d), 0) / plne.length : 0;
+  const menoKroku = {den:'deň', tyzden:'týždeň', mesiac:'mesiac'}[krok];
+  const f = iso => new Date(iso+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'numeric'});
   const a = htV.akt >= 0 && htV.akt < n ? t[htV.akt] : null;
   const info = a
-    ? `<b>${esc(htPopisBodu(a[0], krok, true))}</b>: spolu <b>${htF(+a[1] + +a[2])}</b> ks · HT <b>${htF(a[1])}</b> · HF <b>${htF(a[2])}</b> · <b>${htF(a[3])}</b> obj.`
-    : `${esc(odTxt)} – ${esc(doTxt)}: spolu <b>${htF(sHT + sHF)}</b> ks · HT <b>${htF(sHT)}</b> · HF <b>${htF(sHF)}</b> · <b>${htF(sOb)}</b> obj. <span style="color:var(--sedy)">· ťukni do grafu pre detail</span>`;
-  el.innerHTML = `<div class="ht-graf"><div class="ht-graf-hl">${legenda}${krokPrep}</div>
+    ? `<b>${esc(htPopisBodu(a[0], krok, true))}</b>: HT <b>${htF(a[1])}</b> ks · HF <b>${htF(a[2])}</b> ks · <b>${htF(a[3])}</b> obj.${htV.akt === n-1 && neuplny ? ' <span style="color:var(--sedy)">(zatiaľ)</span>' : ''}`
+    : `${esc(f(htV.data.od))} – ${esc(f(htV.data.do))}: spolu <b>${htF(sum)}</b> ${jed} · priemer <b>${cis(priem, priem < 10 ? 1 : 0)}</b> ${jed} / ${menoKroku}${neuplny ? '<span style="color:var(--sedy)"> (bez neukončeného)</span>' : ''} <span style="color:var(--sedy)">· ťukni do grafu pre detail</span>`;
+  el.innerHTML = `<div class="ht-graf">${hl}
     <div class="obal"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${s}</svg><div class="zony" id="htZony">${t.map((_, i) => `<i data-i="${i}"${i === htV.akt ? ' class="akt"' : ''}></i>`).join('')}</div></div>
     <div class="ht-os"><span>${htPopisBodu(t[0][0], krok)}</span><span>${n > 2 ? htPopisBodu(stred, krok) : ''}</span><span>${htPopisBodu(t[n-1][0], krok)}</span></div>
     <div class="ht-graf-info">${info}</div></div>`;
@@ -1935,6 +1939,8 @@ function htPripojVyvoj(){
   $('#htGraf').addEventListener('click', e => {
     const k = e.target.closest('#htKrok button');
     if(k){ htV.krok = k.dataset.k; htV.auto = false; nacitajVyvoj(); return; }
+    const u = e.target.closest('#htUkaz button');
+    if(u){ htV.ukaz = u.dataset.u; htKresliVyvoj(); return; }
     const z = e.target.closest('#htZony i');
     if(z){ const i = +z.dataset.i; htV.akt = htV.akt === i ? -1 : i; htKresliVyvoj(); }
   });
