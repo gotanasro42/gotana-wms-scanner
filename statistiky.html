@@ -332,24 +332,24 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .graf7 .st{cursor:pointer;transition:opacity .15s}
 .graf7 .stlp{background:#F7DDB0;border:2px solid var(--fd,#9AA3B2);border-bottom:0;box-sizing:border-box}
 .graf7 .st.ciastocny .stlp{background:repeating-linear-gradient(135deg,#F7DDB0 0 5px,#fff 5px 8px)}
-.graf7.utlm .st{opacity:.28}
-.graf7.utlm .st.zvyr{opacity:1}
+.graf7.utlm .st:not(.zvyr) .stlp{opacity:.3}
+.graf7.utlm .st:not(.zvyr) .hodn,.graf7.utlm .st:not(.zvyr) .den{opacity:.55}
 .graf7 .st.zvyr .stlp{background:var(--fd)}
 .graf7 .st.zvyr .hodn{color:var(--atrament);font-weight:700}
 .graf7 .tz-ciara{position:absolute;left:-1px;right:-1px;border-top:2px dashed var(--atrament);opacity:.75;pointer-events:none}
 .graf7 .tz-hodn{position:absolute;left:-2px;right:-2px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:700;color:var(--atrament);line-height:1;margin-bottom:2px;white-space:nowrap}
 .graf7.velmihusty .tz-hodn{font-size:7px;letter-spacing:-.06em}
-.graf7.utlm .st:not(.zvyr) .tz-ciara,.graf7.utlm .st:not(.zvyr) .tz-hodn{opacity:.4}
+.graf7.utlm .st:not(.zvyr) .tz-ciara,.graf7.utlm .st:not(.zvyr) .tz-hodn,.graf7.utlm .st:not(.zvyr) .vh.tz{opacity:.45}
 .tz-leg{font-size:10.5px;color:var(--sedy);margin-top:5px;display:flex;align-items:center;gap:6px}
 .tz-leg i{display:inline-block;width:16px;border-top:2px dashed var(--atrament);opacity:.75}
 /* hustý graf (21 dní): zvislé čísla, širšie stĺpce */
 .graf7.vert{height:215px;gap:2px}
 #graf7Prehlad .graf7.vert{margin:0 -8px}
-.graf7.vert .vnutro{top:2px}
+.graf7.vert .vnutro{top:28px}
 .graf7.vert .stlp{border-width:1.5px;border-radius:2px 2px 0 0}
 .graf7.vert .st .vh{position:absolute;left:0;right:0;margin:0 auto;width:max-content;writing-mode:vertical-rl;transform:rotate(180deg);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:0;line-height:1;white-space:nowrap;padding:2px 0 3px;color:var(--atrament)}
 .graf7.vert .st .vh.dnu{transform:translateY(100%) rotate(180deg)}
-.graf7.vert .st .vh.tz{font-size:9.5px;font-weight:700;opacity:.8}
+.graf7.vert .st .vh.tz{font-size:10px;font-weight:700;color:var(--atrament);opacity:.85;padding:3px 0}
 .graf7.vert .st .den{font-family:'IBM Plex Sans Condensed','IBM Plex Sans',sans-serif;font-size:9.5px;letter-spacing:0;margin-top:3px}
 .graf7.vert .st.vybr .den{font-weight:700}
 /* Súhrn: odhad a stav dňa v jednej karte */
@@ -450,6 +450,8 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 @keyframes htpr{0%{margin-left:-40%}100%{margin-left:100%}}
 .ht-delta{font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600}
 .ht-delta span{color:var(--sedy);font-weight:400}
+.ht-delta.dobre{color:var(--mach)}
+.ht-delta.zle{color:var(--tehla)}
 .ht-pozn{font-size:10.5px;color:var(--sedy);margin-top:6px;line-height:1.35}
 .ht-graf{background:#fff;border:1px solid var(--linka);border-radius:8px;padding:10px 8px 6px}
 .ht-legenda{display:flex;gap:12px;font-size:11px;color:var(--sedy);margin:0 0 4px 4px}
@@ -1309,8 +1311,8 @@ function graf7(dni, jeDnes, cas){
     return `<div class="${tr}" data-dow="${dow}" data-obj="${Number(x.obj)||0}"${sTeraz ? ` data-tz="${posl ? Number(x.obj)||0 : tz}"` : ''} data-dnes="${posl && jeDnes ? 1 : 0}" style="--fd:${fd}" title="${new Date(x.den + 'T12:00').toLocaleDateString('sk-SK',{weekday:'long', day:'numeric', month:'numeric'})}: ${cis(x.obj)} obj. · ${cis(x.metre,1)} m · ${cis(x.kusy)} ks${ukazTz ? ` · do ${esc(cas)}: ${cis(tz)} obj.` : ''}">
       <div class="plocha"><div class="vnutro">
         <div class="stlp" style="height:${v.toFixed(1)}%"></div>${vert ? `${ukazTz ? `
-        <div class="tz-ciara" style="bottom:${vt.toFixed(1)}%"></div>${vt >= 16 && v - vt >= 16 ? `<div class="vh tz dnu" style="bottom:${vt.toFixed(1)}%">${cis(tz)}</div>` : ''}` : ''}
-        <div class="vh hodn${v >= 16 ? ' dnu' : ''}" style="bottom:${v.toFixed(1)}%">${cis(x.obj)}</div>` : `${ukazTz ? `
+        <div class="tz-ciara" style="bottom:${vt.toFixed(1)}%"></div>${v - vt >= 14 ? `<div class="vh tz" style="bottom:${vt.toFixed(1)}%">${cis(tz)}</div>` : (vt >= 14 ? `<div class="vh tz dnu" style="bottom:${vt.toFixed(1)}%">${cis(tz)}</div>` : '')}` : ''}
+        <div class="vh hodn" style="bottom:${v.toFixed(1)}%">${cis(x.obj)}</div>` : `${ukazTz ? `
         <div class="tz-ciara" style="bottom:${vt.toFixed(1)}%"></div>${v - vt > 14 ? `<div class="tz-hodn" style="bottom:${vt.toFixed(1)}%">${cis(tz)}</div>` : ''}` : ''}
         <div class="hodn" style="bottom:${v.toFixed(1)}%">${cis(x.obj)}</div>`}
       </div></div>
@@ -1832,7 +1834,7 @@ function htProdukt(r, i, sObj){
 
 /* ---- Vývoj v čase: vlastné obdobie a krok (dni / týždne / mesiace) ---- */
 const HT_PRESETY = [['4t','4 týždne'],['3m','3 mesiace'],['6m','6 mesiacov'],['1r','1 rok'],['vl','Od – do…']];
-let htV = {preset:'6m', od:null, do:null, krok:null, auto:true, data:null, kluc:'', akt:-1};
+let htV = {preset:'4t', od:null, do:null, krok:null, auto:true, data:null, kluc:'', akt:-1};
 function htAutoKrok(od, dd){
   const dni = (new Date(dd+'T12:00') - new Date(od+'T12:00')) / 864e5 + 1;
   return dni <= 45 ? 'den' : (dni <= 240 ? 'tyzden' : 'mesiac');
@@ -1888,10 +1890,10 @@ function htKresliVyvoj(){
   const el = $('#htGraf'); if(!el || !htV.data) return;
   const t = htV.data.body || [], krok = htV.data.krok;
   const krokPrep = `<div class="ht-krok" id="htKrok">${[['den','Dni'],['tyzden','Týždne'],['mesiac','Mesiace']].map(([k,n]) => `<button type="button" data-k="${k}" aria-pressed="${krok === k}">${n}</button>`).join('')}</div>`;
-  const legenda = `<div class="ht-legenda" style="margin:0"><span><i style="background:var(--safran)"></i>HT</span><span><i style="background:var(--hf)"></i>HF</span></div>`;
+  const legenda = `<div class="ht-legenda" style="margin:0"><span><i style="background:var(--safran)"></i>HT</span><span><i style="background:var(--hf)"></i>HF</span><span><i style="background:var(--atrament)"></i>Obj.</span></div>`;
   if(!t.length){ el.innerHTML = `<div class="ht-graf"><div class="ht-graf-hl">${legenda}${krokPrep}</div><div class="prazdne">Bez údajov.</div></div>`; return; }
   const W = 400, H = 150, p = 8, n = t.length;
-  const max = Math.max(...t.map(x => Math.max(+x[1], +x[2])), 10) * 1.1;
+  const max = Math.max(...t.map(x => Math.max(+x[1], +x[2], +(x[3]||0))), 10) * 1.1;
   const kroky = [0.25, 0.5, 0.75].map(k => { const v = max * k; const r = v > 100 ? 10 : 1; return Math.round(v / r) * r; });
   const x = i => n === 1 ? W/2 : p + i * (W - 2*p) / (n - 1), y = v => H - p - (v / max) * (H - 2*p);
   const cesta = k => t.map((d, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(+d[k]).toFixed(1)).join(' ');
@@ -1900,15 +1902,16 @@ function htKresliVyvoj(){
   s += `<path d="${cesta(1)} L${x(n-1)} ${H-p} L${x(0)} ${H-p}Z" fill="#E8A33D" opacity=".12"/>`;
   s += `<path d="${cesta(1)}" fill="none" stroke="#E8A33D" stroke-width="2.2" vector-effect="non-scaling-stroke"/>`;
   s += `<path d="${cesta(2)}" fill="none" stroke="#5B7DB1" stroke-width="2.2" vector-effect="non-scaling-stroke"/>`;
+  if(t[0].length > 3) s += `<path d="${cesta(3)}" fill="none" stroke="#14213D" stroke-width="1.8" stroke-dasharray="5 3" vector-effect="non-scaling-stroke"/>`;
   if(htV.akt >= 0 && htV.akt < n) s += `<line x1="${x(htV.akt)}" x2="${x(htV.akt)}" y1="${p}" y2="${H-p}" stroke="#14213D" stroke-dasharray="3 3" opacity=".5" vector-effect="non-scaling-stroke"/>`;
   const stred = t[Math.floor((n - 1) / 2)][0];
-  let sHT = 0, sHF = 0; t.forEach(d => { sHT += +d[1]; sHF += +d[2]; });
+  let sHT = 0, sHF = 0, sOb = 0; t.forEach(d => { sHT += +d[1]; sHF += +d[2]; sOb += +(d[3]||0); });
   const odTxt = new Date(htV.data.od+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'numeric'});
   const doTxt = new Date(htV.data.do+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'numeric'});
   const a = htV.akt >= 0 && htV.akt < n ? t[htV.akt] : null;
   const info = a
-    ? `<b>${esc(htPopisBodu(a[0], krok, true))}</b>: spolu <b>${htF(+a[1] + +a[2])}</b> ks · HT <b>${htF(a[1])}</b> · HF <b>${htF(a[2])}</b>`
-    : `${esc(odTxt)} – ${esc(doTxt)}: spolu <b>${htF(sHT + sHF)}</b> ks · HT <b>${htF(sHT)}</b> · HF <b>${htF(sHF)}</b> <span style="color:var(--sedy)">· ťukni do grafu pre detail</span>`;
+    ? `<b>${esc(htPopisBodu(a[0], krok, true))}</b>: spolu <b>${htF(+a[1] + +a[2])}</b> ks · HT <b>${htF(a[1])}</b> · HF <b>${htF(a[2])}</b> · <b>${htF(a[3])}</b> obj.`
+    : `${esc(odTxt)} – ${esc(doTxt)}: spolu <b>${htF(sHT + sHF)}</b> ks · HT <b>${htF(sHT)}</b> · HF <b>${htF(sHF)}</b> · <b>${htF(sOb)}</b> obj. <span style="color:var(--sedy)">· ťukni do grafu pre detail</span>`;
   el.innerHTML = `<div class="ht-graf"><div class="ht-graf-hl">${legenda}${krokPrep}</div>
     <div class="obal"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${s}</svg><div class="zony" id="htZony">${t.map((_, i) => `<i data-i="${i}"${i === htV.akt ? ' class="akt"' : ''}></i>`).join('')}</div></div>
     <div class="ht-os"><span>${htPopisBodu(t[0][0], krok)}</span><span>${n > 2 ? htPopisBodu(stred, krok) : ''}</span><span>${htPopisBodu(t[n-1][0], krok)}</span></div>
@@ -2014,6 +2017,16 @@ function htPredTxt(d){
   const t = new Date(), cas = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
   return 'oproti ' + (L === 1 ? f(po) : f(po) + ' – ' + f(pd)) + (d.do === den(t) ? ` (do ${cas})` : '');
 }
+function htObjDelta(d){
+  if(d.obj_pred == null) return '';
+  const o = +d.obj, p = +d.obj_pred;
+  const kedy = esc(htPredTxt(d));
+  if(!p) return `<span class="ht-delta" style="flex-basis:100%">${kedy}: 0 obj.</span>`;
+  const pct = Math.round((o - p) / p * 100);
+  const tr = pct > 0 ? 'dobre' : (pct < 0 ? 'zle' : '');
+  const txt = pct < 0 ? `o ${Math.abs(pct)} % menej objednávok` : (pct > 0 ? `o ${pct} % viac objednávok` : 'rovnako objednávok');
+  return `<span class="ht-delta ${tr}" style="flex-basis:100%">${pct > 0 ? '▲' : (pct < 0 ? '▼' : '•')} ${txt} <span>${kedy}: ${htF(p)} obj.</span></span>`;
+}
 function vykresliHT(){
   const d = htData;
   const k = {}; (d.kpi || []).forEach(x => k[x.t] = x);
@@ -2024,7 +2037,7 @@ function vykresliHT(){
     <h2>Hometextil spolu</h2>
     <div class="ht-spolu">
       <span class="velke">${htF(spolu)}<small>ks</small></span>
-      <span class="pod"><b class="ht-obj">${htF(d.obj)}</b> objednávok</span>
+      <span class="pod"><b class="ht-obj">${htF(d.obj)}</b> objednávok</span>${htObjDelta(d)}
       <div class="pomer"><i style="width:${podielHT.toFixed(1)}%;background:var(--safran)"></i><i style="width:${(100-podielHT).toFixed(1)}%;background:var(--hf)"></i></div>
     </div>
 
