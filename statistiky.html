@@ -1903,8 +1903,12 @@ function htKresliVyvoj(){
   const cesta = t.map((d, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(hod(d)).toFixed(1)).join(' ');
   let s = '';
   kroky.forEach(v => s += `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#F0EAE0" vector-effect="non-scaling-stroke"/><text x="2" y="${y(v) - 2}" font-size="9" fill="#6B6660" font-family="IBM Plex Mono">${htF(v)}</text>`);
-  s += `<path d="${cesta} L${x(n-1)} ${H-p} L${x(0)} ${H-p}Z" fill="${farba}" opacity=".13"/>`;
-  s += `<path d="${cesta}" fill="none" stroke="${farba}" stroke-width="2.4" vector-effect="non-scaling-stroke"/>`;
+  /* dnešok ešte nabieha → plná čiara končí včerajškom, dnešok len jemne bodkovane */
+  const nd = htV.data.do === den(new Date()) && n > 1, m = nd ? n - 1 : n;
+  const cestaP = t.slice(0, m).map((d, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(hod(d)).toFixed(1)).join(' ');
+  if(m > 1) s += `<path d="${cestaP} L${x(m-1)} ${H-p} L${x(0)} ${H-p}Z" fill="${farba}" opacity=".13"/>`;
+  if(m > 1) s += `<path d="${cestaP}" fill="none" stroke="${farba}" stroke-width="2.4" vector-effect="non-scaling-stroke"/>`;
+  if(nd) s += `<line x1="${x(m-1)}" y1="${y(hod(t[m-1]))}" x2="${x(n-1)}" y2="${y(hod(t[n-1]))}" stroke="${farba}" stroke-width="1.4" stroke-dasharray="2 4" stroke-linecap="round" opacity=".55" vector-effect="non-scaling-stroke"/>`;
   if(htV.akt >= 0 && htV.akt < n) s += `<line x1="${x(htV.akt)}" x2="${x(htV.akt)}" y1="${p}" y2="${H-p}" stroke="#14213D" stroke-dasharray="3 3" opacity=".5" vector-effect="non-scaling-stroke"/>`;
   const stred = t[Math.floor((n - 1) / 2)][0];
   const sum = t.reduce((a, d) => a + hod(d), 0);
@@ -2161,8 +2165,12 @@ function kresliPV(){
   const dnes = den(new Date());
   let s = '';
   kroky.forEach(v => s += `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#F0EAE0" vector-effect="non-scaling-stroke"/><text x="2" y="${y(v) - 2}" font-size="9" fill="#6B6660" font-family="IBM Plex Mono">${cis(v)}</text>`);
-  s += `<path d="${cesta} L${x(n-1)} ${H-p} L${x(0)} ${H-p}Z" fill="#E8A33D" opacity=".14"/>`;
-  s += `<path d="${cesta}" fill="none" stroke="#E8A33D" stroke-width="2.4" vector-effect="non-scaling-stroke"/>`;
+  /* dnešok ešte nabieha → plná čiara končí včerajškom, dnešok len jemne bodkovane */
+  const nd = pv.data.do === den(new Date()) && n > 1, m = nd ? n - 1 : n;
+  const cestaP = t.slice(0, m).map((d, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(hod(d)).toFixed(1)).join(' ');
+  if(m > 1) s += `<path d="${cestaP} L${x(m-1)} ${H-p} L${x(0)} ${H-p}Z" fill="#E8A33D" opacity=".14"/>`;
+  if(m > 1) s += `<path d="${cestaP}" fill="none" stroke="#E8A33D" stroke-width="2.4" vector-effect="non-scaling-stroke"/>`;
+  if(nd) s += `<line x1="${x(m-1)}" y1="${y(hod(t[m-1]))}" x2="${x(n-1)}" y2="${y(hod(t[n-1]))}" stroke="#E8A33D" stroke-width="1.4" stroke-dasharray="2 4" stroke-linecap="round" opacity=".55" vector-effect="non-scaling-stroke"/>`;
   if(pv.akt >= 0 && pv.akt < n) s += `<line x1="${x(pv.akt)}" x2="${x(pv.akt)}" y1="${p}" y2="${H-p}" stroke="#14213D" stroke-dasharray="3 3" opacity=".5" vector-effect="non-scaling-stroke"/>`;
   const sum = t.reduce((a, d) => a + hod(d), 0);
   const neuplny = pv.data.do === dnes; /* posledný bod (deň/týždeň/mesiac) ešte nie je ukončený */
