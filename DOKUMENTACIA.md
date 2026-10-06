@@ -42,6 +42,15 @@ Indexer `build-index.mjs` bezi na PC (`C:\\Users\\Acer\\Desktop\\vzory`):
 2. vzniknute `index.json` a `nahlady.json` nahraj do repozitara (Add file -> Upload files -> commit do main)
 Prefixy: NS-, NT-, VZOR-, HT-. Indexer prechadza produkty po kategoriach (obchadza limit 10 000).
 
+## Kupovane spolu (od 10/2026)
+Pod kartou produktu po naskenovani NS appka ukaze 10 produktov, ktore sa najcastejsie kupovali
+v tych istych objednavkach (poslednych 12 mesiacov, len predane, bez stornovanych poloziek).
+- Data: Supabase tabulka `ns_spolu` (top 10 na kazde SKU), appka cita pohlad `ns_spolu_detail`
+  (doplna nazov, obrazok, zasobu, podpracovisko, denny priemer z `katalog`).
+- Prepocet: funkcia `prepocitaj_ns_spolu()`, plan `prepocet-ns-spolu` kazdu nedelu 2:10.
+- Vynechane: NS-5369 (Ochrana proti poskodeniu - sluzba), objednavky s 1 alebo viac ako 30 polozkami.
+- Percento = v kolkych objednavkach s tymto NS bol aj dany produkt.
+
 ## Ak nieco nefunguje
 - **Appka ukazuje stare data / stare tlacidla** -> Ctrl+Shift+R, na mobile vymazat udaje stranky.
 - **Zoznam prazdny** -> skontroluj, ci pri mene svieti DB; ak nie, prepni ikonou databazy.
