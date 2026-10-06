@@ -1046,6 +1046,7 @@ async function nacitajZasoby(skus){
 
 /* Kupované spolu: zoznam dvojíc + hľadanie podľa SKU (dáta z ns_spolu, posledných 12 mesiacov) */
 const spoluPamat = {};
+let spoluPoradie = 0;   /* aby pomalšia odpoveď neprepísala novší výsledok */
 async function spoluDb(cesta){
   const r = await fetch(`${URL_SUP}/rest/v1/${cesta}`, {headers:{apikey:KLUC, Authorization:'Bearer '+KLUC}});
   if(!r.ok) throw new Error('chyba ' + r.status);
@@ -1069,11 +1070,13 @@ function spoluNormalizuj(t){
   return t;
 }
 async function spoluZoznam(){
+  const moje = ++spoluPoradie;
   const ciel = $('#spoluVysledok');
   ciel.innerHTML = '<div class="kostra"></div>';
   try{
     if(!spoluPamat.__top) spoluPamat.__top = await spoluDb('ns_spolu_dvojice?select=*&order=pocet.desc&limit=20');
     const d = spoluPamat.__top;
+    if(moje !== spoluPoradie) return;
     if(!d.length){ ciel.innerHTML = '<div class="prazdne">Zatiaľ nie je dosť objednávok.</div>'; return; }
     const od = d[0].prepocitane ? new Date(d[0].prepocitane).toLocaleDateString('sk-SK') : '';
     ciel.innerHTML = '<div class="spolu-pozn">20 najčastejšie spolu kupovaných dvojíc. Číslo = v koľkých objednávkach boli spolu. Klikni na produkt pre jeho najčastejších partnerov.' + (od ? ' Prepočítané ' + esc(od) + '.' : '') + '</div>'
@@ -1087,6 +1090,7 @@ async function spoluHladaj(sku){
   const ciel = $('#spoluVysledok');
   sku = spoluNormalizuj(sku);
   if(!sku){ $('#spoluVstup').value = ''; return spoluZoznam(); }
+  const moje = ++spoluPoradie;
   $('#spoluVstup').value = sku;
   ciel.innerHTML = '<div class="kostra"></div>';
   try{
@@ -1094,6 +1098,7 @@ async function spoluHladaj(sku){
       spoluDb('ns_spolu_detail?sku=eq.' + encodeURIComponent(sku) + '&order=poradie&select=poradie,partner_sku,nazov,obrazok,pocet,objednavok_sku,podiel_pct,zasoba,na_sklade,prepocitane'),
       spoluDb('katalog?sku=eq.' + encodeURIComponent(sku) + '&select=sku,nazov,obrazok,zasoba,na_sklade')
     ]);
+    if(moje !== spoluPoradie) return;
     const p = k[0];
     const hlavicka = `<div class="spolu-hlavicka"><button type="button" id="spoluSpat">← Zoznam</button><span>Partneri pre <b>${esc(sku)}</b></span></div>`
       + (p ? `<div class="spolu-par" style="grid-template-columns:1fr">${spoluProdukt(p.sku, p.nazov, p.obrazok, p.zasoba, p.na_sklade)}</div>` : '');
