@@ -1029,12 +1029,12 @@ async function nacitajZasoby(skus){
   }catch(_e){}
 }
 
-/* Odstrihnutia v sklade podľa ľudí (len správca; zápisy z histórie objednávok v Magente) */
+/* Odstrihnutia v sklade podľa ľudí (pre všetkých s firemným kódom; zápisy z histórie objednávok v Magente) */
 async function nacitajOdstrihnutia(){
   const blok = $('#odstrihBlok');
   if(!blok) return;
   const kod = localStorage.getItem('trh_kod');
-  if(!kod || !(window.GotanaUcet && GotanaUcet.spravca())){ blok.style.display = 'none'; return; }
+  if(!kod){ blok.style.display = 'none'; return; }
   const od = obdobie.od, dod = obdobie.do;
   try{
     const o = await rpc('odstrihnutia_statistika', {p_kod:kod, p_od:od, p_do:dod});
