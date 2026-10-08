@@ -3156,13 +3156,10 @@
           nastroje = document.createElement('div');
           nastroje.id = 'gt-nastroje';
           nastroje.style.cssText = 'grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:8px 8px 10px;border-top:1px solid rgba(255,255,255,.08)';
-          [['synchronizujKatalog()','Katalóg'],['prepniZdroj()','Zdroj dát'],['zmenApiAdresu()','Nastavenia']].forEach(function(p){
-            var b = document.querySelector('button[onclick="' + p[0] + '"]');
-            if(!b) return;
-            b.className = 'bg-slate-800 text-slate-300 px-3 py-2 rounded-lg border border-slate-700 hover:bg-slate-700 hover:text-white flex items-center gap-1.5 text-xs font-bold transition-colors';
-            var ik = b.querySelector('.material-icons'); if(ik){ ik.className = 'material-icons'; ik.style.fontSize = '18px'; }
-            b.appendChild(document.createTextNode(p[1]));
-            nastroje.appendChild(b);
+          /* tlačidlá Katalóg, Zdroj dát a Nastavenia sa už nepoužívajú (dáta sú v Supabase, katalóg sa synchronizuje automaticky) */
+          ['synchronizujKatalog()','prepniZdroj()','zmenApiAdresu()'].forEach(function(p){
+            var b = document.querySelector('button[onclick="' + p + '"]');
+            if(b) b.remove();
           });
         }
         wrap.appendChild(nastroje);
@@ -3170,7 +3167,7 @@
 
         function nastavViac(otvorit){
           ['tab-vzor','tab-panely','tab-trh','gt-nastroje'].forEach(function(id){
-            var e = document.getElementById(id); if(e) e.style.display = otvorit ? (id === 'gt-nastroje' ? 'flex' : '') : 'none';
+            var e = document.getElementById(id); if(e) e.style.display = otvorit ? (id === 'gt-nastroje' ? (e.children.length ? 'flex' : 'none') : '') : 'none';
           });
           viac.querySelector('.material-icons').textContent = otvorit ? 'expand_less' : 'expand_more';
           viac.setAttribute('aria-expanded', otvorit ? 'true' : 'false');
@@ -3240,6 +3237,8 @@
         odlozena.userChoice.finally(function(){ odlozena = null; b.remove(); });
       };
       n.appendChild(b);
+      var vi = document.getElementById('tab-viac');
+      if(vi && vi.getAttribute('aria-expanded') === 'true') n.style.display = 'flex';
     }
     window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); odlozena = e; pridajTlacidlo(); });
     window.addEventListener('appinstalled', function(){ var b = document.getElementById('gt-instal'); if(b) b.remove(); });
