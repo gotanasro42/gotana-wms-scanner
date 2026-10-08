@@ -1537,8 +1537,7 @@
              html += `<div class="p-10 text-center bg-slate-50"><h3 class="text-xl font-bold text-slate-700 mb-1">Nenájdené</h3><p class="text-sm text-slate-400 mb-6">Tento kód neevidujeme.</p><button onclick="prepareNew('${scannedId}', false)" class="w-full bg-green-600 active:bg-green-800 text-white py-4 rounded-xl font-bold shadow-lg text-lg tap-feedback">Naskladniť nové</button></div>`; 
          }
          html += `</div>`;
-         html += `<div id="gtSpolu" data-kod="${getBaseCode(scannedId)}"></div>`;
-         if(count === 0 && rawParts.length > 2) prepareNew(scannedId, false, rawParts); else { area.innerHTML = html; if (window.gtPredajInfo) window.gtPredajInfo(scannedId); if (window.gtSpolu) window.gtSpolu(scannedId); }
+         if(count === 0 && rawParts.length > 2) prepareNew(scannedId, false, rawParts); else { area.innerHTML = html; if (window.gtPredajInfo) window.gtPredajInfo(scannedId); }
       }
       
       // Úprava funkcie pre výpočet farby, aby bola vhodná pre ľavý hrubý okraj celého bloku
@@ -3028,82 +3027,6 @@
   </script>
 
 
-<script>
-  /* Najčastejšie kupované spolu: 10 produktov z tých istých objednávok (posledných 12 mesiacov).
-     Dáta počíta Supabase (tabuľka ns_spolu, prepočet každú nedeľu), appka ich len číta. */
-  (function(){
-    var SUP = 'https://gduarwvhxlffrasuuxqw.supabase.co';
-    var KLUC = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkdWFyd3ZoeGxmZnJhc3V1eHF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDUxMTMsImV4cCI6MjEwMTQ4MTExM30.xGnlwd5XPVSIkd9X1PlsxlTldiwuul410B8EX-VftLQ';
-    var pamat = {};
-    var VYBER = 'poradie,partner_sku,nazov,obrazok,pocet,objednavok_sku,podiel_pct,zasoba,na_sklade,podpracovisko,denny_priemer_30,prepocitane';
-
-    function esc(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
-    function cislo(n){ return Number(n).toLocaleString('sk-SK', { maximumFractionDigits: 1 }); }
-
-    async function nacitaj(kod){
-      if(kod in pamat) return pamat[kod];
-      var r = await fetch(SUP + '/rest/v1/ns_spolu_detail?sku=eq.' + encodeURIComponent(kod) + '&order=poradie&select=' + VYBER, {
-        headers: { apikey: KLUC, Authorization: 'Bearer ' + KLUC }
-      });
-      if(!r.ok) throw new Error('DB ' + r.status);
-      var d = await r.json();
-      pamat[kod] = d;
-      return d;
-    }
-
-    function riadok(p){
-      var sk = p.partner_sku;
-      var skladom = p.na_sklade === true && Number(p.zasoba) > 0;
-      var obr = p.obrazok || (typeof dbNahlady !== 'undefined' && dbNahlady[sk]) || '';
-      var foto = obr
-        ? '<img src="' + esc(obr) + '" loading="lazy" class="w-14 h-14 object-cover rounded-lg border border-slate-200 shrink-0 bg-slate-100" onerror="this.style.visibility=\'hidden\'">'
-        : '<div class="w-14 h-14 rounded-lg border border-slate-200 shrink-0 bg-slate-100"></div>';
-      var zasoba = (p.zasoba === null || p.zasoba === undefined) ? ''
-        : '<span style="color:' + (skladom ? '#2F6B4F' : '#A63D40') + '">' + (skladom ? 'skladom ' + cislo(p.zasoba) : 'vypredané') + '</span>';
-      var priemer = (p.denny_priemer_30 === null || p.denny_priemer_30 === undefined) ? ''
-        : '<span class="text-slate-500">Ø ' + (Number(p.denny_priemer_30) < 0.1 ? (Number(p.denny_priemer_30) === 0 ? '0' : '<0,1') : cislo(p.denny_priemer_30)) + '/deň</span>';
-      var pp = p.podpracovisko ? '<span class="text-indigo-700">' + esc(p.podpracovisko) + '</span>' : '';
-      var meta = [zasoba, priemer, pp].filter(Boolean).join('<span class="text-slate-300"> · </span>');
-      var podiel = Number(p.podiel_pct);
-      return '<div class="bg-white p-3 rounded-xl border border-slate-200 flex items-center gap-3 shadow-sm cursor-pointer tap-feedback active:scale-[0.98] transition-transform" onclick="processResult(\'' + esc(sk) + '\')">'
-        + '<div class="text-xs font-black text-slate-400 w-5 text-center shrink-0">' + p.poradie + '</div>'
-        + foto
-        + '<div class="flex-1 min-w-0">'
-        +   '<div class="font-mono font-bold text-slate-800 text-sm leading-tight">' + esc(sk) + '</div>'
-        +   '<div class="text-xs text-slate-600 leading-snug">' + esc(p.nazov || '') + '</div>'
-        +   '<div class="text-[11px] font-bold mt-0.5 flex flex-wrap gap-x-1">' + meta + '</div>'
-        + '</div>'
-        + '<div class="text-right shrink-0" title="V ' + p.pocet + ' z ' + p.objednavok_sku + ' objednávok s týmto produktom bol aj tento">'
-        +   '<div class="text-lg font-black text-slate-800 leading-none">' + (isNaN(podiel) ? '' : cislo(podiel) + ' %') + '</div>'
-        +   '<div class="text-[10px] font-bold text-slate-400 mt-1">' + p.pocet + ' z ' + p.objednavok_sku + ' obj.</div>'
-        + '</div>'
-        + '</div>';
-    }
-
-    window.gtSpolu = async function(kod){
-      try{
-        var el = document.getElementById('gtSpolu');
-        if(!el) return;
-        kod = String(kod || '').split('_')[0].toUpperCase();
-        var d = await nacitaj(kod);
-        el = document.getElementById('gtSpolu');
-        if(!el || el.dataset.kod !== kod) return;
-        if(!d || !d.length){
-          el.innerHTML = '<div class="mt-4 text-center text-xs font-bold text-slate-400">Zatiaľ nie je dosť objednávok na odporúčanie "kupované spolu".</div>';
-          return;
-        }
-        var od = d[0].prepocitane ? new Date(d[0].prepocitane).toLocaleDateString('sk-SK') : '';
-        el.innerHTML = '<div class="mt-4 bg-slate-50 rounded-2xl border border-slate-300 overflow-hidden shadow-xl">'
-          + '<div class="p-4 border-b border-slate-200 bg-white"><div class="font-black text-slate-800 flex items-center gap-2"><span class="material-icons text-pink-600">shopping_basket</span> Najčastejšie kupované spolu</div>'
-          + '<div class="text-[11px] text-slate-500 mt-1">Z objednávok za posledných 12 mesiacov, v ktorých bol aj ' + esc(kod) + '. Percento = v koľkých z nich bol aj daný produkt.' + (od ? ' Prepočítané ' + esc(od) + '.' : '') + '</div></div>'
-          + '<div class="p-2 space-y-2">' + d.map(riadok).join('') + '</div></div>';
-      }catch(e){
-        try{ var x = document.getElementById('gtSpolu'); if(x) x.innerHTML = ''; }catch(_){}
-        console.warn('Kupované spolu:', e);
-      }
-    };
-  })();
-</script>
 </body>
 </html>
 
