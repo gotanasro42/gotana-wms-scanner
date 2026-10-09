@@ -51,6 +51,16 @@ v tych istych objednavkach (poslednych 12 mesiacov, len predane, bez stornovanyc
 - Vynechane: NS-5369 (Ochrana proti poskodeniu - sluzba), objednavky s 1 alebo viac ako 30 polozkami.
 - Percento = v kolkych objednavkach s tymto NS bol aj dany produkt.
 
+## MAT podla grafiky (od 10/2026)
+Statistiky -> Produkty -> tlacidlo **MAT**: najpredavanejsie grafiky (vzory) za zvolene obdobie, s filtrom podla materialu.
+- MAT-0001 je v Magente jeden produkt s vyberom grafiky; grafika je samostatny konfigurovatelny produkt "Vzor - ...".
+- Data: Supabase `objednavky_polozky.grafika_id` (Magento product_id grafiky) a `grafika_nazov`. Nazov grafiky je podla jazyka
+  obchodu (Vzor/Minta/Muster...), preto sa vsetko zoskupuje podla `grafika_id`, nazov sa vyberie jeden (prednostne "Vzor - ...").
+- Plnenie: Edge Function `sync-grafika` (cita z Magenta, zapisuje len tieto 2 stlpce), plan `grafika-doplnanie` kazdych 5 min
+  dopln nove MAT riadky. Staré objednavky (od 5/2025) sa doplnili jednorazovo.
+- Zobrazenie: funkcia `dash_top_mat(od, do, sku)`.
+- Sklad podla grafiky (ABRA kody MAT-0001-100) zatial nie je napojeny.
+
 ## Ak nieco nefunguje
 - **Appka ukazuje stare data / stare tlacidla** -> Ctrl+Shift+R, na mobile vymazat udaje stranky.
 - **Zoznam prazdny** -> skontroluj, ci pri mene svieti DB; ak nie, prepni ikonou databazy.
