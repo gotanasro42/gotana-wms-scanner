@@ -831,6 +831,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
       <button data-p="metre" aria-pressed="true">Na metre</button>
       <button data-p="kusy" aria-pressed="false">Na kusy</button>
       <button data-p="objednavka" aria-pressed="false">Na objednávku</button>
+      <button data-p="strihy" aria-pressed="false">PDF strihy</button>
     </div>
     <div class="spolu-pozn" style="margin:6px 0 0">Klikni na produkt a rozbalí sa 10 najčastejších kombinácií (čo sa kupovalo spolu, posledných 12 mesiacov).</div>
     <div id="topProdukty"></div>
@@ -999,6 +1000,7 @@ async function nacitaj(tiche){
     nacitajMinulyRok();
     nacitajPredikciu();
     nacitajTlacObdobie();
+    nacitajStrihy();
   }catch(e){
     $('#hlavnaHodnota').textContent = '—';
     dl.forEach(s => { const el = $(s); if (el) el.innerHTML = ''; });
@@ -1147,8 +1149,10 @@ async function spoluHladaj(sku){
 
 function vykresliProdukty(){
   const naObj = zobrazUdaj === 'objednavka';
+  const strihy = zobrazUdaj === 'strihy';
   if(naObj && !tlacObd){ $('#topProdukty').innerHTML = '<div class="kostra"></div>'; return; }
-  const pole = naObj ? tlacObd.top : (zobrazUdaj === 'metre' ? data.topMetre : data.topKusy);
+  if(strihy && !strihyObd){ $('#topProdukty').innerHTML = '<div class="kostra"></div>'; return; }
+  const pole = naObj ? tlacObd.top : strihy ? strihyObd : (zobrazUdaj === 'metre' ? data.topMetre : data.topKusy);
   const chybaju = (pole||[]).map(x=>x.sku).filter(x => !(x in zasoby));
   if(chybaju.length){ nacitajZasoby(chybaju).then(() => { if(data) vykresliProdukty(); }); }
   const jed = zobrazUdaj === 'metre' ? 'm' : 'ks';
@@ -1171,7 +1175,7 @@ function vykresliProdukty(){
           return v;
         })()}</div>
       </div>
-      <div class="hod">${cis(p.mnozstvo, naObj && !p.je_meter ? 0 : 1)}<small>${naObj ? (p.je_meter ? 'm' : 'ks') : jed} · ${cis(p.obj)}×</small></div>
+      <div class="hod">${cis(p.mnozstvo, (naObj && !p.je_meter) || strihy ? 0 : 1)}<small>${naObj ? (p.je_meter ? 'm' : 'ks') : jed} · ${cis(p.obj)}×</small></div>
     </div>
     <div class="spolu-box" data-box="${esc(p.sku)}">${spoluBoxHtml(p.sku)}</div>
     </div>`).join('');
@@ -1694,6 +1698,19 @@ setInterval(() => { if(Date.now() - posledneNacitanie >= 10*60*1000) tichaObnova
 document.addEventListener('visibilitychange', () => {
   if(document.visibilityState === 'visible' && Date.now() - posledneNacitanie >= 10*60*1000) tichaObnova();
 });
+
+/* ---- PDF strihy (SKU ST-) – najpredávanejšie za obdobie ---- */
+let strihyObd = null;
+async function nacitajStrihy(){
+  const od = obdobie.od, dd = obdobie.do;
+  strihyObd = null;
+  if(zobrazUdaj === 'strihy' && data) vykresliProdukty();
+  let t = null;
+  try{ t = await rpc('dash_top_strihy', {p_od: od, p_do: dd}); }catch(_e){ t = null; }
+  if(obdobie.od !== od || obdobie.do !== dd) return;
+  strihyObd = Array.isArray(t) ? t : [];
+  if(zobrazUdaj === 'strihy' && data) vykresliProdukty();
+}
 
 /* ---- Na objednávku (panely vlastnej tlače, NST, MAT, predané bez zásoby) – pribudlo za obdobie + dnes ---- */
 let tlacObd = null;
