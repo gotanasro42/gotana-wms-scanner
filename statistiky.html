@@ -485,6 +485,12 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .ht-zoznam{background:#fff;border:1px solid var(--linka);border-radius:8px;padding:0 10px}
 .ht-produkt{display:grid;grid-template-columns:18px 40px 1fr auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--linka)}
 .ht-produkt:last-child{border-bottom:0}
+.ht-obal{border-bottom:1px solid var(--linka)}
+.ht-obal:last-child{border-bottom:0}
+.ht-obal>.ht-produkt{border-bottom:0;cursor:pointer}
+.ht-obal.otvoreny>.ht-produkt .nazov{color:var(--safran)}
+.ht-obal>.spolu-box{padding:0 0 8px 26px}
+.ht-obal .spolu-r{grid-template-columns:34px 1fr auto}
 .ht-produkt .por{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sedy);text-align:right}
 .ht-produkt img{width:40px;height:40px;object-fit:cover;border-radius:6px;background:var(--platno-tmavsi);border:1px solid var(--linka)}
 .ht-produkt .nazov{font-size:12.5px;font-weight:500;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -1129,8 +1135,12 @@ async function spoluHladaj(sku){
   document.addEventListener('click', e => {
     if(e.target.closest('img')) return;               /* obrázok = zväčšenie */
     const h = e.target.closest('.spolu-r[data-hladaj]');
-    if(h){ spoluHladaj(h.dataset.hladaj); window.scrollTo({top: 0, behavior:'smooth'}); return; }
-    const r = e.target.closest('#topProdukty .produkt[data-sku]');
+    if(h){
+      /* z hometextilu preskoč na záložku Produkty, kde je hľadanie kombinácií */
+      if(h.closest('#s-hometextil')){ const nb = document.querySelector('#nav button[data-s="produkty"]'); if(nb) nb.click(); }
+      spoluHladaj(h.dataset.hladaj); window.scrollTo({top: 0, behavior:'smooth'}); return;
+    }
+    const r = e.target.closest('#topProdukty .produkt[data-sku], #s-hometextil .ht-produkt[data-sku]');
     if(r) spoluPrepni(r.dataset.sku);
   });
 })();
@@ -1946,7 +1956,7 @@ function htDeltaHtml(ks, pred){
 
 function htProdukt(r, i, sObj){
   const zas = r[5] != null ? ` · zásoba <span class="ht-zas${Number(r[5]) <= 5 ? ' malo' : ''}">${htF(r[5])} ks</span>` : '';
-  return `<div class="ht-produkt"><span class="por">${i+1}.</span><img src="${htImg(r[2])}" alt="" loading="lazy" onerror="${HT_BEZ_OBR}"><div><div class="nazov">${esc(r[1]||r[0])}</div><div class="meta">${esc(r[0])}${zas}${priemTxt(r[6])}</div></div><div class="hod">${htF(r[3])} ks${sObj ? `<small>${htF(r[4])} obj.</small>` : ''}</div></div>`;
+  return `<div class="ht-obal${spoluOtvorene.has(r[0]) ? ' otvoreny' : ''}"><div class="ht-produkt" data-sku="${esc(r[0])}"><span class="por">${i+1}.</span><img src="${htImg(r[2])}" alt="" loading="lazy" onerror="${HT_BEZ_OBR}"><div><div class="nazov">${esc(r[1]||r[0])}</div><div class="meta">${esc(r[0])}${zas}${priemTxt(r[6])}</div></div><div class="hod">${htF(r[3])} ks${sObj ? `<small>${htF(r[4])} obj.</small>` : ''}</div></div><div class="spolu-box" data-box="${esc(r[0])}">${spoluBoxHtml(r[0])}</div></div>`;
 }
 
 /* ---- Vývoj v čase: vlastné obdobie a krok (dni / týždne / mesiace) ---- */
@@ -2130,7 +2140,7 @@ function htPripojRozbal(sel, pole, obsah){
 function htKresliTop(){
   const pole = (htData.top || {})[htTop] || [];
   $('#htTop').innerHTML = pole.length ? pole.map((r, i) => htProdukt(r, i, true)).join('') : '<div class="prazdne">Za toto obdobie zatiaľ nič.</div>';
-  $('#htTopPozn').textContent = htTop === 'HT' ? 'Pri HT aj aktuálna zásoba. Červenou: 5 ks a menej.' : 'HF sa neskladuje — zásoba sa nezobrazuje.';
+  $('#htTopPozn').textContent = (htTop === 'HT' ? 'Pri HT aj aktuálna zásoba. Červenou: 5 ks a menej.' : 'HF sa neskladuje — zásoba sa nezobrazuje.') + ' Klikni na produkt a rozbalí sa 10 najčastejších kombinácií (čo sa kupovalo spolu, posledných 12 mesiacov).';
   document.querySelectorAll('#htPrepinac button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === htTop)));
 }
 
