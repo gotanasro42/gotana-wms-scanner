@@ -193,6 +193,9 @@ h2:first-child{margin-top:2px}
 .mat-filter select{width:100%;padding:9px 10px;border:1px solid var(--linka);border-radius:7px;background:#fff;color:var(--atrament);font-size:13px;min-height:40px;font-family:'IBM Plex Sans',sans-serif}
 .mat-suhrn{display:flex;gap:14px;flex-wrap:wrap;padding:4px 0 8px;font-size:12px;color:var(--sedy)}
 .vzor-r{cursor:pointer}
+.mat-cisla{text-align:right;line-height:1.15}
+.mat-m{font-size:13px;color:var(--sedy)}.mat-m b{font-size:24px;font-weight:700;color:var(--tmava,#14213d)}
+.mat-o{font-size:12px;color:var(--sedy);margin-top:2px}.mat-o b{font-size:16px;font-weight:700;color:var(--tmava,#14213d)}
 .mat-zm{display:inline-block;margin-left:5px;font-size:10px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--sedy)}
 .mat-hore{color:#2f7d4f}.mat-dole{color:var(--tehla)}.mat-novy{color:var(--safran)}
 .mat-rozpis{padding:2px 0 8px 49px}
@@ -1758,11 +1761,11 @@ function vykresliMat(){
   const hlavicka = `
     <div class="mat-filter"><select id="matFilter" aria-label="Filter podľa látky">${volby}</select></div>
     <div class="mat-suhrn">
-      <span><b>${cis(s.metre, Number(s.metre) % 1 ? 1 : 0)}</b> m ${matZmena(s.metre, s.metre_pred)}</span>
+      <span><b>${cis(s.metre, Number(s.metre) % 1 ? 1 : 0)}</b> m</span>
       <span><b>${cis(s.obj)}</b> obj.</span>
       <span><b>${cis(s.vzorov)}</b> vzorov</span>
     </div>
-    <div class="spolu-pozn" style="margin:0 0 6px">Zmena je oproti rovnako dlhému obdobiu tesne pred vybraným. Klikni na vzor a uvidíš, na akých látkach sa predával.${nez > 0 ? ` Bez čísla vzoru: ${cis(nez, 0)} m.` : ''}</div>`;
+    <div class="spolu-pozn" style="margin:0 0 6px">Klikni na vzor a uvidíš, na akých látkach sa predával.${nez > 0 ? ` Bez čísla vzoru: ${cis(nez, 0)} m.` : ''}</div>`;
   if(!top.length){ ciel.innerHTML = hlavicka + '<div class="prazdne">Za toto obdobie zatiaľ nič.</div>'; return; }
   ciel.innerHTML = hlavicka + top.map(p => {
     const nazov = String(p.nazov || '').replace(/^(Vzor|Minta|Muster|Motivo|Motif|Model|Mönster|Kuvio)\s*-\s*/i, '');
@@ -1773,9 +1776,9 @@ function vykresliMat(){
         ${p.obrazok ? `<img src="${esc(p.obrazok)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<div></div>'}
         <div>
           <div class="nazov">${esc(nazov)}</div>
-          <div class="meta">vzor č. ${esc(p.cislo)} ${matZmena(p.metre, p.metre_pred)}</div>
+          <div class="meta">vzor č. ${esc(p.cislo)}</div>
         </div>
-        <div class="hod">${cis(p.metre, Number(p.metre) % 1 ? 1 : 0)}<small>m · ${cis(p.obj)}×</small></div>
+        <div class="mat-cisla"><div class="mat-m"><b>${cis(p.metre, Number(p.metre) % 1 ? 1 : 0)}</b> m</div><div class="mat-o"><b>${cis(p.obj)}</b> obj.</div></div>
       </div>
       <div class="mat-rozpis"${otv ? '' : ' hidden'}>${latky}</div>
     </div>`;
