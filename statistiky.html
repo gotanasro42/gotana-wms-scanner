@@ -1223,7 +1223,7 @@ function vykresliProdukty(){
       <div class="hod hod1">${cis(p.mnozstvo, (naObj && !p.je_meter) || strihy ? 0 : 1)}<small> ${naObj ? (p.je_meter ? 'm' : 'ks') : jed} · ${cis(p.obj)} obj.</small></div>
     </div>
     <div class="spolu-box" data-box="${esc(p.sku)}">${spoluBoxHtml(p.sku)}</div>
-    </div>`).join('');
+    </div>`).join('') + viacTlacidlo(vsetkoPol, pole.length);
 }
 
 function vykresliTrend(){
@@ -1240,7 +1240,7 @@ function vykresliTrend(){
     const v = ((Number(x.metre)||0)/max*100).toFixed(1);
     const d = new Date(x.den+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric'});
     return `<div style="height:${v}%" title="${d}: ${cis(x.metre,1)} m, ${cis(x.obj)} obj."></div>`;
-  }).join('') + viacTlacidlo(vsetkoPol, pole.length);
+  }).join('');
   const f = s => new Date(s+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric'});
   $('#trendOd').textContent = f(t[0].den);
   $('#trendDo').textContent = f(t[t.length-1].den);
