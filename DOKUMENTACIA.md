@@ -56,7 +56,7 @@ Statistiky -> Produkty -> tlacidlo **Vzory**: najpredavanejsie vzory za zvolene 
 - Kluc je **cislo vzoru** (Magento `grafika_id` = koncovka ABRA kodu MAT-0001-234). Nazvy su v kazdom jazyku ine, preto sa zoskupuje podla cisla.
 - Jeden riadok = jeden vzor (cislo, nazov, obrazok, metre, objednavky). Klik rozbali rozpis (latky MAT a produkty zo skladu). Zoradenie metre/objednavky, "Zobrazit dalsich 30".
 - MAT: `objednavky_polozky.grafika_id` (Magento product_id vzoru) + `vzory_grafiky` (product_id -> cislo, nazov, obrazok). Edge Function `sync-grafika`, plan `vzory-doplnanie` kazdych 5 min.
-- Sklad: tabulka `sklad_vzory` (sku -> cislo = Magento `ob_kod`, dodavatel = ID atributu `dodavatel`). Berie sa len dodavatel Takoy-tlac (149), Takoy-tlac-dlhsi proces (6220), takoy-pigment (6263), Takoy pigment dlhsi proces (8060), Takoy-tlac-pigment (7902). Edge Function `sync-vzory-sklad`, plan `vzory-sklad-doplnanie` kazdych 5 min (predavane NT-/NS- SKU za 400 dni, obnova po 30 dnoch).
+- Sklad: tabulka `sklad_vzory` (sku -> cislo = Magento `ob_kod`, dodavatel = ID atributu `dodavatel`, latka = ID atributu `material`; nazvy latok v `ciselnik_material` - pri novej latke doplnit nazov, inak sa ukaze "latka N"). Berie sa len dodavatel Takoy-tlac (149), Takoy-tlac-dlhsi proces (6220), takoy-pigment (6263), Takoy pigment dlhsi proces (8060), Takoy-tlac-pigment (7902). Edge Function `sync-vzory-sklad`, plan `vzory-sklad-doplnanie` kazdych 5 min (predavane NT-/NS- SKU za 400 dni, obnova po 30 dnoch).
 - Zobrazenie: funkcia `dash_top_vzory(od, do, sku, zdroj)`.
 - Sklad ABRA podla vzoru (MAT-0001-100) zatial nie je napojeny.
 

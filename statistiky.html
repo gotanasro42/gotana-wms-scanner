@@ -198,6 +198,7 @@ h2:first-child{margin-top:2px}
 .viac-btn{display:block;width:100%;margin:12px 0 6px;padding:12px;border-radius:8px;border:1px solid var(--linka);background:#fff;color:var(--atrament);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 .viac-btn small{font-weight:400;color:var(--sedy)}
 .mat-tag{font-style:normal;font-size:9px;font-weight:600;font-family:'IBM Plex Mono',monospace;background:var(--platno-tmavsi);color:var(--sedy);padding:1px 5px;border-radius:3px;margin-right:5px}
+.mat-lat{color:var(--sedy)}
 .mat-sklad{background:var(--mach);color:#fff}
 .zorad{display:flex;align-items:center;gap:6px;margin:8px 0 2px;font-size:11px;color:var(--sedy)}
 .zorad button{font:inherit;font-size:11.5px;padding:5px 11px;border-radius:14px;border:1px solid var(--linka);background:#fff;color:var(--atrament);cursor:pointer}
@@ -861,7 +862,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
       <button data-z="mnozstvo" aria-pressed="true">podľa metrov / kusov</button>
       <button data-z="obj" aria-pressed="false">podľa objednávok</button>
     </div>
-    <div class="spolu-pozn" style="margin:6px 0 0">Klikni na produkt a rozbalí sa 10 najčastejších kombinácií (čo sa kupovalo spolu, posledných 12 mesiacov).</div>
+    <div class="spolu-pozn" id="spoluPozn" style="margin:6px 0 0">Klikni na produkt a rozbalí sa 10 najčastejších kombinácií (čo sa kupovalo spolu, posledných 12 mesiacov).</div>
     <div id="topProdukty"></div>
   </section>
 
@@ -1189,6 +1190,7 @@ async function spoluHladaj(sku){
 })();
 
 function vykresliProdukty(){
+  { const pz = $('#spoluPozn'); if(pz) pz.style.display = zobrazUdaj === 'mat' ? 'none' : ''; }
   if(zobrazUdaj === 'mat'){ vykresliMat(); return; }
   const naObj = zobrazUdaj === 'objednavka';
   const strihy = zobrazUdaj === 'strihy';
@@ -1762,7 +1764,7 @@ async function nacitajMat(){
   matObd = null;
   if(zobrazUdaj === 'mat' && data) vykresliProdukty();
   let t = null;
-  try{ t = await rpc('dash_top_vzory', {p_od: od, p_do: dd, p_sku: (matZdroj === 'sklad' ? null : matSku) || null, p_zdroj: matZdroj}); }catch(_e){ t = null; }
+  try{ t = await rpc('dash_top_vzory', {p_od: od, p_do: dd, p_sku: matSku || null, p_zdroj: matZdroj}); }catch(_e){ t = null; }
   if(obdobie.od !== od || obdobie.do !== dd) return;
   matObd = t || {spolu:{}, materialy:[], top:[]};
   if(zobrazUdaj === 'mat' && data) vykresliProdukty();
@@ -1778,14 +1780,18 @@ function vykresliMat(){
   const ciel = $('#topProdukty');
   if(!matObd){ ciel.innerHTML = '<div class="kostra"></div>'; return; }
   const s = matObd.spolu || {}, topVsetko = zoradPole(matObd.top, 'metre', 1000), top = topVsetko.slice(0, zobrazPocet), mat = matObd.materialy || [];
-  const volby = '<option value="">Všetky látky</option>' + mat.map(m =>
-    `<option value="${esc(m.sku)}"${m.sku === matSku ? ' selected' : ''}>${esc(m.nazov)} · ${cis(m.metre, 0)} m</option>`).join('');
+  const mSkl = matObd.materialy_sklad || [];
+  const opt = m => `<option value="${esc(m.sku)}"${m.sku === matSku ? ' selected' : ''}>${esc(m.nazov)} · ${cis(m.metre, 0)} m</option>`;
+  let volby = '<option value="">Všetky látky</option>';
+  if(matZdroj === 'objednavku') volby += mat.map(opt).join('');
+  else if(matZdroj === 'sklad') volby += mSkl.map(opt).join('');
+  else volby += `<optgroup label="Na objednávku">${mat.map(opt).join('')}</optgroup><optgroup label="Sklad">${mSkl.map(opt).join('')}</optgroup>`;
   const nez = Number(s.nezaradene) || 0;
   const hlavicka = `
     <div class="zorad" id="matZdroj"><span>Zdroj:</span>
       ${[['vsetko','Všetko'],['objednavku','Na objednávku'],['sklad','Sklad']].map(z => `<button type="button" data-zdroj="${z[0]}" aria-pressed="${matZdroj === z[0]}">${z[1]}</button>`).join('')}
     </div>
-    ${matZdroj === 'sklad' ? '' : `<div class="mat-filter"><select id="matFilter" aria-label="Filter podľa látky (na objednávku)">${volby}</select></div>`}
+    <div class="mat-filter"><select id="matFilter" aria-label="Filter podľa látky">${volby}</select></div>
     <div class="mat-suhrn">
       <span><b>${cis(s.metre, Number(s.metre) % 1 ? 1 : 0)}</b> m</span>
       <span><b>${cis(s.obj)}</b> obj.</span>
@@ -1796,7 +1802,7 @@ function vykresliMat(){
   ciel.innerHTML = hlavicka + top.map(p => {
     const nazov = String(p.nazov || '').replace(/^(Vzor|Minta|Muster|Motivo|Motif|Model|Mönster|Kuvio)\s*-\s*/i, '');
     const otv = matOtvorene.has(p.cislo);
-    const latky = (p.latky || []).map(l => `<div class="mat-latka"><span>${l.typ === 'sklad' ? '<em class="mat-tag mat-sklad">sklad</em>' + esc(l.sku) + ' · ' : '<em class="mat-tag">obj.</em>'}${esc(l.nazov)}</span><b>${cis(l.metre, Number(l.metre) % 1 ? 1 : 0)} m</b></div>`).join('');
+    const latky = (p.latky || []).map(l => `<div class="mat-latka"><span>${l.typ === 'sklad' ? '<em class="mat-tag mat-sklad">sklad</em>' + esc(l.sku) + ' · ' : '<em class="mat-tag">obj.</em>'}${esc(l.nazov)}${l.typ === 'sklad' && l.latka ? ` <small class="mat-lat">(${esc(l.latka)})</small>` : ''}</span><b>${cis(l.metre, Number(l.metre) % 1 ? 1 : 0)} m</b></div>`).join('');
     const dvaZdroje = Number(p.metre_mat) > 0 && Number(p.metre_sklad) > 0;
     return `<div class="produkt-obal${otv ? ' otvoreny' : ''}">
       <div class="produkt vzor-r" data-vzor="${esc(p.cislo)}">
@@ -1813,7 +1819,7 @@ function vykresliMat(){
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('#matZdroj button'); if(!b) return;
-  matZdroj = b.dataset.zdroj; zobrazPocet = 30; nacitajMat();
+  matZdroj = b.dataset.zdroj; matSku = ''; zobrazPocet = 30; nacitajMat();
 });
 document.addEventListener('change', e => {
   if(e.target && e.target.id === 'matFilter'){ matSku = e.target.value; zobrazPocet = 30; nacitajMat(); }
