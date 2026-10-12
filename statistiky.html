@@ -195,6 +195,8 @@ h2:first-child{margin-top:2px}
 .vzor-r{cursor:pointer}
 .produkt .hod1{font-size:16px;font-weight:700}
 .produkt .hod1 small{display:inline;font-size:11.5px;font-weight:500;color:var(--sedy)}
+.viac-btn{display:block;width:100%;margin:12px 0 6px;padding:12px;border-radius:8px;border:1px solid var(--linka);background:#fff;color:var(--atrament);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.viac-btn small{font-weight:400;color:var(--sedy)}
 .zorad{display:flex;align-items:center;gap:6px;margin:8px 0 2px;font-size:11px;color:var(--sedy)}
 .zorad button{font:inherit;font-size:11.5px;padding:5px 11px;border-radius:14px;border:1px solid var(--linka);background:#fff;color:var(--atrament);cursor:pointer}
 .zorad button[aria-pressed="true"]{background:var(--atrament);color:var(--platno);border-color:var(--atrament);font-weight:600}
@@ -961,6 +963,10 @@ let obdobie = {od:null, do:null};
 let data = null;
 let zobrazUdaj = 'metre';
 let zoradPodla = 'mnozstvo';
+let zobrazPocet = 30;
+function viacTlacidlo(vsetko, ukazane){
+  return vsetko > ukazane ? `<button type="button" class="viac-btn" id="viacBtn">Zobraziť ďalších ${Math.min(30, vsetko - ukazane)} <small>(${ukazane} z ${vsetko})</small> ▾</button>` : '';
+}
 function zoradPole(pole, kluc, limit){
   const a = (pole||[]).slice();
   const q = x => Number(x[kluc]) || 0, o = x => Number(x.obj) || 0;
@@ -1186,7 +1192,8 @@ function vykresliProdukty(){
   const strihy = zobrazUdaj === 'strihy';
   if(naObj && !tlacObd){ $('#topProdukty').innerHTML = '<div class="kostra"></div>'; return; }
   if(strihy && !strihyObd){ $('#topProdukty').innerHTML = '<div class="kostra"></div>'; return; }
-  const pole = zoradPole(naObj ? tlacObd.top : strihy ? strihyObd : (zobrazUdaj === 'metre' ? data.topMetre : data.topKusy), 'mnozstvo', strihy ? 200 : 35);
+  const pole = zoradPole(naObj ? tlacObd.top : strihy ? strihyObd : (zobrazUdaj === 'metre' ? data.topMetre : data.topKusy), 'mnozstvo', 1000);
+  const vsetkoPol = pole.length; pole.length = Math.min(pole.length, zobrazPocet);
   const chybaju = (pole||[]).map(x=>x.sku).filter(x => !(x in zasoby));
   if(chybaju.length){ nacitajZasoby(chybaju).then(() => { if(data) vykresliProdukty(); }); }
   const jed = zobrazUdaj === 'metre' ? 'm' : 'ks';
@@ -1229,7 +1236,7 @@ function vykresliTrend(){
     const v = ((Number(x.metre)||0)/max*100).toFixed(1);
     const d = new Date(x.den+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric'});
     return `<div style="height:${v}%" title="${d}: ${cis(x.metre,1)} m, ${cis(x.obj)} obj."></div>`;
-  }).join('');
+  }).join('') + viacTlacidlo(vsetkoPol, pole.length);
   const f = s => new Date(s+'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric'});
   $('#trendOd').textContent = f(t[0].den);
   $('#trendDo').textContent = f(t[t.length-1].den);
@@ -1768,7 +1775,7 @@ function matZmena(teraz, pred){
 function vykresliMat(){
   const ciel = $('#topProdukty');
   if(!matObd){ ciel.innerHTML = '<div class="kostra"></div>'; return; }
-  const s = matObd.spolu || {}, top = zoradPole(matObd.top, 'metre', 80), mat = matObd.materialy || [];
+  const s = matObd.spolu || {}, topVsetko = zoradPole(matObd.top, 'metre', 1000), top = topVsetko.slice(0, zobrazPocet), mat = matObd.materialy || [];
   const volby = '<option value="">Všetky látky</option>' + mat.map(m =>
     `<option value="${esc(m.sku)}"${m.sku === matSku ? ' selected' : ''}>${esc(m.nazov)} · ${cis(m.metre, 0)} m</option>`).join('');
   const nez = Number(s.nezaradene) || 0;
@@ -1796,10 +1803,10 @@ function vykresliMat(){
       </div>
       <div class="mat-rozpis"${otv ? '' : ' hidden'}>${latky}</div>
     </div>`;
-  }).join('');
+  }).join('') + viacTlacidlo(topVsetko.length, top.length);
 }
 document.addEventListener('change', e => {
-  if(e.target && e.target.id === 'matFilter'){ matSku = e.target.value; nacitajMat(); }
+  if(e.target && e.target.id === 'matFilter'){ matSku = e.target.value; zobrazPocet = 30; nacitajMat(); }
 });
 document.addEventListener('click', e => {
   const r = e.target.closest('#topProdukty .vzor-r'); if(!r) return;
@@ -1999,16 +2006,19 @@ $('#nav').addEventListener('click', e => {
   window.scrollTo({top:0, behavior:'instant'});
 });
 
+document.addEventListener('click', e => {
+  if(e.target.closest('#viacBtn')){ zobrazPocet += 30; if(data) vykresliProdukty(); }
+});
 $('#zorad').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
   [...b.parentElement.querySelectorAll('button')].forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-  zoradPodla = b.dataset.z; if(data) vykresliProdukty();
+  zoradPodla = b.dataset.z; zobrazPocet = 30; if(data) vykresliProdukty();
 });
 document.querySelectorAll('.prepinac').forEach(pr => {
   pr.addEventListener('click', e => {
     const b = e.target.closest('button'); if(!b) return;
     [...b.parentElement.children].forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-    if(b.dataset.p){ zobrazUdaj = b.dataset.p; if(data) vykresliProdukty(); }
+    if(b.dataset.p){ zobrazUdaj = b.dataset.p; zobrazPocet = 30; if(data) vykresliProdukty(); }
   });
 });
 
