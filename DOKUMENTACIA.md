@@ -81,3 +81,9 @@ Statistiky -> Produkty -> tlacidlo **Vzory**: najpredavanejsie vzory za zvolene 
 - Podpracoviska: najprv rucne v Sheets, potom Apps Script, dnes automaticky z Magenta.
 - 8/2026: prechod zo Sheets/Apps Script na Supabase (rychlost, subezne skenovanie, ziadne denne limity).
 
+
+## Expedícia (od 10/2026, zatiaľ len pre Andreja)
+- Záložka EXPEDÍCIA v statistiky.html je skrytá; zapne sa raz otvorením `statistiky.html?expedicia` (uloží sa v prehliadači).
+- Dáta: RPC `dash_expedicia()`. Dnešná dávka = objednávky z predošlého dňa, v pondelok piatok–nedeľa.
+- Stavy: `prebieha_priprava` = pripravené na balenie, `processing` = čaká (na výrobu, ak má položku MAT/NST/bez zásoby), `nespracovana` = nové, `kontrola_produktov` = problém s balíkom (rozhoduje obchodné), `na_vyzdvihnutie` = osobný odber.
+- Odoslané sa berie z `objednavky.expedovana`. Pripravenosť výroby (odstrihnuté) je len v Magic Takoy, tu nie je.

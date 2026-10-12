@@ -600,6 +600,18 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .ht-graf-info b{font-family:'IBM Plex Mono',monospace}
 #pvGraf .ht-graf-hl,#htGraf .ht-graf-hl{gap:6px;margin:0 0 4px}
 #pvGraf .ht-krok button,#htGraf .ht-krok button{padding:4px 7px;font-size:11px}
+#nav button[hidden]{display:none}
+.exp-sk{display:flex;gap:8px;align-items:baseline;justify-content:space-between;padding:9px 11px;background:#fff;border:1px solid var(--linka);border-radius:10px;margin-top:6px}
+.exp-sk b{font-family:'IBM Plex Mono',monospace;font-size:17px}
+.exp-sk small{display:block;color:var(--sedy);font-size:10.5px;margin-top:1px}
+.exp-sk.zle{border-left:4px solid var(--tehla)}
+.exp-sk.ceka{border-left:4px solid var(--safran)}
+.exp-sk.ok{border-left:4px solid var(--mach)}
+.exp-r{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--linka)}
+.exp-r b{font-family:'IBM Plex Mono',monospace}
+.exp-z{padding:7px 0;border-bottom:1px solid var(--linka);font-size:12px;cursor:pointer}
+.exp-z small{color:var(--sedy)}
+.exp-t{font-size:10px;padding:1px 6px;border-radius:8px;background:var(--platno-tmavsi);margin-left:4px}
 </style>
 <script>
 /* ---- Prihlásenie do aplikácie Gotana ---- */
@@ -900,6 +912,10 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
       <div class="karta"><div class="hod cislo" id="kNaAdresu">—</div><div class="pop">Na adresu</div></div>
     </div>
   </section>
+  <!-- EXPEDÍCIA (zatiaľ len pre Andreja) -->
+  <section class="sekcia" id="s-expedicia">
+    <div id="expObsah"><div class="kostra"></div></div>
+  </section>
   <!-- HOMETEXTIL (HT + HF) -->
   <section class="sekcia" id="s-hometextil">
     <div id="htObsah"><div class="kostra"></div></div>
@@ -921,6 +937,9 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
   </button>
   <button data-s="hometextil" aria-pressed="false">
     <svg viewBox="0 0 24 24"><path d="M4 8c0-2 1.5-3 3-3h10c1.5 0 3 1 3 3v8c0 2-1.5 3-3 3H7c-1.5 0-3-1-3-3z"/><path d="M4 8c2 1.5 2 6.5 0 8M20 8c-2 1.5-2 6.5 0 8"/></svg><span>HOMETEXTIL</span>
+  </button>
+  <button data-s="expedicia" id="navExp" aria-pressed="false" hidden>
+    <svg viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg><span>EXPEDÍCIA</span>
   </button>
 </nav>
 
@@ -2019,6 +2038,7 @@ $('#nav').addEventListener('click', e => {
   document.querySelectorAll('.sekcia').forEach(x => x.classList.remove('aktivna'));
   $('#s-' + b.dataset.s).classList.add('aktivna');
   if(b.dataset.s === 'hometextil') nacitajHT();
+  if(b.dataset.s === 'expedicia') nacitajExp();
   window.scrollTo({top:0, behavior:'instant'});
 });
 
@@ -2512,6 +2532,62 @@ document.addEventListener('click', function(e){
   zobrazVelkyNahlad(img.getAttribute('src'), kod, nazovEl ? nazovEl.textContent.trim() : '');
 }, true);
 stavPrenosu(); nacitajTlac();
+
+/* ====== EXPEDÍCIA (zatiaľ len pre Andreja) ====== */
+try{ if(/[?&]expedicia\b/.test(location.search)) localStorage.setItem('gt_expedicia','1'); if(localStorage.getItem('gt_expedicia')==='1') $('#navExp').hidden = false; }catch(e){}
+const EXP_KURIER = {zasilkovna_zasilkovna:'Packeta (výdajné miesto)',parcelshop_parcelshop:'Parcelshop',balikovna_balikovna:'Balíkovňa',gls_gls:'GLS',ppl_ppl:'PPL',spscarrier_spscarrier:'SPS',packetahomedelivery_packetahomedelivery:'Packeta (domov)',takoyfancourier_takoyfancourier:'FAN Courier',urgentcargus_urgentcargus:'Cargus',takoyfedexeconomy_takoyfedexeconomy:'FedEx',upspickuppoint_upspickuppoint:'UPS',expressone_expressone:'Express One',inposthd_inposthd:'InPost',dpd_dpd:'DPD',zasielkovnaextra_zasielkovnaextra:'Packeta extra',zasielkovnaextra2_zasielkovnaextra2:'Packeta extra 2',storepickup_storepickup:'Osobný odber',customshipping_customshipping:'Vlastná doprava'};
+const EXP_PLATBA = {cashondelivery:'Dobierka',takoy_gopay_hyva:'GoPay',takoy_gopay:'GoPay',banktransfer:'Prevod',takoy_gopay_hyva_applepay:'Apple Pay',gopayapplepay:'Apple Pay',takoy_gopay_hyva_googlepay:'Google Pay',gopaygooglepay:'Google Pay',stripe_payments:'Karta (Stripe)',stripe_payments_checkout:'Karta (Stripe)',paypal_express:'PayPal',adyen_hpp:'Adyen',takoy_amazonpay:'Amazon Pay',braintree:'Braintree',free:'Zdarma'};
+const EXP_SK = {zaostava:'zaostáva',na_dnes:'na dnes',problem:'problém',caka_ine:'čaká'};
+let expData = null, expNacitava = false, expVsetko = false;
+const expDat = d => { if(!d) return ''; const [y,m,dd] = String(d).split('-'); return `${+dd}. ${+m}.`; };
+const expDen = d => ['ne','po','ut','st','št','pi','so'][new Date(d+'T12:00:00').getDay()];
+async function nacitajExp(sila){
+  if(expNacitava || (expData && !sila)) return;
+  expNacitava = true;
+  try{ expData = await rpc('dash_expedicia', {}); vykresliExp(); }
+  catch(e){ $('#expObsah').innerHTML = '<div class="pozn">Nepodarilo sa načítať expedíciu.</div>'; }
+  expNacitava = false;
+}
+function vykresliExp(){
+  const d = expData; if(!d) return;
+  const g = d.skupiny || {}, n = k => (g[k]||{}).obj||0, dob = k => (g[k]||{}).dobierka||0;
+  const riadok = (k, nadpis, pod, trieda) => `<div class="exp-sk ${trieda||''}"><div>${nadpis}<small>${pod}</small></div><b>${cis(n(k))}</b></div>`;
+  const okno = d.zaciatok === d.dnes ? '' : (new Date(d.dnes+'T12:00:00').getDay()===1 ? `piatok–nedeľa (od ${expDat(d.zaciatok)})` : `od ${expDat(d.zaciatok)}`);
+  const dnesNa = n('na_dnes');
+  const rozpis = (pole, popis, limit) => (pole||[]).slice(0, limit||12).map(x => `<div class="exp-r"><span>${esc(popis(x.k))}</span><b>${cis(x.n)}</b></div>`).join('');
+  const odos = (d.odoslane||[]).map(x => `<div class="exp-r"><span>${expDen(x.den)} ${expDat(x.den)}</span><b>${cis(x.n)}</b></div>`).join('');
+  const zoznam = d.zoznam || [];
+  const ukaz = expVsetko ? zoznam : zoznam.slice(0, 40);
+  const zrad = ukaz.map(o => `<div class="exp-z" data-cislo="${esc(o.cislo)}"><b>${esc(o.cislo)}</b><span class="exp-t">${EXP_SK[o.sk]||o.sk}</span>${o.na_obj?'<span class="exp-t">na objednávku</span>':''}<br><small>${expDat(o.den)} · ${esc(EXP_KURIER[o.dopr]||o.dopr||'—')} · ${esc(EXP_PLATBA[o.platba]||o.platba||'—')} · ${esc(o.kraj||'')}${o.suma!=null?' · '+cis(Math.round(o.suma))+' €':''}</small></div>`).join('');
+  $('#expObsah').innerHTML = `
+    <h2>Expedícia <span class="h2-pozn">· dnes ${expDen(d.dnes)} ${expDat(d.dnes)}${okno?' · berie sa '+okno:''}</span></h2>
+    <div class="mriezka">
+      <div class="karta zvyraznena"><div class="hod cislo">${cis(dnesNa)}</div><div class="pop">Na expedíciu dnes</div></div>
+      <div class="karta"><div class="hod cislo ${n('zaostava')?'zle':''}">${cis(n('zaostava'))}</div><div class="pop">Zaostáva (staršie)</div></div>
+      <div class="karta"><div class="hod cislo">${cis(dob('na_dnes')+dob('zaostava'))}</div><div class="pop">z toho dobierka</div></div>
+    </div>
+    <h2>Stav objednávok</h2>
+    ${riadok('na_dnes','Pripravené na balenie','stav „prebieha príprava“ z dnešnej dávky','ok')}
+    ${riadok('zaostava','Zaostáva','prebieha príprava, ale staršie ako dnešná dávka','zle')}
+    ${riadok('dnesne','Dnešné','prebieha príprava, pôjdu nabudúce')}
+    ${riadok('caka_vyroba','Čaká na výrobu','spracovaná, má položku na objednávku','ceka')}
+    ${riadok('caka_ine','Čaká z iného dôvodu','spracovaná bez položky na objednávku – stojí za kontrolu','ceka')}
+    ${riadok('nove','Nové, nespracované','ešte ich nikto neotvoril ('+cis(dob('nove'))+' dobierka)')}
+    ${riadok('problem','Problém s balíkom','kontrola produktov – čaká na rozhodnutie obchodného','zle')}
+    ${riadok('vyzdvihnutie','Na vyzdvihnutie','osobný odber')}
+    <h2>Dnešná expedícia podľa kuriéra</h2>${rozpis(d.kuriery, k => EXP_KURIER[k]||k, 16)}
+    <h2>Podľa platby</h2>${rozpis(d.platby, k => EXP_PLATBA[k]||k)}
+    <h2>Podľa krajiny</h2>${rozpis(d.krajiny, k => k)}
+    <h2>Odoslané <span class="h2-pozn">· podľa dátumu expedície</span></h2>${odos}
+    <h2>Čo treba vybaviť <span class="h2-pozn">· najstaršie hore</span></h2>
+    ${zrad}
+    ${(!expVsetko && zoznam.length>40)?`<button class="viac-btn" id="expViac">Zobraziť všetkých ${zoznam.length} ▾</button>`:''}
+    <div class="pozn">Čaká na výrobu sa nepočíta ako pripravené. Hotovosť výroby (odstrihnuté) vidí len Magic Takoy, tu to preto nie je.</div>`;
+}
+document.addEventListener('click', e => {
+  if(e.target.closest('#expViac')){ expVsetko = true; vykresliExp(); return; }
+  const z = e.target.closest('.exp-z'); if(z) otvorObjednavku(z.dataset.cislo);
+});
 </script>
 </body>
 </html>
