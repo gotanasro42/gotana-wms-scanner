@@ -51,14 +51,14 @@ v tych istych objednavkach (poslednych 12 mesiacov, len predane, bez stornovanyc
 - Vynechane: NS-5369 (Ochrana proti poskodeniu - sluzba), objednavky s 1 alebo viac ako 30 polozkami.
 - Percento = v kolkych objednavkach s tymto NS bol aj dany produkt.
 
-## MAT podla vzoru (od 10/2026)
-Statistiky -> Produkty -> tlacidlo **MAT**: najpredavanejsie vzory (grafiky) za zvolene obdobie.
-- Kluc je **cislo vzoru** (Magento atribut `grafika_id` = koncovka ABRA kodu MAT-0001-234). Nazvy su v kazdom jazyku ine, preto sa zoskupuje podla cisla.
-- Jeden riadok = jeden vzor (cislo, nazov, obrazok, metre, objednavky, zmena oproti predch. rovnako dlhemu obdobiu). Klik rozbali rozpis podla materialu. Filter podla materialu hore.
-- Data: `objednavky_polozky.grafika_id` (Magento product_id vzoru) + `grafika_nazov`; tabulka `vzory_grafiky` (product_id -> cislo, sku, nazov, obrazok).
-- Plnenie: Edge Function `sync-grafika` (cita z Magenta), plan `vzory-doplnanie` kazdych 5 min dopln nove MAT riadky a mapovanie.
-- Zobrazenie: funkcia `dash_top_vzory(od, do, sku)`.
-- Sklad podla vzoru (ABRA) zatial nie je napojeny.
+## Vzory (od 10/2026)
+Statistiky -> Produkty -> tlacidlo **Vzory**: najpredavanejsie vzory za zvolene obdobie. Zdroj: **Vsetko / Na objednavku (MAT) / Sklad (NT-, NS- vlastna potlac)**.
+- Kluc je **cislo vzoru** (Magento `grafika_id` = koncovka ABRA kodu MAT-0001-234). Nazvy su v kazdom jazyku ine, preto sa zoskupuje podla cisla.
+- Jeden riadok = jeden vzor (cislo, nazov, obrazok, metre, objednavky). Klik rozbali rozpis (latky MAT a produkty zo skladu). Zoradenie metre/objednavky, "Zobrazit dalsich 30".
+- MAT: `objednavky_polozky.grafika_id` (Magento product_id vzoru) + `vzory_grafiky` (product_id -> cislo, nazov, obrazok). Edge Function `sync-grafika`, plan `vzory-doplnanie` kazdych 5 min.
+- Sklad: tabulka `sklad_vzory` (sku -> cislo = Magento `ob_kod`, dodavatel = ID atributu `dodavatel`). Berie sa len dodavatel Takoy-tlac (149), Takoy-tlac-dlhsi proces (6220), takoy-pigment (6263), Takoy pigment dlhsi proces (8060), Takoy-tlac-pigment (7902). Edge Function `sync-vzory-sklad`, plan `vzory-sklad-doplnanie` kazdych 5 min (predavane NT-/NS- SKU za 400 dni, obnova po 30 dnoch).
+- Zobrazenie: funkcia `dash_top_vzory(od, do, sku, zdroj)`.
+- Sklad ABRA podla vzoru (MAT-0001-100) zatial nie je napojeny.
 
 ## Ak nieco nefunguje
 - **Appka ukazuje stare data / stare tlacidla** -> Ctrl+Shift+R, na mobile vymazat udaje stranky.

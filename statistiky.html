@@ -197,6 +197,8 @@ h2:first-child{margin-top:2px}
 .produkt .hod1 small{display:inline;font-size:11.5px;font-weight:500;color:var(--sedy)}
 .viac-btn{display:block;width:100%;margin:12px 0 6px;padding:12px;border-radius:8px;border:1px solid var(--linka);background:#fff;color:var(--atrament);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 .viac-btn small{font-weight:400;color:var(--sedy)}
+.mat-tag{font-style:normal;font-size:9px;font-weight:600;font-family:'IBM Plex Mono',monospace;background:var(--platno-tmavsi);color:var(--sedy);padding:1px 5px;border-radius:3px;margin-right:5px}
+.mat-sklad{background:var(--mach);color:#fff}
 .zorad{display:flex;align-items:center;gap:6px;margin:8px 0 2px;font-size:11px;color:var(--sedy)}
 .zorad button{font:inherit;font-size:11.5px;padding:5px 11px;border-radius:14px;border:1px solid var(--linka);background:#fff;color:var(--atrament);cursor:pointer}
 .zorad button[aria-pressed="true"]{background:var(--atrament);color:var(--platno);border-color:var(--atrament);font-weight:600}
@@ -853,7 +855,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
       <button data-p="kusy" aria-pressed="false">Na kusy</button>
       <button data-p="objednavka" aria-pressed="false">Na objednávku</button>
       <button data-p="strihy" aria-pressed="false">PDF strihy</button>
-      <button data-p="mat" aria-pressed="false">MAT</button>
+      <button data-p="mat" aria-pressed="false">Vzory</button>
     </div>
     <div class="zorad" id="zorad"><span>Zoradiť:</span>
       <button data-z="mnozstvo" aria-pressed="true">podľa metrov / kusov</button>
@@ -1754,13 +1756,13 @@ async function nacitajStrihy(){
 }
 
 /* ---- MAT – najpredávanejšie vzory (podľa čísla vzoru, rovnaké ako v ABRE MAT-xxxx-ČÍSLO) ---- */
-let matObd = null, matSku = '', matOtvorene = new Set();
+let matObd = null, matSku = '', matZdroj = 'vsetko', matOtvorene = new Set();
 async function nacitajMat(){
   const od = obdobie.od, dd = obdobie.do;
   matObd = null;
   if(zobrazUdaj === 'mat' && data) vykresliProdukty();
   let t = null;
-  try{ t = await rpc('dash_top_vzory', {p_od: od, p_do: dd, p_sku: matSku || null}); }catch(_e){ t = null; }
+  try{ t = await rpc('dash_top_vzory', {p_od: od, p_do: dd, p_sku: (matZdroj === 'sklad' ? null : matSku) || null, p_zdroj: matZdroj}); }catch(_e){ t = null; }
   if(obdobie.od !== od || obdobie.do !== dd) return;
   matObd = t || {spolu:{}, materialy:[], top:[]};
   if(zobrazUdaj === 'mat' && data) vykresliProdukty();
@@ -1780,24 +1782,28 @@ function vykresliMat(){
     `<option value="${esc(m.sku)}"${m.sku === matSku ? ' selected' : ''}>${esc(m.nazov)} · ${cis(m.metre, 0)} m</option>`).join('');
   const nez = Number(s.nezaradene) || 0;
   const hlavicka = `
-    <div class="mat-filter"><select id="matFilter" aria-label="Filter podľa látky">${volby}</select></div>
+    <div class="zorad" id="matZdroj"><span>Zdroj:</span>
+      ${[['vsetko','Všetko'],['objednavku','Na objednávku'],['sklad','Sklad']].map(z => `<button type="button" data-zdroj="${z[0]}" aria-pressed="${matZdroj === z[0]}">${z[1]}</button>`).join('')}
+    </div>
+    ${matZdroj === 'sklad' ? '' : `<div class="mat-filter"><select id="matFilter" aria-label="Filter podľa látky (na objednávku)">${volby}</select></div>`}
     <div class="mat-suhrn">
       <span><b>${cis(s.metre, Number(s.metre) % 1 ? 1 : 0)}</b> m</span>
       <span><b>${cis(s.obj)}</b> obj.</span>
       <span><b>${cis(s.vzorov)}</b> vzorov</span>
     </div>
-    <div class="spolu-pozn" style="margin:0 0 6px">Klikni na vzor a uvidíš, na akých látkach sa predával.${nez > 0 ? ` Bez čísla vzoru: ${cis(nez, 0)} m.` : ''}</div>`;
+    <div class="spolu-pozn" style="margin:0 0 6px">Klikni na vzor a uvidíš, v akých látkach a produktoch sa predával.${nez > 0 ? ` Bez čísla vzoru: ${cis(nez, 0)} m.` : ''}</div>`;
   if(!top.length){ ciel.innerHTML = hlavicka + '<div class="prazdne">Za toto obdobie zatiaľ nič.</div>'; return; }
   ciel.innerHTML = hlavicka + top.map(p => {
     const nazov = String(p.nazov || '').replace(/^(Vzor|Minta|Muster|Motivo|Motif|Model|Mönster|Kuvio)\s*-\s*/i, '');
     const otv = matOtvorene.has(p.cislo);
-    const latky = (p.latky || []).map(l => `<div class="mat-latka"><span>${esc(l.nazov)}</span><b>${cis(l.metre, Number(l.metre) % 1 ? 1 : 0)} m</b></div>`).join('');
+    const latky = (p.latky || []).map(l => `<div class="mat-latka"><span>${l.typ === 'sklad' ? '<em class="mat-tag mat-sklad">sklad</em>' + esc(l.sku) + ' · ' : '<em class="mat-tag">obj.</em>'}${esc(l.nazov)}</span><b>${cis(l.metre, Number(l.metre) % 1 ? 1 : 0)} m</b></div>`).join('');
+    const dvaZdroje = Number(p.metre_mat) > 0 && Number(p.metre_sklad) > 0;
     return `<div class="produkt-obal${otv ? ' otvoreny' : ''}">
       <div class="produkt vzor-r" data-vzor="${esc(p.cislo)}">
         ${p.obrazok ? `<img src="${esc(p.obrazok)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<div></div>'}
         <div>
           <div class="nazov">${esc(nazov)}</div>
-          <div class="meta">vzor č. ${esc(p.cislo)}</div>
+          <div class="meta">vzor č. ${esc(p.cislo)}${dvaZdroje ? ` · na obj. ${cis(p.metre_mat, 0)} m · sklad ${cis(p.metre_sklad, 0)} m` : (matZdroj === 'vsetko' && Number(p.metre_sklad) > 0 ? ' · sklad' : '')}</div>
         </div>
         <div class="hod hod1">${cis(p.metre, Number(p.metre) % 1 ? 1 : 0)}<small> m · ${cis(p.obj)} obj.</small></div>
       </div>
@@ -1805,6 +1811,10 @@ function vykresliMat(){
     </div>`;
   }).join('') + viacTlacidlo(topVsetko.length, top.length);
 }
+document.addEventListener('click', e => {
+  const b = e.target.closest('#matZdroj button'); if(!b) return;
+  matZdroj = b.dataset.zdroj; zobrazPocet = 30; nacitajMat();
+});
 document.addEventListener('change', e => {
   if(e.target && e.target.id === 'matFilter'){ matSku = e.target.value; zobrazPocet = 30; nacitajMat(); }
 });
