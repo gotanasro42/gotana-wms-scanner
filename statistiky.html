@@ -187,6 +187,14 @@ h2:first-child{margin-top:2px}
   font-family:'IBM Plex Sans',sans-serif;
 }
 .prepinac button[aria-pressed="true"]{background:var(--atrament);color:var(--platno);border-color:var(--atrament);font-weight:600}
+#s-produkty .prepinac{flex-wrap:wrap}
+#s-produkty .prepinac button{min-width:calc(33% - 6px)}
+.mat-filter{margin:8px 0 6px}
+.mat-filter select{width:100%;padding:9px 10px;border:1px solid var(--linka);border-radius:7px;background:#fff;color:var(--atrament);font-size:13px;min-height:40px;font-family:'IBM Plex Sans',sans-serif}
+.mat-suhrn{display:flex;gap:14px;flex-wrap:wrap;padding:4px 0 8px;font-size:12px;color:var(--sedy)}
+.mat-suhrn b{font-family:'IBM Plex Mono',monospace;font-size:16px;color:var(--atrament);font-weight:600}
+.produkt.mat-r{grid-template-columns:minmax(0,1fr) auto}
+.produkt.mat-r .meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'IBM Plex Sans',sans-serif}
 
 
 /* ---------- Kupované spolu ---------- */
@@ -832,6 +840,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
       <button data-p="kusy" aria-pressed="false">Na kusy</button>
       <button data-p="objednavka" aria-pressed="false">Na objednávku</button>
       <button data-p="strihy" aria-pressed="false">PDF strihy</button>
+      <button data-p="mat" aria-pressed="false">MAT</button>
     </div>
     <div class="spolu-pozn" style="margin:6px 0 0">Klikni na produkt a rozbalí sa 10 najčastejších kombinácií (čo sa kupovalo spolu, posledných 12 mesiacov).</div>
     <div id="topProdukty"></div>
@@ -1001,6 +1010,7 @@ async function nacitaj(tiche){
     nacitajPredikciu();
     nacitajTlacObdobie();
     nacitajStrihy();
+    nacitajMat();
   }catch(e){
     $('#hlavnaHodnota').textContent = '—';
     dl.forEach(s => { const el = $(s); if (el) el.innerHTML = ''; });
@@ -1148,6 +1158,7 @@ async function spoluHladaj(sku){
 })();
 
 function vykresliProdukty(){
+  if(zobrazUdaj === 'mat'){ vykresliMat(); return; }
   const naObj = zobrazUdaj === 'objednavka';
   const strihy = zobrazUdaj === 'strihy';
   if(naObj && !tlacObd){ $('#topProdukty').innerHTML = '<div class="kostra"></div>'; return; }
@@ -1711,6 +1722,49 @@ async function nacitajStrihy(){
   strihyObd = Array.isArray(t) ? t : [];
   if(zobrazUdaj === 'strihy' && data) vykresliProdukty();
 }
+
+/* ---- MAT – najpredávanejšie grafiky (vzory) za obdobie, s filtrom podľa materiálu ---- */
+let matObd = null, matSku = '';
+async function nacitajMat(){
+  const od = obdobie.od, dd = obdobie.do;
+  matObd = null;
+  if(zobrazUdaj === 'mat' && data) vykresliProdukty();
+  let t = null;
+  try{ t = await rpc('dash_top_mat', {p_od: od, p_do: dd, p_sku: matSku || null}); }catch(_e){ t = null; }
+  if(obdobie.od !== od || obdobie.do !== dd) return;
+  matObd = t || {spolu:{}, materialy:[], top:[]};
+  if(zobrazUdaj === 'mat' && data) vykresliProdukty();
+}
+function vykresliMat(){
+  const ciel = $('#topProdukty');
+  if(!matObd){ ciel.innerHTML = '<div class="kostra"></div>'; return; }
+  const s = matObd.spolu || {}, top = matObd.top || [], mat = matObd.materialy || [];
+  const bezG = Number(s.bez_grafiky) || 0;
+  const volby = '<option value="">Všetky materiály</option>' + mat.map(m =>
+    `<option value="${esc(m.sku)}"${m.sku === matSku ? ' selected' : ''}>${esc(m.nazov)} · ${cis(m.metre, 0)} m</option>`).join('');
+  const hlavicka = `
+    <div class="mat-filter"><select id="matFilter" aria-label="Filter podľa materiálu">${volby}</select></div>
+    <div class="mat-suhrn">
+      <span><b>${cis(s.metre, Number(s.metre) % 1 ? 1 : 0)}</b> m</span>
+      <span><b>${cis(s.obj)}</b> obj.</span>
+      <span><b>${cis(s.grafik)}</b> grafík</span>
+    </div>
+    ${bezG > 0 ? `<div class="spolu-pozn" style="margin:0 0 6px">U ${cis(bezG)} riadkov sa grafika ešte nedoplnila (staršie objednávky sa dopĺňajú).</div>` : ''}`;
+  if(!top.length){ ciel.innerHTML = hlavicka + '<div class="prazdne">Za toto obdobie zatiaľ nič.</div>'; return; }
+  ciel.innerHTML = hlavicka + top.map(p => {
+    const nazov = String(p.grafika || '').replace(/^(Vzor|Minta)\s*-\s*/i, '');
+    return `<div class="produkt-obal"><div class="produkt mat-r">
+      <div>
+        <div class="nazov">${esc(nazov)}</div>
+        <div class="meta">${Number(p.materialov) > 1 ? cis(p.materialov) + ' materiály: ' : ''}${esc(p.material)}</div>
+      </div>
+      <div class="hod">${cis(p.metre, Number(p.metre) % 1 ? 1 : 0)}<small>m · ${cis(p.obj)}×</small></div>
+    </div></div>`;
+  }).join('');
+}
+document.addEventListener('change', e => {
+  if(e.target && e.target.id === 'matFilter'){ matSku = e.target.value; nacitajMat(); }
+});
 
 /* ---- Na objednávku (panely vlastnej tlače, NST, MAT, predané bez zásoby) – pribudlo za obdobie + dnes ---- */
 let tlacObd = null;
