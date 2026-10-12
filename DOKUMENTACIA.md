@@ -51,15 +51,14 @@ v tych istych objednavkach (poslednych 12 mesiacov, len predane, bez stornovanyc
 - Vynechane: NS-5369 (Ochrana proti poskodeniu - sluzba), objednavky s 1 alebo viac ako 30 polozkami.
 - Percento = v kolkych objednavkach s tymto NS bol aj dany produkt.
 
-## MAT podla grafiky (od 10/2026)
-Statistiky -> Produkty -> tlacidlo **MAT**: najpredavanejsie grafiky (vzory) za zvolene obdobie, s filtrom podla materialu.
-- MAT-0001 je v Magente jeden produkt s vyberom grafiky; grafika je samostatny konfigurovatelny produkt "Vzor - ...".
-- Data: Supabase `objednavky_polozky.grafika_id` (Magento product_id grafiky) a `grafika_nazov`. Nazov grafiky je podla jazyka
-  obchodu (Vzor/Minta/Muster...), preto sa vsetko zoskupuje podla `grafika_id`, nazov sa vyberie jeden (prednostne "Vzor - ...").
-- Plnenie: Edge Function `sync-grafika` (cita z Magenta, zapisuje len tieto 2 stlpce), plan `grafika-doplnanie` kazdych 5 min
-  dopln nove MAT riadky. Staré objednavky (od 5/2025) sa doplnili jednorazovo.
-- Zobrazenie: funkcia `dash_top_mat(od, do, sku)`.
-- Sklad podla grafiky (ABRA kody MAT-0001-100) zatial nie je napojeny.
+## MAT podla vzoru (od 10/2026)
+Statistiky -> Produkty -> tlacidlo **MAT**: najpredavanejsie vzory (grafiky) za zvolene obdobie.
+- Kluc je **cislo vzoru** (Magento atribut `grafika_id` = koncovka ABRA kodu MAT-0001-234). Nazvy su v kazdom jazyku ine, preto sa zoskupuje podla cisla.
+- Jeden riadok = jeden vzor (cislo, nazov, obrazok, metre, objednavky, zmena oproti predch. rovnako dlhemu obdobiu). Klik rozbali rozpis podla materialu. Filter podla materialu hore.
+- Data: `objednavky_polozky.grafika_id` (Magento product_id vzoru) + `grafika_nazov`; tabulka `vzory_grafiky` (product_id -> cislo, sku, nazov, obrazok).
+- Plnenie: Edge Function `sync-grafika` (cita z Magenta), plan `vzory-doplnanie` kazdych 5 min dopln nove MAT riadky a mapovanie.
+- Zobrazenie: funkcia `dash_top_vzory(od, do, sku)`.
+- Sklad podla vzoru (ABRA) zatial nie je napojeny.
 
 ## Ak nieco nefunguje
 - **Appka ukazuje stare data / stare tlacidla** -> Ctrl+Shift+R, na mobile vymazat udaje stranky.

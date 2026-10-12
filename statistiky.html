@@ -192,9 +192,15 @@ h2:first-child{margin-top:2px}
 .mat-filter{margin:8px 0 6px}
 .mat-filter select{width:100%;padding:9px 10px;border:1px solid var(--linka);border-radius:7px;background:#fff;color:var(--atrament);font-size:13px;min-height:40px;font-family:'IBM Plex Sans',sans-serif}
 .mat-suhrn{display:flex;gap:14px;flex-wrap:wrap;padding:4px 0 8px;font-size:12px;color:var(--sedy)}
+.vzor-r{cursor:pointer}
+.mat-zm{display:inline-block;margin-left:5px;font-size:10px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--sedy)}
+.mat-hore{color:#2f7d4f}.mat-dole{color:var(--tehla)}.mat-novy{color:var(--safran)}
+.mat-rozpis{padding:2px 0 8px 49px}
+.mat-rozpis[hidden]{display:none}
+.mat-latka{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:3px 0;border-bottom:1px dashed var(--linka)}
+.mat-latka:last-child{border-bottom:0}
+.mat-latka b{font-family:'IBM Plex Mono',monospace;font-weight:600;white-space:nowrap}
 .mat-suhrn b{font-family:'IBM Plex Mono',monospace;font-size:16px;color:var(--atrament);font-weight:600}
-.produkt.mat-r{grid-template-columns:minmax(0,1fr) auto}
-.produkt.mat-r .meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'IBM Plex Sans',sans-serif}
 
 
 /* ---------- Kupované spolu ---------- */
@@ -1723,47 +1729,66 @@ async function nacitajStrihy(){
   if(zobrazUdaj === 'strihy' && data) vykresliProdukty();
 }
 
-/* ---- MAT – najpredávanejšie grafiky (vzory) za obdobie, s filtrom podľa materiálu ---- */
-let matObd = null, matSku = '';
+/* ---- MAT – najpredávanejšie vzory (podľa čísla vzoru, rovnaké ako v ABRE MAT-xxxx-ČÍSLO) ---- */
+let matObd = null, matSku = '', matOtvorene = new Set();
 async function nacitajMat(){
   const od = obdobie.od, dd = obdobie.do;
   matObd = null;
   if(zobrazUdaj === 'mat' && data) vykresliProdukty();
   let t = null;
-  try{ t = await rpc('dash_top_mat', {p_od: od, p_do: dd, p_sku: matSku || null}); }catch(_e){ t = null; }
+  try{ t = await rpc('dash_top_vzory', {p_od: od, p_do: dd, p_sku: matSku || null}); }catch(_e){ t = null; }
   if(obdobie.od !== od || obdobie.do !== dd) return;
   matObd = t || {spolu:{}, materialy:[], top:[]};
   if(zobrazUdaj === 'mat' && data) vykresliProdukty();
+}
+function matZmena(teraz, pred){
+  teraz = Number(teraz) || 0; pred = Number(pred) || 0;
+  if(!pred) return teraz > 0 ? '<span class="mat-zm mat-novy">nový</span>' : '';
+  const r = Math.round((teraz - pred) / pred * 100);
+  if(r === 0) return '<span class="mat-zm">±0 %</span>';
+  return r > 0 ? `<span class="mat-zm mat-hore">▲ ${cis(r)} %</span>` : `<span class="mat-zm mat-dole">▼ ${cis(Math.abs(r))} %</span>`;
 }
 function vykresliMat(){
   const ciel = $('#topProdukty');
   if(!matObd){ ciel.innerHTML = '<div class="kostra"></div>'; return; }
   const s = matObd.spolu || {}, top = matObd.top || [], mat = matObd.materialy || [];
-  const bezG = Number(s.bez_grafiky) || 0;
-  const volby = '<option value="">Všetky materiály</option>' + mat.map(m =>
+  const volby = '<option value="">Všetky látky</option>' + mat.map(m =>
     `<option value="${esc(m.sku)}"${m.sku === matSku ? ' selected' : ''}>${esc(m.nazov)} · ${cis(m.metre, 0)} m</option>`).join('');
+  const nez = Number(s.nezaradene) || 0;
   const hlavicka = `
-    <div class="mat-filter"><select id="matFilter" aria-label="Filter podľa materiálu">${volby}</select></div>
+    <div class="mat-filter"><select id="matFilter" aria-label="Filter podľa látky">${volby}</select></div>
     <div class="mat-suhrn">
-      <span><b>${cis(s.metre, Number(s.metre) % 1 ? 1 : 0)}</b> m</span>
+      <span><b>${cis(s.metre, Number(s.metre) % 1 ? 1 : 0)}</b> m ${matZmena(s.metre, s.metre_pred)}</span>
       <span><b>${cis(s.obj)}</b> obj.</span>
-      <span><b>${cis(s.grafik)}</b> grafík</span>
+      <span><b>${cis(s.vzorov)}</b> vzorov</span>
     </div>
-    ${bezG > 0 ? `<div class="spolu-pozn" style="margin:0 0 6px">U ${cis(bezG)} riadkov sa grafika ešte nedoplnila (staršie objednávky sa dopĺňajú).</div>` : ''}`;
+    <div class="spolu-pozn" style="margin:0 0 6px">Zmena je oproti rovnako dlhému obdobiu tesne pred vybraným. Klikni na vzor a uvidíš, na akých látkach sa predával.${nez > 0 ? ` Bez čísla vzoru: ${cis(nez, 0)} m.` : ''}</div>`;
   if(!top.length){ ciel.innerHTML = hlavicka + '<div class="prazdne">Za toto obdobie zatiaľ nič.</div>'; return; }
   ciel.innerHTML = hlavicka + top.map(p => {
-    const nazov = String(p.grafika || '').replace(/^(Vzor|Minta)\s*-\s*/i, '');
-    return `<div class="produkt-obal"><div class="produkt mat-r">
-      <div>
-        <div class="nazov">${esc(nazov)}</div>
-        <div class="meta">${Number(p.materialov) > 1 ? cis(p.materialov) + ' materiály: ' : ''}${esc(p.material)}</div>
+    const nazov = String(p.nazov || '').replace(/^(Vzor|Minta|Muster|Motivo|Motif|Model|Mönster|Kuvio)\s*-\s*/i, '');
+    const otv = matOtvorene.has(p.cislo);
+    const latky = (p.latky || []).map(l => `<div class="mat-latka"><span>${esc(l.nazov)}</span><b>${cis(l.metre, Number(l.metre) % 1 ? 1 : 0)} m</b></div>`).join('');
+    return `<div class="produkt-obal${otv ? ' otvoreny' : ''}">
+      <div class="produkt vzor-r" data-vzor="${esc(p.cislo)}">
+        ${p.obrazok ? `<img src="${esc(p.obrazok)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<div></div>'}
+        <div>
+          <div class="nazov">${esc(nazov)}</div>
+          <div class="meta">vzor č. ${esc(p.cislo)} ${matZmena(p.metre, p.metre_pred)}</div>
+        </div>
+        <div class="hod">${cis(p.metre, Number(p.metre) % 1 ? 1 : 0)}<small>m · ${cis(p.obj)}×</small></div>
       </div>
-      <div class="hod">${cis(p.metre, Number(p.metre) % 1 ? 1 : 0)}<small>m · ${cis(p.obj)}×</small></div>
-    </div></div>`;
+      <div class="mat-rozpis"${otv ? '' : ' hidden'}>${latky}</div>
+    </div>`;
   }).join('');
 }
 document.addEventListener('change', e => {
   if(e.target && e.target.id === 'matFilter'){ matSku = e.target.value; nacitajMat(); }
+});
+document.addEventListener('click', e => {
+  const r = e.target.closest('#topProdukty .vzor-r'); if(!r) return;
+  const c = Number(r.dataset.vzor), obal = r.parentElement, box = obal.querySelector('.mat-rozpis');
+  if(matOtvorene.has(c)){ matOtvorene.delete(c); box.hidden = true; obal.classList.remove('otvoreny'); }
+  else { matOtvorene.add(c); box.hidden = false; obal.classList.add('otvoreny'); }
 });
 
 /* ---- Na objednávku (panely vlastnej tlače, NST, MAT, predané bez zásoby) – pribudlo za obdobie + dnes ---- */
