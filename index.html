@@ -347,15 +347,15 @@
               <button data-f="nove" onclick="stkFilter('nove')" class="flex-1 py-2 rounded-lg text-xs font-bold border-2 tap-feedback">Nevyexportované</button>
               <button data-f="vsetko" onclick="stkFilter('vsetko')" class="flex-1 py-2 rounded-lg text-xs font-bold border-2 tap-feedback">Všetko</button>
           </div>
+          <div class="flex gap-2 mb-2 justify-end">
+              <button onclick="stkExport(false)" class="bg-emerald-600 active:bg-emerald-800 text-white px-3 py-2 rounded-lg text-xs font-bold tap-feedback flex items-center gap-1"><span class="material-icons text-sm">download</span> Excel</button>
+              <button onclick="stkExport(true)" class="bg-slate-700 active:bg-slate-900 text-white px-3 py-2 rounded-lg text-xs font-bold tap-feedback flex items-center gap-1" title="Zdieľať"><span class="material-icons text-sm">share</span> Zdieľať</button>
+          </div>
 
-          <div id="stkZoznam" class="space-y-2 pb-40">
+          <div id="stkZoznam" class="space-y-2 pb-24">
               <div class="text-center text-slate-400 py-4 font-medium italic">Načítavam...</div>
           </div>
 
-          <div class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200 shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-50 flex gap-2">
-              <button onclick="stkExport(false)" class="flex-1 bg-emerald-600 active:bg-emerald-800 text-white py-4 rounded-xl font-bold shadow-lg tap-feedback flex items-center justify-center gap-2"><span class="material-icons">download</span> STIAHNUŤ EXCEL</button>
-              <button onclick="stkExport(true)" class="bg-slate-700 active:bg-slate-900 text-white px-5 rounded-xl font-bold shadow-lg tap-feedback flex items-center justify-center" title="Zdieľať"><span class="material-icons">share</span></button>
-          </div>
       </div>
 
       <!-- INVENTORY VIEW (PRIEBEŽNÁ INVENTÚRA) -->
