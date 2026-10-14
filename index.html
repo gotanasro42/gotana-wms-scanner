@@ -264,6 +264,13 @@
                          <span class="material-icons">layers</span> HROMADNÝ PRÍJEM
                      </button>
                  </div>
+
+                 <!-- ŠTÍTKY ROLIEK (evidencia mimo skladu) -->
+                 <div class="space-y-2">
+                     <button onclick="stkOtvor()" class="w-full h-16 bg-emerald-600 active:bg-emerald-800 text-white rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-1 shadow-md active:scale-[0.98] transition-transform tap-feedback border-2 border-emerald-500 border-dashed leading-tight px-1">
+                         <span class="material-icons">sell</span> ŠTÍTKY ROLIEK
+                     </button>
+                 </div>
              </div>
           </div>
 
@@ -304,6 +311,50 @@
               <button onclick="finishBulkToLoc()" id="btnFinishBulk" class="w-full bg-green-600 active:bg-green-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale transition-all" disabled>
                   <span class="material-icons">where_to_vote</span> DOKONČIŤ NA POZÍCIU
               </button>
+          </div>
+      </div>
+
+      <!-- ŠTÍTKY ROLIEK (evidencia zvyškov, nič sa neodpisuje zo skladu) -->
+      <div id="view-stitky" class="hidden animate-scale-in">
+          <div class="sticky top-20 z-40 bg-slate-100 pb-2 -mt-2">
+              <div class="bg-emerald-600 text-white p-3 rounded-2xl shadow-lg flex justify-between items-center mb-2">
+                  <div class="flex items-center gap-2">
+                      <button onclick="stkZavri()" class="bg-emerald-700 p-2 rounded-full hover:bg-emerald-800"><span class="material-icons text-sm">arrow_back</span></button>
+                      <div>
+                          <h2 class="font-black text-lg leading-tight">ŠTÍTKY ROLIEK</h2>
+                          <div class="text-[11px] font-bold opacity-80" id="stkSuhrn">Načítavam...</div>
+                      </div>
+                  </div>
+                  <div class="bg-white text-emerald-700 w-10 h-10 rounded-full flex items-center justify-center font-black text-lg shadow-inner" id="stkPocet">0</div>
+              </div>
+              <button id="btnResumeStitky" onclick="stkKamera()" class="w-full bg-blue-600 active:bg-blue-800 text-white py-4 rounded-xl font-bold mb-2 shadow-md flex items-center justify-center gap-2 tap-feedback">
+                  <span class="material-icons">videocam</span> OTVORIŤ SKENER
+              </button>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl shadow-md border border-slate-200 mb-3">
+              <div class="text-[10px] uppercase font-bold text-slate-400 mb-2 tracking-wider">Zapísať ručne</div>
+              <div class="grid grid-cols-5 gap-2">
+                  <input id="stkNs" type="text" autocapitalize="characters" autocomplete="off" placeholder="NS-16261" oninput="stkNahlad()" onkeydown="if(event.key==='Enter'){document.getElementById('stkMetraz').focus();}" class="col-span-3 p-3 text-center border-2 border-slate-200 rounded-xl font-bold uppercase focus:border-emerald-500 outline-none text-sm">
+                  <input id="stkMetraz" type="text" inputmode="decimal" autocomplete="off" placeholder="m" onkeydown="if(event.key==='Enter'){stkUlozRucne();}" class="col-span-2 p-3 text-center border-2 border-slate-200 rounded-xl font-bold focus:border-emerald-500 outline-none text-sm">
+              </div>
+              <div id="stkNahlad" class="text-xs text-slate-500 font-medium mt-2 min-h-[1rem] leading-snug"></div>
+              <button onclick="stkUlozRucne()" class="w-full mt-2 bg-emerald-600 active:bg-emerald-800 text-white py-3 rounded-xl font-bold shadow-md tap-feedback flex items-center justify-center gap-2"><span class="material-icons">add_circle</span> ULOŽIŤ</button>
+          </div>
+
+          <div class="flex gap-2 mb-2" id="stkFiltre">
+              <button data-f="dnes" onclick="stkFilter('dnes')" class="flex-1 py-2 rounded-lg text-xs font-bold border-2 tap-feedback">Dnes</button>
+              <button data-f="nove" onclick="stkFilter('nove')" class="flex-1 py-2 rounded-lg text-xs font-bold border-2 tap-feedback">Nevyexportované</button>
+              <button data-f="vsetko" onclick="stkFilter('vsetko')" class="flex-1 py-2 rounded-lg text-xs font-bold border-2 tap-feedback">Všetko</button>
+          </div>
+
+          <div id="stkZoznam" class="space-y-2 pb-40">
+              <div class="text-center text-slate-400 py-4 font-medium italic">Načítavam...</div>
+          </div>
+
+          <div class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200 shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-50 flex gap-2">
+              <button onclick="stkExport(false)" class="flex-1 bg-emerald-600 active:bg-emerald-800 text-white py-4 rounded-xl font-bold shadow-lg tap-feedback flex items-center justify-center gap-2"><span class="material-icons">download</span> STIAHNUŤ EXCEL</button>
+              <button onclick="stkExport(true)" class="bg-slate-700 active:bg-slate-900 text-white px-5 rounded-xl font-bold shadow-lg tap-feedback flex items-center justify-center" title="Zdieľať"><span class="material-icons">share</span></button>
           </div>
       </div>
 
@@ -963,6 +1014,7 @@
         if (hiddenModalForCamera) { hiddenModalForCamera.classList.remove('opacity-0', 'pointer-events-none'); hiddenModalForCamera = null; }
         if (!document.getElementById('view-bulk').classList.contains('hidden') && document.getElementById('btnResumeCamera')) document.getElementById('btnResumeCamera').classList.remove('hidden');
         if (!document.getElementById('view-inventory').classList.contains('hidden') && document.getElementById('btnResumeInvCamera')) document.getElementById('btnResumeInvCamera').classList.remove('hidden');
+        if (!document.getElementById('view-stitky').classList.contains('hidden') && document.getElementById('btnResumeStitky')) document.getElementById('btnResumeStitky').classList.remove('hidden');
       }
 
       async function startScanInput(targetId) {
@@ -1427,7 +1479,7 @@
       }
 
       function switchView(v) {
-         ['scan','db', 'vzor', 'bulk', 'inventory', 'panely'].forEach(t => { 
+         ['scan','db', 'vzor', 'bulk', 'inventory', 'panely', 'stitky'].forEach(t => {
              const el = document.getElementById('view-'+t); if(el) el.classList.add('hidden'); 
              const tab = document.getElementById('tab-'+t); if(tab) tab.classList.remove('active'); 
          });
@@ -3039,6 +3091,177 @@
     })();
   </script>
 
+
+<script>
+/* ====== ŠTÍTKY ROLIEK ======
+   Samostatná evidencia zvyškov látok (tabuľka stitky_rolky v Supabase).
+   Nič sa nezapisuje do skladu ani sa z neho neodpisuje. Rovnaké NS aj metráž sa môžu opakovať. */
+(function(){
+  var filter = 'dnes', riadky = [], posledny = {kod:'', cas:0};
+
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function m2(n){ return String(Math.round(Number(n) * 100) / 100).replace('.', ','); }
+  function nazov(ns){
+    var n = (typeof dbCatalog !== 'undefined' && dbCatalog[ns]) || '';
+    if(!n && typeof dbData !== 'undefined'){ var f = dbData.find(function(i){ return String(i.id).split('_')[0] === ns && i.name; }); if(f) n = f.name; }
+    return n;
+  }
+  function zaciatokDna(){ var d = new Date(); d.setHours(0,0,0,0); return d.toISOString(); }
+  function dotaz(f){
+    var q = 'stitky_rolky?select=*&order=vytvorene.desc,id.desc';
+    if(f === 'dnes') q += '&vytvorene=gte.' + encodeURIComponent(zaciatokDna());
+    if(f === 'nove') q += '&exportovane=eq.false';
+    return q;
+  }
+  /* všetky riadky pre daný filter (po 1000, kvôli exportu) */
+  async function nacitajVsetky(f){
+    var vsetko = [], od = 0;
+    while(true){
+      var r = await sbFetch(dotaz(f), { headers: { Range: od + '-' + (od + 999) } });
+      vsetko = vsetko.concat(r || []);
+      if(!r || r.length < 1000 || vsetko.length >= 20000) break;
+      od += 1000;
+    }
+    return vsetko;
+  }
+
+  function vykresli(){
+    var box = document.getElementById('stkZoznam'); if(!box) return;
+    var suma = riadky.reduce(function(a, r){ return a + Number(r.metraz); }, 0);
+    document.getElementById('stkPocet').textContent = riadky.length;
+    document.getElementById('stkSuhrn').textContent = riadky.length + ' štítkov • ' + m2(suma) + ' m';
+    [].forEach.call(document.querySelectorAll('#stkFiltre button'), function(b){
+      var on = b.dataset.f === filter;
+      b.className = 'flex-1 py-2 rounded-lg text-xs font-bold border-2 tap-feedback ' + (on ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200');
+    });
+    if(!riadky.length){ box.innerHTML = '<div class="text-center text-slate-400 py-6 font-medium italic">Zatiaľ nič. Naskenuj štítok alebo zapíš ručne.</div>'; return; }
+    var html = '';
+    riadky.slice(0, 300).forEach(function(r){
+      var n = nazov(r.ns), foto = (typeof dbNahlady !== 'undefined') ? dbNahlady[r.ns] : '';
+      var cas = new Date(r.vytvorene).toLocaleString('sk-SK', { day:'numeric', month:'numeric', hour:'2-digit', minute:'2-digit' });
+      html += '<div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">'
+        + (foto ? '<img src="' + esc(foto) + '" loading="lazy" class="w-12 h-12 object-cover rounded-lg shrink-0 border border-slate-200" onerror="this.style.display=\'none\'">' : '')
+        + '<div class="flex-1 min-w-0">'
+        +   '<div class="font-black font-mono text-slate-800 leading-tight">' + esc(r.ns) + '</div>'
+        +   (n ? '<div class="text-xs text-slate-500 leading-snug truncate">' + esc(n) + '</div>' : '')
+        +   '<div class="text-[10px] text-slate-400 font-bold mt-0.5">' + esc(cas) + ' • ' + (r.zdroj === 'QR' ? 'QR' : 'ručne') + (r.skenoval ? ' • ' + esc(r.skenoval) : '') + (r.exportovane ? ' • ✓ exportované' : '') + '</div>'
+        + '</div>'
+        + '<div class="text-right shrink-0"><div class="text-2xl font-black text-emerald-700 leading-none">' + m2(r.metraz) + '</div><div class="text-[10px] font-bold text-slate-400">m</div></div>'
+        + '<button onclick="stkZmaz(' + r.id + ')" class="text-slate-300 active:text-red-600 p-1 shrink-0"><span class="material-icons">delete</span></button>'
+        + '</div>';
+    });
+    if(riadky.length > 300) html += '<div class="text-center text-xs text-slate-400 py-2">Zobrazených je prvých 300. Export obsahuje všetky.</div>';
+    box.innerHTML = html;
+  }
+
+  async function nacitaj(){
+    try{ riadky = await sbFetch(dotaz(filter), { headers: { Range: '0-999' } }) || []; }
+    catch(e){ riadky = []; document.getElementById('stkZoznam').innerHTML = '<div class="text-center text-red-600 py-6 font-bold">Nepodarilo sa načítať: ' + esc(e.message) + '</div>'; return; }
+    vykresli();
+  }
+
+  async function uloz(ns, metraz, zdroj, stitokId, udaj4){
+    var r = await sbFetch('stitky_rolky', { method: 'POST', headers: { Prefer: 'return=representation' },
+      body: JSON.stringify([{ ns: ns, metraz: metraz, zdroj: zdroj, stitok_id: stitokId || null, udaj4: udaj4 || null, skenoval: (typeof currentUser !== 'undefined' ? currentUser : '') || null }]) });
+    var novy = r && r[0]; if(novy){ riadky.unshift(novy); vykresli(); }
+    return novy;
+  }
+
+  window.stkOtvor = function(){ switchView('stitky'); nacitaj(); window.stkKamera(); };
+  window.stkZavri = function(){ stopCamera(); resetScanScreen(); switchView('scan'); };
+  window.stkKamera = function(){
+    document.getElementById('btnResumeStitky').classList.add('hidden');
+    ['btnResumeCamera','btnResumeInvCamera'].forEach(function(id){ var b = document.getElementById(id); if(b) b.classList.add('hidden'); });
+    initCamera(window.stkSken, true);
+  };
+  window.stkFilter = function(f){ filter = f; nacitaj(); };
+
+  window.stkNahlad = function(){
+    var ns = document.getElementById('stkNs').value.trim().toUpperCase(), el = document.getElementById('stkNahlad');
+    if(ns.length < 4){ el.textContent = ''; return; }
+    var n = nazov(ns);
+    el.innerHTML = n ? '<b class="text-slate-700">' + esc(n) + '</b>' : '<span class="text-amber-600">Tento kód nepoznám v katalógu, ale dá sa uložiť.</span>';
+  };
+
+  window.stkSken = async function(raw){
+    raw = String(raw || '').trim();
+    var t = Date.now();
+    if(raw === posledny.kod && t - posledny.cas < 4000) return;   /* ten istý štítok v zábere dvakrát po sebe */
+    posledny = { kod: raw, cas: t };
+    var m = raw.match(/^\s*(\d+)\s*;\s*([A-Za-z]{1,4}-\d+[\w.]*)\s*;\s*(\d+(?:[.,]\d+)?)\s*;\s*(\d+)\s*$/);
+    if(m){
+      var met = parseFloat(m[3].replace(',', '.'));
+      if(!(met > 0)){ beep('error'); showCustomAlert('Štítok', 'Metráž na štítku je ' + esc(m[3]) + ', to nevyzerá správne. Zapíš ju ručne.'); return; }
+      try{ await uloz(m[2].toUpperCase(), met, 'QR', m[1], m[4]); beep('success'); updateLastAction('ŠTÍTOK ' + m[2].toUpperCase() + ' ' + m2(met) + ' m'); }
+      catch(e){ beep('error'); showCustomAlert('Nepodarilo sa uložiť', esc(e.message)); }
+      return;
+    }
+    var ns = raw.toUpperCase().split('_')[0];
+    if(/^[A-Z]{1,4}-\d+[\w.]*$/.test(ns)){                          /* iný QR len s NS kódom -> doplní sa do ručného zápisu */
+      document.getElementById('stkNs').value = ns; window.stkNahlad(); beep('success');
+      updateLastAction('NS ' + ns + ' - doplň metráž'); return;
+    }
+    beep('error'); showCustomAlert('Neznámy kód', 'Toto nie je štítok z rolky: ' + esc(raw.slice(0, 60)));
+  };
+
+  window.stkUlozRucne = async function(){
+    var ns = document.getElementById('stkNs').value.trim().toUpperCase();
+    var met = parseFloat(String(document.getElementById('stkMetraz').value).trim().replace(',', '.'));
+    if(!/^[A-Z]{1,4}-\d+[\w.]*$/.test(ns)){ beep('error'); showCustomAlert('Chýba NS', 'Zadaj kód v tvare NS-16261.'); return; }
+    if(!(met > 0) || met >= 10000){ beep('error'); showCustomAlert('Chýba metráž', 'Zadaj metráž väčšiu ako 0, napríklad 1,3.'); return; }
+    try{
+      await uloz(ns, met, 'RUCNE', null, null); beep('success');
+      document.getElementById('stkNs').value = ''; document.getElementById('stkMetraz').value = ''; document.getElementById('stkNahlad').textContent = '';
+      document.getElementById('stkNs').focus(); updateLastAction('ŠTÍTOK ' + ns + ' ' + m2(met) + ' m (ručne)');
+    }catch(e){ beep('error'); showCustomAlert('Nepodarilo sa uložiť', esc(e.message)); }
+  };
+
+  window.stkZmaz = async function(id){
+    var r = riadky.find(function(x){ return x.id === id; }); if(!r) return;
+    if(!(await showCustomConfirm('Zmazať záznam?', esc(r.ns) + ' • ' + m2(r.metraz) + ' m', 'Zmazať'))) return;
+    try{ await sbFetch('stitky_rolky?id=eq.' + id, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); riadky = riadky.filter(function(x){ return x.id !== id; }); vykresli(); }
+    catch(e){ beep('error'); showCustomAlert('Nepodarilo sa zmazať', esc(e.message)); }
+  };
+
+  function csv(data){
+    var hl = ['Dátum a čas','NS','Názov','Metráž (m)','Zdroj','ID štítku','Údaj 4','Zapísal'];
+    function bunka(v){ v = String(v == null ? '' : v); return /[";\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+    var out = [hl.join(';')];
+    data.slice().reverse().forEach(function(r){
+      var d = new Date(r.vytvorene), p = function(n){ return String(n).padStart(2, '0'); };
+      var cas = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+      out.push([cas, r.ns, nazov(r.ns), m2(r.metraz), r.zdroj === 'QR' ? 'QR' : 'ručne', r.stitok_id || '', r.udaj4 || '', r.skenoval || ''].map(bunka).join(';'));
+    });
+    return '﻿' + out.join('\r\n');
+  }
+
+  window.stkExport = async function(zdielat){
+    try{
+      setLoading(true, 'Pripravujem export...');
+      var data = await nacitajVsetky(filter);
+      if(!data.length){ setLoading(false); showCustomAlert('Export', 'V tomto zozname nie je nič na export.'); return; }
+      var p = function(n){ return String(n).padStart(2, '0'); }, d = new Date();
+      var nazovSuboru = 'stitky-rolky-' + d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + '.csv';
+      var blob = new Blob([csv(data)], { type: 'text/csv;charset=utf-8' });
+      var hotovo = false;
+      if(zdielat && navigator.canShare){
+        var subor = new File([blob], nazovSuboru, { type: 'text/csv' });
+        if(navigator.canShare({ files: [subor] })){ try{ await navigator.share({ files: [subor], title: 'Štítky roliek' }); hotovo = true; }catch(e){ if(e && e.name === 'AbortError'){ setLoading(false); return; } } }
+      }
+      if(!hotovo){
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nazovSuboru;
+        document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+      }
+      /* označiť ako vyexportované (po 200 kusoch) */
+      var ids = data.filter(function(r){ return !r.exportovane; }).map(function(r){ return r.id; });
+      for(var i = 0; i < ids.length; i += 200){
+        await sbFetch('stitky_rolky?id=in.(' + ids.slice(i, i + 200).join(',') + ')', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ exportovane: true }) });
+      }
+      setLoading(false); beep('success'); await nacitaj();
+    }catch(e){ setLoading(false); beep('error'); showCustomAlert('Export zlyhal', esc(e.message)); }
+  };
+})();
+</script>
 
 </body>
 </html>

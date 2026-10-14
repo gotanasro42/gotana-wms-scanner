@@ -65,6 +65,14 @@ Skenovat NS vie precitat aj papierovy stitok z rolky. QR ma tvar `ID;NS-kod;metr
 Appka vyhlada produkt podla NS kodu a na vrchu karty ukaze zelenu zahlavie s metrazou zo stitku. Rucne dopisana
 metraz (napr. 1,3 m) sa skenerom precitat neda. Vyznam 4. cisla v QR zatial nie je potvrdeny, appka ho nezobrazuje.
 
+## Stitky roliek (od 10/2026)
+Skenovat -> tlacidlo **STITKY ROLIEK** (pod Hromadnym prijmom). Samostatna evidencia zvyskov latok, **mimo skladu**:
+nic sa nepridava ani neodpisuje zo skladovych poloziek.
+- Data: Supabase tabulka `stitky_rolky` (ns, metraz, stitok_id, udaj4, zdroj QR/RUCNE, skenoval, vytvorene, exportovane).
+- Rovnake NS aj rovnaka metraz sa mozu opakovat, nie je to chyba. Jedine, ze ten isty stitok v zabere dvakrat po sebe (do 4 s) sa ignoruje.
+- Zapis aj rucne: NS + metraz. Kazdy zaznam sa da zmazat (kos pri riadku).
+- Export: **Stiahnut Excel** (CSV so strednikmi, otvori sa v Exceli s diakritikou) alebo tlacidlo Zdielat (mail, Disk...). Filter Dnes / Nevyexportovane / Vsetko; po exporte sa zaznamy oznacia ako vyexportovane.
+
 ## Ak nieco nefunguje
 - **Appka ukazuje stare data / stare tlacidla** -> Ctrl+Shift+R, na mobile vymazat udaje stranky.
 - **Zoznam prazdny** -> skontroluj, ci pri mene svieti DB; ak nie, prepni ikonou databazy.
