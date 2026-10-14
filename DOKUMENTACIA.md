@@ -60,6 +60,11 @@ Statistiky -> Produkty -> tlacidlo **Vzory**: najpredavanejsie vzory za zvolene 
 - Zobrazenie: funkcia `dash_top_vzory(od, do, sku, zdroj)`.
 - Sklad ABRA podla vzoru (MAT-0001-100) zatial nie je napojeny.
 
+## Stitok z rolky (od 10/2026)
+Skenovat NS vie precitat aj papierovy stitok z rolky. QR ma tvar `ID;NS-kod;metraz;cislo` (napr. `88574;NS-16261;3.7;2`).
+Appka vyhlada produkt podla NS kodu a na vrchu karty ukaze zelenu zahlavie s metrazou zo stitku. Rucne dopisana
+metraz (napr. 1,3 m) sa skenerom precitat neda. Vyznam 4. cisla v QR zatial nie je potvrdeny, appka ho nezobrazuje.
+
 ## Ak nieco nefunguje
 - **Appka ukazuje stare data / stare tlacidla** -> Ctrl+Shift+R, na mobile vymazat udaje stranky.
 - **Zoznam prazdny** -> skontroluj, ci pri mene svieti DB; ak nie, prepni ikonou databazy.
