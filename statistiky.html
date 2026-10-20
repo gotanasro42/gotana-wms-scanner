@@ -2353,8 +2353,35 @@ function vykresliHT(){
   if(!htV.od) htNastavPreset(htV.preset);
   if(htV.data) htKresliVyvoj();
   nacitajVyvoj();
-  htPripojRozbal('#htTypy', d.typy, r => (r.top || []).map((p, i) => htProdukt(p, i, true)).join('') || '<div class="prazdne">Žiadne predaje.</div>');
+  htPripojRozbal('#htTypy', d.typy, r => htTypObsah(r));
+  $('#htTypy').addEventListener('click', e => { const b = e.target.closest('.ht-typ-viac'); if(b){ e.stopPropagation(); htTypViac(b); } });
   htPripojRozbal('#htKrajiny', d.krajiny, r => htKrajGraf(r.dni || []));
+}
+
+/* Podľa typu produktu: prvých 8 hneď, ďalšie po 20 cez tlačidlo (dotiahnu sa z databázy až po kliknutí) */
+const htTypCache = {};
+function htTypObsah(r){
+  const top = r.top || [];
+  if(!top.length) return '<div class="prazdne">Žiadne predaje.</div>';
+  return `<div class="ht-typ-zoz">${top.map((p, i) => htProdukt(p, i, true)).join('')}</div>` +
+    (top.length >= 8 ? `<button type="button" class="viac-btn ht-typ-viac" data-typ="${esc(r.typ)}">Zobraziť ďalšie ▾</button>` : '');
+}
+async function htTypViac(b){
+  const typ = b.dataset.typ, kluc = htData.od + '|' + htData.do + '|' + typ;
+  const zoz = b.previousElementSibling;
+  if(!htTypCache[kluc]){
+    b.disabled = true; b.textContent = 'Načítavam…';
+    try { htTypCache[kluc] = await rpc('dash_hometextil_typ', {p_od: htData.od, p_do: htData.do, p_typ: typ}); }
+    catch(e){ b.disabled = false; b.textContent = 'Nenačítalo sa – skús znova ▾'; return; }
+    b.disabled = false;
+  }
+  const uz = new Set([...zoz.querySelectorAll('.ht-produkt[data-sku]')].map(x => x.dataset.sku));
+  const zvysok = htTypCache[kluc].filter(p => !uz.has(p[0]));
+  const n = uz.size, pridaj = zvysok.slice(0, 20);
+  zoz.insertAdjacentHTML('beforeend', pridaj.map((p, i) => htProdukt(p, n + i, true)).join(''));
+  const ostava = zvysok.length - pridaj.length, spolu = n + zvysok.length;
+  if(ostava > 0) b.innerHTML = `Zobraziť ďalších ${Math.min(20, ostava)} <small>(${n + pridaj.length} z ${spolu})</small> ▾`;
+  else b.remove();
 }
 
 /* ====== PREHĽAD: vývoj v čase (vlastné obdobie, ako pri hometextile) ====== */
