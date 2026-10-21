@@ -23,8 +23,9 @@ Apps Script mal denny limit behu (~90 min) a pri dvoch ludoch naraz vznikali chy
 chybou 404. V Supabase to trva 0,3 s a duplicitne ID databaza fyzicky nedovoli.
 
 ## Ovladacie prvky v hlavicke appky
-- **DB** pri mene = appka bezi na novej databaze. Ak tam nie je, bezi na starych Sheets.
-- **Ikona databazy** = prepnutie medzi novou DB a starymi Sheets (navrat je vzdy mozny).
+- **DB** pri mene = appka bezi na novej databaze. Od 21.10.2026 appka bezi **vzdy** na novej DB
+  (Supabase), uvodna obrazovka "Prepojenie Skladu" (vkladanie /exec odkazu) bola odstranena.
+- Kratky odkaz na appku: **takoy-sklad.netlify.app** (samostatna stranka, len presmeruje sem).
 - **Ikona mrakov (cloud_sync)** = okamzita aktualizacia katalogu z Magenta (1-2 min).
 - **Ozubene koliesko** = zmena API adresy (uz netreba, dedicstvo starych Sheets).
 

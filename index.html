@@ -532,23 +532,6 @@
       <button onclick="manualRefresh()" class="fixed bottom-24 right-6 bg-slate-900 text-white w-14 h-14 rounded-full shadow-2xl hover:bg-blue-600 z-50 active:scale-90 flex items-center justify-center border-4 border-slate-100 tap-feedback opacity-80 hover:opacity-100 transition-all"><span class="material-icons text-2xl">sync</span></button>
       <div id="loading" class="hidden fixed inset-0 bg-slate-900/90 z-[100] flex flex-col items-center justify-center backdrop-blur-sm"><div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-600 h-16 w-16 mb-6"></div><p id="loadingText" class="text-lg font-bold text-white tracking-widest uppercase">Pracujem...</p></div>
 
-      <!-- API URL Setup Modal -->
-      <div id="apiSetupModal" class="hidden fixed inset-0 bg-slate-900 z-[120] flex flex-col items-center justify-center p-6 backdrop-blur-md">
-          <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center animate-scale-in">
-              <span class="material-icons text-blue-600 text-5xl mb-4">link</span>
-              <h2 class="text-2xl font-extrabold text-slate-800 mb-2">Prepojenie Skladu</h2>
-              <div class="text-left bg-blue-50 p-4 rounded-xl mb-6 border border-blue-100">
-                  <p class="text-sm text-slate-700 font-medium">
-                      Tu vlož <b>Web App URL</b> z tvojej Google Tabuľky. Odkaz musí končiť na <b>/exec</b>.<br><br>
-                      <span class="text-xs text-slate-500">Nájdeš ho v tabuľke: Rozšírenia &rarr; Apps Script &rarr; Nasadiť (Deploy) &rarr; Nové nasadenie &rarr; Webová aplikácia. (Kto má prístup: Ktokoľvek)</span>
-                  </p>
-              </div>
-              <input type="url" id="apiUrlInput" class="w-full p-4 border-2 border-slate-300 rounded-xl text-center font-mono text-[10px] sm:text-xs mb-4 focus:border-blue-500 outline-none" placeholder="https://script.google.com/macros/s/.../exec">
-              <button onclick="spustiSNovouDB()" class="w-full bg-emerald-600 active:bg-emerald-800 text-white py-4 rounded-xl font-bold text-lg shadow-lg tap-feedback transition-all mb-3">POUZIT NOVU DATABAZU</button>
-                <button onclick="saveApiUrl()" class="w-full bg-blue-600 active:bg-blue-800 text-white py-4 rounded-xl font-bold text-lg shadow-lg tap-feedback transition-transform active:scale-95">ULOŽIŤ A SPUSTIŤ</button>
-          </div>
-      </div>
-
       <!-- Identity Modal -->
       <div id="identityModal" class="hidden fixed inset-0 bg-slate-900 z-[70] flex flex-col items-center justify-center p-6 backdrop-blur-md">
           <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center animate-scale-in">
@@ -1353,8 +1336,9 @@
           if (!storedApiUrl && DEFAULT_API_URL && DEFAULT_API_URL.startsWith("https://script.google.com/")) {
               storedApiUrl = DEFAULT_API_URL; localStorage.setItem('gotana_api_url', DEFAULT_API_URL);
           }
-          if (!storedApiUrl) { document.getElementById('apiSetupModal').classList.remove('hidden'); } 
-          else { SCRIPT_URL = storedApiUrl; finishInit(); }
+          /* starý systém (Google Sheets) sa už nepoužíva – appka vždy beží na novej databáze, úvodná obrazovka "Prepojenie Skladu" sa už nezobrazuje */
+          if (!storedApiUrl) { storedApiUrl = "https://script.google.com/nepouziva-sa/exec"; try { localStorage.setItem('gotana_api_url', storedApiUrl); } catch(e) {} }
+          SCRIPT_URL = storedApiUrl; finishInit();
       }
       
       function finishInit() {
@@ -2340,7 +2324,8 @@
     const SB_URL = "https://gduarwvhxlffrasuuxqw.supabase.co";
     const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkdWFyd3ZoeGxmZnJhc3V1eHF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDUxMTMsImV4cCI6MjEwMTQ4MTExM30.xGnlwd5XPVSIkd9X1PlsxlTldiwuul410B8EX-VftLQ";
 
-    function zdrojDat() { return localStorage.getItem("gotana_zdroj") || "sheets"; }
+    function zdrojDat() { return "supabase"; } /* vždy nová databáza (Supabase) */
+    try { localStorage.setItem("gotana_zdroj","supabase"); } catch(e) {}
     function nastavZdroj(z) { localStorage.setItem("gotana_zdroj", z); }
 
     async function sbFetch(cesta, opts) {
