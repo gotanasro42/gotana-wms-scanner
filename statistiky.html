@@ -202,7 +202,11 @@ h2:first-child{margin-top:2px}
 .okno-sip{position:absolute;top:122px;transform:translateY(-50%);z-index:3;width:30px;height:46px;padding:0;border-radius:8px;border:1px solid var(--linka);background:rgba(255,255,255,.93);color:var(--atrament);font-size:24px;line-height:1;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.14)}
 .okno-sip.l{left:-6px}.okno-sip.p{right:-6px}
 .okno-sip:disabled{opacity:.25;cursor:default;box-shadow:none}
-.okno-rozsah{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;color:var(--sedy);margin:4px 0 0;font-family:'IBM Plex Mono',monospace}
+.okno-rozsah{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;color:var(--sedy);margin:2px 0 0;font-family:'IBM Plex Mono',monospace;min-height:22px}
+.okno-rozsah b{color:var(--atrament);font-weight:600}
+.okno-ovl{margin:8px 0 2px}
+.okno-posuv{display:block;width:100%;margin:0;height:28px;accent-color:var(--safran);cursor:pointer;touch-action:pan-y}
+.okno-kraje{display:flex;justify-content:space-between;font-size:9.5px;color:var(--sedy);font-family:'IBM Plex Mono',monospace;margin-top:-2px}
 .okno-rozsah button{border:0;background:none;color:var(--safran);font:inherit;font-weight:600;cursor:pointer;padding:4px 0}
 .mat-tag{font-style:normal;font-size:9px;font-weight:600;font-family:'IBM Plex Mono',monospace;background:var(--platno-tmavsi);color:var(--sedy);padding:1px 5px;border-radius:3px;margin-right:5px}
 .mat-lat{color:var(--sedy)}
@@ -1532,25 +1536,60 @@ function graf7(dni, jeDnes, cas, jeKoniec = true){
   }).join('') + '</div>';
 }
 
-/* graf s posúvaním: ukáže 21 dní, šípky posúvajú po týždni (rovnaké dni zostanú pod sebou) */
+/* graf s posúvaním: ukáže 21 dní, šípky posúvajú o 1 deň, posuvník pod grafom na väčší posun */
+const oknoData = {}; /* dáta grafu pre každý kľúč – aby sa pri posúvaní prekreslil len graf, nie celá stránka */
+const fDat = iso => { const d = new Date(iso + 'T12:00'); return `${d.getDate()}. ${d.getMonth()+1}.`; };
+function oknoVypocet(kluc){
+  const {dni, jeDnes, cas} = oknoData[kluc];
+  const maxP = Math.max(0, dni.length - POCET_DNI);
+  const p = Math.min(Math.max(0, okno[kluc] || 0), maxP);
+  okno[kluc] = p;
+  const koniec = dni.length - p;
+  const cast = dni.slice(Math.max(0, koniec - POCET_DNI), koniec);
+  return {dni, jeDnes, cas, maxP, p, cast};
+}
+function oknoGrafHtml(kluc, v){
+  const sip = v.maxP > 0
+    ? `<button type="button" class="okno-sip l" data-okno="${esc(kluc)}" data-smer="1" aria-label="Staršie dni"${v.p >= v.maxP ? ' disabled' : ''}>‹</button><button type="button" class="okno-sip p" data-okno="${esc(kluc)}" data-smer="-1" aria-label="Novšie dni"${v.p <= 0 ? ' disabled' : ''}>›</button>` : '';
+  return sip + graf7(v.cast, v.jeDnes, v.cas, v.p === 0);
+}
+function oknoRozsahHtml(kluc, v){
+  return `<span><b>${fDat(v.cast[0].den)} – ${fDat(v.cast[v.cast.length-1].den)}</b></span>${v.p > 0 ? `<button type="button" class="okno-sip-domov" data-okno="${esc(kluc)}">späť na najnovšie ›</button>` : '<span>najnovšie</span>'}`;
+}
 function grafOkno(kluc, dni, jeDnes, cas){
   if(!dni || !dni.length) return graf7(dni, jeDnes, cas);
-  const maxP = Math.max(0, Math.floor((dni.length - POCET_DNI) / 7));
-  const p = Math.min(okno[kluc] || 0, maxP);
-  const koniec = dni.length - 7 * p;
-  const cast = dni.slice(Math.max(0, koniec - POCET_DNI), koniec);
-  const sip = maxP > 0
-    ? `<button type="button" class="okno-sip l" data-okno="${esc(kluc)}" data-smer="1" aria-label="Staršie dni"${p >= maxP ? ' disabled' : ''}>‹</button><button type="button" class="okno-sip p" data-okno="${esc(kluc)}" data-smer="-1" aria-label="Novšie dni"${p <= 0 ? ' disabled' : ''}>›</button>` : '';
-  const f = iso => { const d = new Date(iso + 'T12:00'); return `${d.getDate()}. ${d.getMonth()+1}.`; };
-  const rozsah = p > 0 ? `<div class="okno-rozsah"><span>${f(cast[0].den)} – ${f(cast[cast.length-1].den)}</span><button type="button" class="okno-sip-domov" data-okno="${esc(kluc)}">späť na najnovšie ›</button></div>` : '';
-  return `<div class="okno-graf" data-okno="${esc(kluc)}">${sip}${graf7(cast, jeDnes, cas, p === 0)}</div>${rozsah}`;
+  oknoData[kluc] = {dni, jeDnes, cas};
+  const v = oknoVypocet(kluc);
+  const ovl = v.maxP > 0 ? `<div class="okno-ovl">
+      <input type="range" class="okno-posuv" data-okno="${esc(kluc)}" min="0" max="${v.maxP}" step="1" value="${v.maxP - v.p}" aria-label="Posun grafu v čase">
+      <div class="okno-kraje"><span>${fDat(dni[0].den)}</span><span>${fDat(dni[dni.length-1].den)}</span></div>
+      <div class="okno-rozsah">${oknoRozsahHtml(kluc, v)}</div>
+    </div>` : '';
+  return `<div class="okno-obal" data-okno="${esc(kluc)}"><div class="okno-graf" data-okno="${esc(kluc)}">${oknoGrafHtml(kluc, v)}</div>${ovl}</div>`;
+}
+/* prekreslí len graf jedného okna (posuvník ostane v ruke) */
+function oknoPrekresli(kluc, nastavPosuv){
+  const ob = [...document.querySelectorAll('.okno-obal')].find(x => x.dataset.okno === kluc);
+  if(!ob || !oknoData[kluc]) return;
+  const v = oknoVypocet(kluc);
+  ob.querySelector('.okno-graf').innerHTML = oknoGrafHtml(kluc, v);
+  const r = ob.querySelector('.okno-rozsah'); if(r) r.innerHTML = oknoRozsahHtml(kluc, v);
+  const sl = ob.querySelector('.okno-posuv'); if(sl && nastavPosuv) sl.value = v.maxP - v.p;
+  const d = oknoVyber[kluc], g = ob.querySelector('.graf7');
+  if(g && d != null) zvyrazniDen(g, d);
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('.okno-sip, .okno-sip-domov'); if(!b) return;
   e.stopPropagation();
   const k = b.dataset.okno;
   okno[k] = b.classList.contains('okno-sip-domov') ? 0 : Math.max(0, (okno[k] || 0) + Number(b.dataset.smer));
-  if(k === '__spolu') vykresli7Prehlad(); else vykresliKrajiny();
+  oknoPrekresli(k, true);
+});
+document.addEventListener('input', e => {
+  const sl = e.target.closest('.okno-posuv'); if(!sl) return;
+  const k = sl.dataset.okno;
+  okno[k] = Number(sl.max) - Number(sl.value);
+  oknoPrekresli(k, false);
 });
 
 const DNI_MN = ['nedele','pondelky','utorky','stredy','štvrtky','piatky','soboty'];
