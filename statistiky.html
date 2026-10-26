@@ -2283,7 +2283,8 @@ function htPripojRozbal(sel, pole, obsah){
 
 function htKresliTop(){
   const pole = (htData.top || {})[htTop] || [];
-  $('#htTop').innerHTML = pole.length ? pole.map((r, i) => htProdukt(r, i, true)).join('') : '<div class="prazdne">Za toto obdobie zatiaľ nič.</div>';
+  $('#htTop').innerHTML = pole.length ? `<div class="ht-typ-zoz">${pole.map((r, i) => htProdukt(r, i, true)).join('')}</div>` +
+    (pole.length >= 8 ? `<button type="button" class="viac-btn ht-top-viac" data-t="${htTop}">Zobraziť ďalšie ▾</button>` : '') : '<div class="prazdne">Za toto obdobie zatiaľ nič.</div>';
   $('#htTopPozn').textContent = (htTop === 'HT' ? 'Pri HT aj aktuálna zásoba. Červenou: 5 ks a menej.' : 'HF sa neskladuje — zásoba sa nezobrazuje.') + ' Klikni na produkt a rozbalí sa 10 najčastejších kombinácií (čo sa kupovalo spolu, posledných 12 mesiacov).';
   document.querySelectorAll('#htPrepinac button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === htTop)));
 }
@@ -2349,6 +2350,7 @@ function vykresliHT(){
 
   htKresliTop();
   $('#htPrepinac').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; htTop = b.dataset.t; htKresliTop(); });
+  $('#htTop').addEventListener('click', e => { const b = e.target.closest('.ht-top-viac'); if(b){ e.stopPropagation(); htTopViac(b); } });
   htPripojVyvoj();
   if(!htV.od) htNastavPreset(htV.preset);
   if(htV.data) htKresliVyvoj();
@@ -2366,12 +2368,20 @@ function htTypObsah(r){
   return `<div class="ht-typ-zoz">${top.map((p, i) => htProdukt(p, i, true)).join('')}</div>` +
     (top.length >= 8 ? `<button type="button" class="viac-btn ht-typ-viac" data-typ="${esc(r.typ)}">Zobraziť ďalšie ▾</button>` : '');
 }
-async function htTypViac(b){
-  const typ = b.dataset.typ, kluc = htData.od + '|' + htData.do + '|' + typ;
+function htTypViac(b){
+  const typ = b.dataset.typ;
+  return htViac(b, 'typ|' + htData.od + '|' + htData.do + '|' + typ, () => rpc('dash_hometextil_typ', {p_od: htData.od, p_do: htData.do, p_typ: typ}));
+}
+/* Najpredávanejšie HT / HF: rovnako – prvých 8 hneď, ďalšie po 20 */
+function htTopViac(b){
+  const t = b.dataset.t;
+  return htViac(b, 'top|' + htData.od + '|' + htData.do + '|' + t, () => rpc('dash_hometextil_top', {p_od: htData.od, p_do: htData.do, p_t: t}));
+}
+async function htViac(b, kluc, nacitaj){
   const zoz = b.previousElementSibling;
   if(!htTypCache[kluc]){
     b.disabled = true; b.textContent = 'Načítavam…';
-    try { htTypCache[kluc] = await rpc('dash_hometextil_typ', {p_od: htData.od, p_do: htData.do, p_typ: typ}); }
+    try { htTypCache[kluc] = await nacitaj(); }
     catch(e){ b.disabled = false; b.textContent = 'Nenačítalo sa – skús znova ▾'; return; }
     b.disabled = false;
   }
