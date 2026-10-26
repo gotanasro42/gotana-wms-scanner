@@ -199,7 +199,7 @@ h2:first-child{margin-top:2px}
 .viac-btn small{font-weight:400;color:var(--sedy)}
 /* posúvanie grafu dní do minulosti (šípky vľavo / vpravo) */
 .okno-graf{position:relative}
-.okno-sip{position:absolute;top:40%;transform:translateY(-50%);z-index:3;width:30px;height:46px;padding:0;border-radius:8px;border:1px solid var(--linka);background:rgba(255,255,255,.93);color:var(--atrament);font-size:24px;line-height:1;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.14)}
+.okno-sip{position:absolute;top:122px;transform:translateY(-50%);z-index:3;width:30px;height:46px;padding:0;border-radius:8px;border:1px solid var(--linka);background:rgba(255,255,255,.93);color:var(--atrament);font-size:24px;line-height:1;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.14)}
 .okno-sip.l{left:-6px}.okno-sip.p{right:-6px}
 .okno-sip:disabled{opacity:.25;cursor:default;box-shadow:none}
 .okno-rozsah{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;color:var(--sedy);margin:4px 0 0;font-family:'IBM Plex Mono',monospace}
@@ -378,7 +378,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .den-r b{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;min-width:34px;text-align:right}
 
 /* ---------- 7-dňový graf ---------- */
-.graf7{display:grid;gap:3px;height:140px}
+.graf7{display:grid;gap:3px;--gp:3px;height:140px}
 .graf7 .st{display:grid;grid-template-rows:1fr auto;height:100%;min-width:0}
 .graf7 .plocha{position:relative}
 .graf7 .vnutro{position:absolute;left:0;right:0;bottom:0;top:15px}
@@ -398,7 +398,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .tz-leg{font-size:10.5px;color:var(--sedy);margin-top:5px;display:flex;align-items:center;gap:6px}
 .tz-leg i{display:inline-block;width:16px;border-top:2px dashed var(--atrament);opacity:.75}
 /* hustý graf (21 dní): zvislé čísla, širšie stĺpce */
-.graf7.vert{height:215px;gap:2px}
+.graf7.vert{height:215px;gap:2px;--gp:2px}
 #graf7Prehlad .graf7.vert{margin:0 -8px}
 .graf7.vert .vnutro{top:28px}
 .graf7.vert .stlp{border-width:1.5px;border-radius:2px 2px 0 0}
@@ -412,12 +412,23 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 .spolu .alarm{text-align:left;margin:8px 0 0;padding:6px 9px;font-size:12px;line-height:1.4;border-radius:6px;border-width:0 0 0 3px}
 .graf-info{font-size:12px;margin-top:6px;padding:6px 9px;border-radius:7px;background:#fff;border:1px solid var(--linka);border-left:4px solid var(--fd,#9AA3B2);line-height:1.4}
 .graf-info b{font-family:'IBM Plex Mono',monospace}
-.graf7.velmihusty{gap:1px}
+.graf7.velmihusty{gap:1px;--gp:1px}
 .graf7.velmihusty .hodn{font-size:7.5px;letter-spacing:-.06em}
 .graf7.velmihusty .den{font-size:7.5px;letter-spacing:-.03em}
 .graf7 .den{font-size:9.5px;color:var(--sedy);margin-top:3px;font-family:'IBM Plex Mono',monospace;text-align:center;line-height:1.2;white-space:nowrap}
 .graf7 .st.vybr .den{color:var(--atrament);font-weight:600}
-.graf7.husty{gap:2px}
+.graf7.husty{gap:2px;--gp:2px}
+/* týždne: každý druhý týždeň jemne podfarbený, pred pondelkom tenká čiara */
+.graf7 .st.tyz-b{background:rgba(120,95,55,.07)}
+.graf7 .st.tyz-b:not(.pon){box-shadow:calc(-1 * var(--gp)) 0 0 rgba(120,95,55,.07)}
+.graf7 .st.pon{position:relative}
+.graf7 .st.pon::before{content:'';position:absolute;top:0;bottom:0;left:calc(-0.5 * var(--gp) - .5px);border-left:1px solid rgba(120,95,55,.28);pointer-events:none}
+.graf7 .st:first-child.pon::before{display:none}
+/* pás s mesiacmi nad grafom */
+.mes-pas{display:grid;margin:0 0 3px;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--sedy);text-transform:lowercase;letter-spacing:.02em}
+#graf7Prehlad .mes-pas{margin:0 -8px 3px}
+.mes-pas span{border-left:1px solid rgba(120,95,55,.35);padding-left:4px;white-space:nowrap;overflow:hidden;line-height:14px}
+.mes-pas span:first-child{border-left:0;padding-left:0}
 .graf7.husty .hodn{font-size:8.5px;letter-spacing:-.04em}
 .graf7.husty .den{font-size:8.5px}
 .porov{font-size:12px;margin-top:8px;padding:7px 9px;background:var(--platno-tmavsi);border-radius:7px;line-height:1.4}
@@ -1499,15 +1510,16 @@ function graf7(dni, jeDnes, cas, jeKoniec = true){
   const max = Math.max(...dni.map(x => Number(x.obj)||0), 1);
   const sTeraz = jeDnes && cas && dni.some(x => x.objTeraz != null);
   const vert = dni.length > 15; /* veľa stĺpcov: čísla zvislo, nech sú čitateľné aj v telefóne */
-  return `<div class="graf7${dni.length > 10 ? ' husty' : ''}${vert ? ' velmihusty vert' : ''}"${sTeraz ? ` data-cas="${esc(cas)}"` : ''} style="grid-template-columns:repeat(${dni.length},1fr)">` + dni.map((x, idx) => {
+  return mesPas(dni) + `<div class="graf7${dni.length > 10 ? ' husty' : ''}${vert ? ' velmihusty vert' : ''}"${sTeraz ? ` data-cas="${esc(cas)}"` : ''} style="grid-template-columns:repeat(${dni.length},1fr)">` + dni.map((x, idx) => {
     const posl = jeKoniec && idx === dni.length - 1;
     const v = (Number(x.obj)||0) > 0 ? Math.max(2, (Number(x.obj)||0) / max * 100) : 0;
     const tr = 'st' + (posl ? ' vybr' : '') + (posl && jeDnes ? ' ciastocny' : '');
     const dow = new Date(x.den + 'T12:00').getDay();
     const fd = FARBY_DNI[dow];
+    const tyz = Math.floor((Date.parse(x.den + 'T12:00Z') / 864e5 + 3) / 7); /* číslo týždňa po–ne */
     const tz = Number(x.objTeraz)||0, ukazTz = sTeraz && !posl && x.objTeraz != null;
     const vt = tz > 0 ? Math.max(1, tz / max * 100) : 0;
-    return `<div class="${tr}" data-dow="${dow}" data-obj="${Number(x.obj)||0}"${sTeraz ? ` data-tz="${posl ? Number(x.obj)||0 : tz}"` : ''} data-dnes="${posl && jeDnes ? 1 : 0}" style="--fd:${fd}" title="${new Date(x.den + 'T12:00').toLocaleDateString('sk-SK',{weekday:'long', day:'numeric', month:'numeric'})}: ${cis(x.obj)} obj. · ${cis(x.metre,1)} m · ${cis(x.kusy)} ks${ukazTz ? ` · do ${esc(cas)}: ${cis(tz)} obj.` : ''}">
+    return `<div class="${tr}${dni.length > 7 && tyz % 2 ? ' tyz-b' : ''}${dni.length > 7 && dow === 1 ? ' pon' : ''}" data-dow="${dow}" data-obj="${Number(x.obj)||0}"${sTeraz ? ` data-tz="${posl ? Number(x.obj)||0 : tz}"` : ''} data-dnes="${posl && jeDnes ? 1 : 0}" style="--fd:${fd}" title="${new Date(x.den + 'T12:00').toLocaleDateString('sk-SK',{weekday:'long', day:'numeric', month:'numeric'})}: ${cis(x.obj)} obj. · ${cis(x.metre,1)} m · ${cis(x.kusy)} ks${ukazTz ? ` · do ${esc(cas)}: ${cis(tz)} obj.` : ''}">
       <div class="plocha"><div class="vnutro">
         <div class="stlp" style="height:${v.toFixed(1)}%"></div>${vert ? `${ukazTz ? `
         <div class="tz-ciara" style="bottom:${vt.toFixed(1)}%"></div>${v - vt >= 14 ? `<div class="vh tz" style="bottom:${vt.toFixed(1)}%">${cis(tz)}</div>` : (vt >= 14 ? `<div class="vh tz dnu" style="bottom:${vt.toFixed(1)}%">${cis(tz)}</div>` : '')}` : ''}
@@ -1531,7 +1543,7 @@ function grafOkno(kluc, dni, jeDnes, cas){
     ? `<button type="button" class="okno-sip l" data-okno="${esc(kluc)}" data-smer="1" aria-label="Staršie dni"${p >= maxP ? ' disabled' : ''}>‹</button><button type="button" class="okno-sip p" data-okno="${esc(kluc)}" data-smer="-1" aria-label="Novšie dni"${p <= 0 ? ' disabled' : ''}>›</button>` : '';
   const f = iso => { const d = new Date(iso + 'T12:00'); return `${d.getDate()}. ${d.getMonth()+1}.`; };
   const rozsah = p > 0 ? `<div class="okno-rozsah"><span>${f(cast[0].den)} – ${f(cast[cast.length-1].den)}</span><button type="button" class="okno-sip-domov" data-okno="${esc(kluc)}">späť na najnovšie ›</button></div>` : '';
-  return `<div class="okno-graf">${sip}${graf7(cast, jeDnes, cas, p === 0)}</div>${rozsah}`;
+  return `<div class="okno-graf" data-okno="${esc(kluc)}">${sip}${graf7(cast, jeDnes, cas, p === 0)}</div>${rozsah}`;
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('.okno-sip, .okno-sip-domov'); if(!b) return;
@@ -1553,6 +1565,16 @@ function zmenaHtml(teraz, priem){
   if(!(priem > 0)) return '';
   const pct = Math.round((teraz - priem) / priem * 100);
   return pct >= 0 ? ` <span class="hore">↑ +${pct} %</span>` : ` <span class="dole">↓ ${pct} %</span>`;
+}
+
+/* tenký pás s názvami mesiacov nad grafom (len pri dlhšom grafe) */
+function mesPas(dni){
+  if(!dni || dni.length <= 10) return '';
+  const MES = ['január','február','marec','apríl','máj','jún','júl','august','september','október','november','december'];
+  const kusy = [];
+  dni.forEach(x => { const m = +x.den.slice(5,7) - 1, k = kusy[kusy.length-1]; if(k && k.m === m) k.n++; else kusy.push({m, n:1}); });
+  const gp = dni.length > 10 ? 2 : 3;
+  return `<div class="mes-pas" style="grid-template-columns:repeat(${dni.length},1fr);gap:${gp}px">${kusy.map(k => `<span style="grid-column:span ${k.n}">${k.n >= 3 ? MES[k.m] : (k.n >= 2 ? MES[k.m].slice(0,3) : '')}</span>`).join('')}</div>`;
 }
 
 function legendaTz(jeDnes, cas){
@@ -1581,6 +1603,7 @@ function vykresli7Prehlad(){
   const ciel = $('#graf7Prehlad');
   if(!sedem || sedemPre !== obdobie.do){ ciel.innerHTML = '<div class="kostra"></div>'; return; }
   ciel.innerHTML = grafOkno('__spolu', sedem.spolu, sedem.jeDnes, sedem.cas) + legendaTz(sedem.jeDnes, sedem.cas) + porovnanie(sedem.spolu, sedem.jeDnes, sedem.cas);
+  obnovVyber();
 }
 
 function vykresliKrajiny(){
@@ -1609,6 +1632,7 @@ function vykresliKrajiny(){
       <div class="detail">${esc(`${cis(x.metre,1)} m · ${cis(x.kusy)} ks`)}${tr ? tr.html : ''}</div>
     </div>${rozbal}`;
   }).join('');
+  obnovVyber();
 }
 
 function prepniKrajinu(kr){
@@ -2022,20 +2046,19 @@ $('#obnov').addEventListener('click', obnov);
 
 /* ---- Klik na stĺpec: zvýrazni rovnaké dni v týždni ---- */
 const MENA_DNI = ['nedele','pondelky','utorky','stredy','štvrtky','piatky','soboty'];
-document.addEventListener('click', e => {
-  const st = e.target.closest('.graf7 .st');
-  if(!st) return;
-  const g = st.closest('.graf7');
-  const dow = st.dataset.dow;
+const oknoVyber = {}; /* zapamätaný označený deň v týždni pre každý graf so šípkami */
+function zvyrazniDen(g, dow){
   let info = g.nextElementSibling && g.nextElementSibling.classList.contains('graf-info') ? g.nextElementSibling : null;
-  if(g.dataset.vyber === dow){
+  if(dow == null){
     delete g.dataset.vyber; g.classList.remove('utlm');
     g.querySelectorAll('.st.zvyr').forEach(x => x.classList.remove('zvyr'));
     if(info) info.remove();
     return;
   }
+  dow = String(dow);
   g.dataset.vyber = dow; g.classList.add('utlm');
   const rovnake = [...g.querySelectorAll('.st')].filter(x => x.dataset.dow === dow);
+  if(!rovnake.length) return;
   g.querySelectorAll('.st').forEach(x => x.classList.toggle('zvyr', x.dataset.dow === dow));
   const cele = rovnake.filter(x => x.dataset.dnes !== '1').map(x => Number(x.dataset.obj)||0);
   const priem = cele.length ? cele.reduce((a,b) => a+b, 0) / cele.length : 0;
@@ -2053,7 +2076,23 @@ document.addEventListener('click', e => {
       const v = rovnake.map(x => Number(x.dataset.vr)||0), sv = v.reduce((a,b)=>a+b,0), sp = rovnake.reduce((a,x)=>a+(Number(x.dataset.obj)||0),0);
       return `<br><span class="vr-txt">Vrátené: ${v.map(x => '<b>' + cis(x) + '</b>').join(' → ')}${sp ? ` · ${cis(sv/sp*100, 1)} % z predaných` : ''}</span>`;
     })() : ''}<br><span style="color:var(--sedy);font-size:11px">Ťukni znova na stĺpec pre zrušenie.</span>`;
+}
+document.addEventListener('click', e => {
+  const st = e.target.closest('.graf7 .st');
+  if(!st) return;
+  const g = st.closest('.graf7');
+  const ob = g.closest('.okno-graf'), kl = ob ? ob.dataset.okno : null;
+  const dow = st.dataset.dow;
+  if(g.dataset.vyber === dow){ zvyrazniDen(g, null); if(kl) delete oknoVyber[kl]; return; }
+  zvyrazniDen(g, dow); if(kl) oknoVyber[kl] = dow;
 });
+/* po prekreslení (šípky, otvorenie krajiny) vráti označenie */
+function obnovVyber(){
+  document.querySelectorAll('.okno-graf[data-okno]').forEach(ob => {
+    const d = oknoVyber[ob.dataset.okno], g = ob.querySelector('.graf7');
+    if(g && d != null) zvyrazniDen(g, d);
+  });
+}
 
 /* ---- Ovládanie ---- */
 $('#obdobia').addEventListener('click', e => {
