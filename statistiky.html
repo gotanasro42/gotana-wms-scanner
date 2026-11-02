@@ -243,6 +243,18 @@ h2:first-child{margin-top:2px}
 .produkt-obal>.produkt{border-bottom:0;cursor:pointer}
 .produkt-obal.otvoreny>.produkt .nazov{color:var(--safran)}
 .spolu-box{padding:0 0 8px 49px}
+.obj-btn{display:inline;border:0;background:none;padding:0;margin:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+.obj-btn[aria-expanded="true"]{color:var(--safran);text-decoration-style:solid}
+.obj-box{padding:0 0 8px 49px}
+.obj-box:empty{display:none}
+.ht-obal>.obj-box{padding:0 0 8px 26px}
+.obj-box .obj-hl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--sedy);font-weight:700;margin:2px 0 4px}
+.obj-r{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--linka);cursor:pointer}
+.obj-r:first-of-type{border-top:0}
+.obj-r .c{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600}
+.obj-r .m{font-size:10px;color:var(--sedy)}
+.obj-r .q{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-align:right;white-space:nowrap}
+.obj-r .q small{display:block;font-size:9.5px;color:var(--sedy);font-weight:400}
 .spolu-box:empty{display:none}
 .spolu-box .spolu-r:first-of-type{border-top:0}
 
@@ -1211,6 +1223,57 @@ async function spoluHladaj(sku){
   });
 })();
 
+/* Objednávky s produktom: klik na „N obj." rozbalí zoznam objednávok, klik na objednávku otvorí jej detail */
+const objPamat = {};
+const objOtvorene = new Set();
+function objKluc(sku, od, dd, rez){ return [sku, od, dd, rez].join('|'); }
+function objBtn(sku, od, dd, rez, text){
+  const k = objKluc(sku, od, dd, rez);
+  return `<button type="button" class="obj-btn" data-objk="${esc(k)}" aria-expanded="${objOtvorene.has(k)}">${text}</button>`;
+}
+function objRiadky(d){
+  return d.map(x => {
+    const dt = x.vytvorena ? new Date(x.vytvorena) : null;
+    const den = dt ? dt.toLocaleDateString('sk-SK', {day:'numeric', month:'numeric'}) + ' ' + dt.toLocaleTimeString('sk-SK', {hour:'2-digit', minute:'2-digit'}) : '';
+    return `<div class="obj-r" data-cislo="${esc(x.cislo)}">
+      <div><div class="c">${esc(x.cislo)}</div><div class="m">${esc(den)}${x.krajina ? ' · ' + esc(x.krajina) : ''}${x.stav ? ' · ' + esc(x.stav) : ''}</div></div>
+      <div class="q">${cis(x.mnozstvo, x.je_meter ? 1 : 0)} ${x.je_meter ? 'm' : 'ks'}<small>${cis(x.poloziek)} pol. v obj.</small></div>
+    </div>`;
+  }).join('');
+}
+function objBoxObsah(k){
+  if(!objOtvorene.has(k)) return '';
+  const d = objPamat[k];
+  if(d === undefined) return '<div class="spolu-pozn">Načítavam objednávky…</div>';
+  if(d === null) return '<div class="spolu-pozn">Objednávky sa nenačítali, skús znova.</div>';
+  if(!d.length) return '<div class="spolu-pozn">Žiadne objednávky.</div>';
+  return `<div class="obj-hl">Objednávky s týmto produktom (${d.length})</div>` + objRiadky(d);
+}
+function objBoxHtml(sku, od, dd, rez){
+  const k = objKluc(sku, od, dd, rez);
+  return `<div class="obj-box" data-objk="${esc(k)}">${objBoxObsah(k)}</div>`;
+}
+function objObnov(k){
+  document.querySelectorAll('.obj-box').forEach(b => { if(b.dataset.objk === k) b.innerHTML = objBoxObsah(k); });
+  document.querySelectorAll('.obj-btn').forEach(b => { if(b.dataset.objk === k) b.setAttribute('aria-expanded', String(objOtvorene.has(k))); });
+}
+async function objPrepni(k){
+  if(objOtvorene.has(k)){ objOtvorene.delete(k); objObnov(k); return; }
+  objOtvorene.add(k); objObnov(k);
+  if(!objPamat[k]){
+    const [sku, od, dd, rez] = k.split('|');
+    try{ objPamat[k] = await rpc('dash_produkt_objednavky', {p_od: od, p_do: dd, p_sku: sku, p_rezim: rez}) || []; }
+    catch(e){ objPamat[k] = null; objObnov(k); delete objPamat[k]; return; }
+  }
+  objObnov(k);
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.obj-btn[data-objk]');
+  if(b){ e.stopPropagation(); objPrepni(b.dataset.objk); return; }
+  const r = e.target.closest('.obj-r[data-cislo]');
+  if(r){ e.stopPropagation(); otvorObjednavku(r.dataset.cislo); }
+}, true);
+
 function vykresliProdukty(){
   { const pz = $('#spoluPozn'); if(pz) pz.style.display = zobrazUdaj === 'mat' ? 'none' : ''; }
   if(zobrazUdaj === 'mat'){ vykresliMat(); return; }
@@ -1242,9 +1305,10 @@ function vykresliProdukty(){
           return v;
         })()}</div>
       </div>
-      <div class="hod hod1">${cis(p.mnozstvo, (naObj && !p.je_meter) || strihy ? 0 : 1)}<small> ${naObj ? (p.je_meter ? 'm' : 'ks') : jed} · ${cis(p.obj)} obj.</small></div>
+      <div class="hod hod1">${cis(p.mnozstvo, (naObj && !p.je_meter) || strihy ? 0 : 1)}<small> ${naObj ? (p.je_meter ? 'm' : 'ks') : jed} · ${objBtn(p.sku, obdobie.od, obdobie.do, naObj ? 'predaj' : 'bezne', cis(p.obj) + ' obj.')}</small></div>
     </div>
     <div class="spolu-box" data-box="${esc(p.sku)}">${spoluBoxHtml(p.sku)}</div>
+    ${objBoxHtml(p.sku, obdobie.od, obdobie.do, naObj ? 'predaj' : 'bezne')}
     </div>`).join('') + viacTlacidlo(vsetkoPol, pole.length);
 }
 
@@ -2241,7 +2305,7 @@ function htDeltaHtml(ks, pred){
 
 function htProdukt(r, i, sObj){
   const zas = r[5] != null ? ` · zásoba <span class="ht-zas${Number(r[5]) <= 5 ? ' malo' : ''}">${htF(r[5])} ks</span>` : '';
-  return `<div class="ht-obal${spoluOtvorene.has(r[0]) ? ' otvoreny' : ''}"><div class="ht-produkt" data-sku="${esc(r[0])}"><span class="por">${i+1}.</span><img src="${htImg(r[2])}" alt="" loading="lazy" onerror="${HT_BEZ_OBR}"><div><div class="nazov">${esc(r[1]||r[0])}</div><div class="meta">${esc(r[0])}${zas}${priemTxt(r[6])}</div></div><div class="hod">${htF(r[3])} ks${sObj ? `<small>${htF(r[4])} obj.</small>` : ''}</div></div><div class="spolu-box" data-box="${esc(r[0])}">${spoluBoxHtml(r[0])}</div></div>`;
+  return `<div class="ht-obal${spoluOtvorene.has(r[0]) ? ' otvoreny' : ''}"><div class="ht-produkt" data-sku="${esc(r[0])}"><span class="por">${i+1}.</span><img src="${htImg(r[2])}" alt="" loading="lazy" onerror="${HT_BEZ_OBR}"><div><div class="nazov">${esc(r[1]||r[0])}</div><div class="meta">${esc(r[0])}${zas}${priemTxt(r[6])}</div></div><div class="hod">${htF(r[3])} ks${sObj ? `<small>${htData ? objBtn(r[0], htData.od, htData.do, 'ht', htF(r[4]) + ' obj.') : htF(r[4]) + ' obj.'}</small>` : ''}</div></div><div class="spolu-box" data-box="${esc(r[0])}">${spoluBoxHtml(r[0])}</div>${htData ? objBoxHtml(r[0], htData.od, htData.do, 'ht') : ''}</div>`;
 }
 
 /* ---- Vývoj v čase: vlastné obdobie a krok (dni / týždne / mesiace) ---- */
