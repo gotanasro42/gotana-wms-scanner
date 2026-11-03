@@ -339,14 +339,20 @@ h2:first-child{margin-top:2px}
 .ch-tl{position:fixed;right:14px;bottom:calc(128px + env(safe-area-inset-bottom));z-index:65;width:54px;height:54px;border-radius:50%;border:0;background:var(--atrament);color:var(--safran);box-shadow:0 6px 18px rgba(20,33,61,.35);cursor:pointer;display:flex;align-items:center;justify-content:center}
 .ch-tl svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .ch-tl[hidden]{display:none}
-.ch-panel{position:fixed;inset:0;z-index:150;background:rgba(20,33,61,.45);display:none;align-items:flex-end;justify-content:center}
+.ch-panel{position:fixed;inset:0;z-index:150;background:rgba(20,33,61,.45);display:none;align-items:stretch;justify-content:center}
 .ch-panel.zobraz{display:flex}
-.ch-okno{background:var(--platno);width:100%;max-width:680px;height:min(88vh,760px);border-radius:16px 16px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -8px 30px rgba(0,0,0,.25)}
-.ch-hl{background:var(--atrament);color:var(--platno);padding:12px 14px;display:flex;align-items:center;gap:10px}
+.ch-okno{background:var(--platno);width:100%;max-width:100%;min-width:0;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -8px 30px rgba(0,0,0,.25)}
+@media (min-width:720px){
+  .ch-panel{align-items:flex-end}
+  .ch-okno{max-width:680px;height:min(88vh,760px);height:min(88dvh,760px);border-radius:16px 16px 0 0}
+}
+.ch-okno>*{min-width:0}
+.ch-hl{background:var(--atrament);color:var(--platno);padding:calc(12px + env(safe-area-inset-top)) 14px 12px;display:flex;align-items:center;gap:10px;flex:0 0 auto}
+.ch-hl>div{min-width:0}
 .ch-hl b{font-size:14px;letter-spacing:.06em;text-transform:uppercase}
 .ch-hl small{display:block;font-size:10.5px;color:#9FB0CE;font-weight:400;letter-spacing:0;text-transform:none}
-.ch-hl button{margin-left:auto;background:rgba(250,247,242,.12);border:0;color:var(--platno);width:34px;height:34px;border-radius:8px;font-size:18px;cursor:pointer}
-.ch-spravy{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:10px}
+.ch-hl button{flex:0 0 auto;margin-left:auto;background:rgba(250,247,242,.12);border:0;color:var(--platno);width:34px;height:34px;border-radius:8px;font-size:18px;cursor:pointer}
+.ch-spravy{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:14px 12px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch}
 .ch-msg{max-width:92%;padding:9px 12px;border-radius:12px;font-size:13.5px;line-height:1.5;white-space:normal;word-wrap:break-word}
 .ch-msg.ja{align-self:flex-end;background:var(--atrament);color:var(--platno);border-bottom-right-radius:4px}
 .ch-msg.bot{align-self:flex-start;background:#fff;border:1px solid var(--linka);border-bottom-left-radius:4px}
@@ -362,12 +368,12 @@ h2:first-child{margin-top:2px}
 .ch-tab td.num{text-align:right}
 .ch-cakaj{align-self:flex-start;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--sedy);padding:6px 4px}
 .ch-cakaj .tocka{border-color:rgba(20,33,61,.15);border-top-color:var(--safran);width:16px;height:16px}
-.ch-priklady{display:flex;flex-wrap:wrap;gap:6px}
-.ch-priklady button{border:1px solid var(--linka);background:#fff;border-radius:14px;padding:6px 11px;font-size:12px;cursor:pointer;text-align:left;color:var(--atrament);font-family:inherit}
+.ch-priklady{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
+.ch-priklady button{max-width:100%;border:1px solid var(--linka);background:#fff;border-radius:14px;padding:7px 12px;font-size:12.5px;cursor:pointer;text-align:left;color:var(--atrament);font-family:inherit;white-space:normal;line-height:1.35}
 .ch-uvod{font-size:12.5px;color:var(--sedy);line-height:1.5}
-.ch-vstup{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--linka);background:#fff}
-.ch-vstup textarea{flex:1;resize:none;border:1px solid var(--linka);border-radius:10px;padding:9px 11px;font:inherit;font-size:14px;max-height:120px;min-height:42px;color:var(--atrament)}
-.ch-vstup button{border:0;background:var(--safran);color:var(--atrament);font-weight:700;border-radius:10px;padding:0 16px;cursor:pointer;font-family:inherit;font-size:14px}
+.ch-vstup{flex:0 0 auto;display:flex;align-items:flex-end;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--linka);background:#fff}
+.ch-vstup textarea{flex:1 1 auto;min-width:0;width:100%;resize:none;border:1px solid var(--linka);border-radius:10px;padding:9px 11px;font:inherit;font-size:14px;max-height:120px;min-height:42px;color:var(--atrament)}
+.ch-vstup button{flex:0 0 auto;height:42px;border:0;background:var(--safran);color:var(--atrament);font-weight:700;border-radius:10px;padding:0 16px;cursor:pointer;font-family:inherit;font-size:14px}
 .ch-vstup button:disabled{opacity:.5;cursor:default}
 
 /* ---------- Kupované spolu ---------- */
@@ -1142,7 +1148,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
     <div class="ch-hl"><div><b>Opýtaj sa</b><small>Odpovede z dát appky · len na čítanie · vidí len správca</small></div><button type="button" id="chZavri" aria-label="Zavrieť">×</button></div>
     <div class="ch-spravy" id="chSpravy"></div>
     <form class="ch-vstup" id="chForm" autocomplete="off">
-      <textarea id="chText" rows="1" placeholder="Napr. ktorá objednávka mala najvyššiu maržu za posledný týždeň?"></textarea>
+      <textarea id="chText" rows="1" placeholder="Napíš otázku…"></textarea>
       <button type="submit" id="chPosli">Poslať</button>
     </form>
   </div>
