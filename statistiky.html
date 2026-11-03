@@ -279,6 +279,15 @@ h2:first-child{margin-top:2px}
 .tr-pr small{font-weight:400;color:var(--sedy);font-size:inherit}
 .tr-ak{margin-left:4px;background:#FCE9D2;color:#9A5B13;border-radius:3px;padding:0 4px;font-size:9.5px;font-weight:600;white-space:nowrap}
 .produkt .hod1.hod-tr small{display:block;font-size:10.5px;text-align:right}
+.tr-riadok{font-size:10.5px;font-family:'IBM Plex Mono',monospace;color:var(--atrament);margin-top:2px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.tr-riadok b{font-weight:700}
+.tr-riadok .jc{color:var(--sedy)}
+.tr-riadok .tr-mz{margin-left:2px}
+.graf7 .rok-ciara{position:absolute;left:-1px;right:-1px;border-top:2px solid var(--atrament-svetly);opacity:.7;pointer-events:none}
+.graf7.utlm .st:not(.zvyr) .rok-ciara{opacity:.3}
+.okno-suhrn.tr-o{grid-template-columns:repeat(4,1fr);margin-top:6px;background:#EAF3EE;border-left:3px solid var(--mach)}
+.okno-suhrn.tr-o b{font-size:15px}
+.okno-pozn{font-size:10.5px;color:var(--sedy);margin:4px 0 2px}
 .tr-pozn-p{font-size:10.5px;color:var(--sedy);margin:2px 0 6px}
 .ht-tr{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
 .ht-tr>div{background:#fff;border:1px solid var(--linka);border-radius:8px;padding:8px 10px;border-top:3px solid var(--safran)}
@@ -1239,7 +1248,7 @@ async function spoluPartneri(sku){
 function spoluSkladom(z, na){
   if(z === null || z === undefined) return '';
   const ok = na === true && Number(z) > 0;
-  return `<span class="${ok ? 'zasoba-ok' : 'zasoba-nic'}" style="margin-left:5px">${ok ? cis(z, z % 1 ? 1 : 0) : 'vypredané'}</span>`;
+  return `<span class="${ok ? 'zasoba-ok' : 'zasoba-nic'}" style="margin-left:5px">${ok ? 'skladom ' + cis(z, z % 1 ? 1 : 0) : 'vypredané'}</span>`;
 }
 function spoluRiadky(d){
   return d.map(x => `<div class="spolu-r" data-hladaj="${esc(x.partner_sku)}">
@@ -1383,21 +1392,20 @@ async function trNacitajProd(k, skus){
 }
 function trMetaHtml(t, jeMeter, bezTrzby){
   if(!t) return '';
-  return (bezTrzby ? `<span class="tr-pr"><small>${cis(t.cena, 2)} €/${jeMeter ? 'm' : 'ks'}</small></span>`
-                   : `<span class="tr-pr">${cis(t.trzba)} €<small> · ${cis(t.cena, 2)} €/${jeMeter ? 'm' : 'ks'}</small></span>`)
+  return `<div class="tr-riadok">${bezTrzby ? '' : `<b>${cis(t.trzba, t.trzba < 100 ? 2 : 0)} €</b> · `}<span class="jc">${cis(t.cena, 2)} €/${jeMeter ? 'm' : 'ks'}</span>`
     + (t.marza !== null && t.marza !== undefined ? `<span class="tr-mz${+t.marza < 30 ? ' nizka' : ''}">marža ${cis(t.marza, 0)} %</span>` : '')
-    + (t.akcia > 0 ? `<span class="tr-ak">v zľave ${cis(t.akcia)} %</span>` : '');
+    + `</div>`;
 }
 /* doplní tržbu do riadkov produktov (data-sku) – načíta len tie, ktoré ešte nemáme */
 async function trDoplnPolozky(selektor, k, bezTrzby){
   if(!jeSpravca() || !k) return;
-  const riadky = [...document.querySelectorAll(selektor)].filter(r => !r.querySelector('.tr-pr'));
+  const riadky = [...document.querySelectorAll(selektor)].filter(r => !r.querySelector('.tr-riadok'));
   if(!riadky.length) return;
   const z = await trNacitajProd(k, [...new Set(riadky.map(r => r.dataset.sku))]);
   riadky.forEach(r => {
-    if(!r.isConnected || r.querySelector('.tr-pr')) return;
+    if(!r.isConnected || r.querySelector('.tr-riadok')) return;
     const t = z.sku[r.dataset.sku]; const meta = r.querySelector('.meta');
-    if(t && meta) meta.insertAdjacentHTML('beforeend', trMetaHtml(t, t.m, bezTrzby));
+    if(t && meta) meta.insertAdjacentHTML('afterend', trMetaHtml(t, t.m, bezTrzby));
   });
 }
 
@@ -1444,8 +1452,8 @@ function vykresliProdukty(){
           let v = '';
           if(z.regaly) v += '<span class="regal" style="margin-left:4px">' + esc(z.regaly) + '</span>';
           if(z.zasoba !== null && z.zasoba !== undefined)
-            v += '<span class="' + (z.zasoba > 0 ? 'zasoba-ok' : 'zasoba-nic') + '" style="margin-left:5px">'
-               + cis(z.zasoba, z.zasoba % 1 ? 1 : 0) + '</span>';
+            v += '<span class="' + (z.zasoba > 0 ? 'zasoba-ok' : 'zasoba-nic') + '" style="margin-left:5px">skladom '
+               + cis(z.zasoba, z.zasoba % 1 ? 1 : 0) + ' ' + ((p.je_meter === true || (p.je_meter === undefined && zobrazUdaj === 'metre')) ? 'm' : 'ks') + '</span>';
           v += priemTxt(z.priemer, z.priemer30);
           return v;
         })()}</div>
@@ -1456,7 +1464,7 @@ function vykresliProdukty(){
     <div class="spolu-box" data-box="${esc(p.sku)}">${spoluBoxHtml(p.sku)}</div>
     ${objBoxHtml(p.sku, obdobie.od, obdobie.do, naObj ? 'predaj' : 'bezne')}
     </div>`).join('') + viacTlacidlo(vsetkoPol, pole.length)
-    + (trTyp ? `<div class="tr-pozn-p">Tržby pri produktoch sú bez DPH v € a len z predaných objednávok${obdobie.od < '2026-01-01' ? ' – po produktoch ich máme od 1. 1. 2026' : ''}. „V zľave" = koľko % tržby išlo pod pôvodnou cenou (akcia alebo množstevná zľava). Marža = (tržba − nákupná cena z Magenta) / tržba; červenou pod 30 %.</div>` : '');
+    + (trTyp ? `<div class="tr-pozn-p">Tržby pri produktoch sú bez DPH v € a len z predaných objednávok${obdobie.od < '2026-01-01' ? ' – po produktoch ich máme od 1. 1. 2026' : ''}. Marža = (tržba − nákupná cena z Magenta) / tržba; červenou pod 30 %.</div>` : '');
   if(trTyp) trDoplnPolozky('#topProdukty .produkt[data-sku]', trK, podlaTrzby);
 }
 
@@ -1508,7 +1516,7 @@ async function otvorObjednavku(cislo){
         <div><span>Doprava</span><b style="font-size:12px">${esc(o.vydajne ? 'výdajné miesto' : 'na adresu')}</b></div>
       </div>` +
       (pol.length ? pol.map(x => `
-        <div class="produkt">
+        <div class="produkt" data-sku="${esc(x.sku)}">
           ${x.obrazok ? `<img src="${esc(x.obrazok)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<div></div>'}
           <div>
             <div class="nazov">${esc(x.nazov)}</div>
@@ -1528,9 +1536,31 @@ async function otvorObjednavku(cislo){
           <div class="hod">${cis(x.mnozstvo, x.mnozstvo % 1 ? 2 : 0)}<small>${x.je_meter ? 'm' : 'ks'}</small></div>
         </div>`).join('')
       : '<div class="prazdne">Bez položiek.</div>');
+    if(jeSpravca()) doplnCenyObjednavky(String(cislo));
   }catch(e){
     $('#oknoTelo').innerHTML = `<div class="chyba">Detail sa nenačítal.<br>${esc(e.message)}</div>`;
   }
+}
+/* tržba a marža v detaile objednávky (len správca) */
+async function doplnCenyObjednavky(cislo){
+  let c;
+  try{ c = await rpc('dash_objednavka_ceny', {p_kod: localStorage.getItem('trh_kod') || '', p_cislo: cislo}); }catch(_e){ return; }
+  if(!c || c.chyba || !$('#zaclona').classList.contains('zobraz') || $('#oknoCislo').textContent !== 'č. ' + cislo) return;
+  const s = $('#oknoTelo .okno-suhrn');
+  if(s && !$('#oknoTelo .tr-o')){
+    s.insertAdjacentHTML('afterend', `<div class="okno-suhrn tr-o">
+        <div><span>Tržba bez DPH</span><b class="cislo">${eur(c.trzba, 2)}</b></div>
+        <div><span>Tovar</span><b class="cislo">${eur(c.tovar, 2)}</b></div>
+        <div><span>Doprava</span><b class="cislo">${eur(c.doprava, 2)}</b></div>
+        <div><span>Marža</span><b class="cislo">${c.marza !== null ? eur(c.marza, 2) : '—'}</b></div>
+      </div>
+      <div class="okno-pozn">${c.pct !== null ? `Marža tovaru <b>${cis(c.pct, 1)} %</b>${+c.pokrytie < 100 ? ` (z ${cis(c.pokrytie)} % tovaru, zvyšok nemá nákupnú cenu)` : ''}` : 'Bez nákupných cien.'}${+c.zlava > 0 ? ` · zľava ${eur(c.zlava, 2)}${c.kupon ? ' (kupón ' + esc(c.kupon) + ')' : ''}` : ''}${c.mena && c.mena !== 'EUR' ? ` · prepočet z ${esc(c.mena)} kurzom ECB ${cis(c.kurz, 3)}` : ''}</div>`);
+  }
+  document.querySelectorAll('#oknoTelo .produkt[data-sku]').forEach(r => {
+    const t = (c.polozky || {})[r.dataset.sku], meta = r.querySelector('.meta');
+    const kotva = r.querySelector('.sklad-info') || meta;
+    if(t && kotva && !r.querySelector('.tr-riadok')) kotva.insertAdjacentHTML('afterend', trMetaHtml(t, t.m, false));
+  });
 }
 
 function zavriObjednavku(){
@@ -1721,12 +1751,14 @@ function popisDna(iso, kratko){
 
 /* farba podľa dňa v týždni: rovnaké dni = rovnaká farba */
 const FARBY_DNI = ['#9AA3B2','#4A6FA5','#4E9A6E','#8B6BB1','#D08A3E','#BFA23A','#4F9C9E']; /* ne, po, ut, st, št, pi, so */
-function graf7(dni, jeDnes, cas, jeKoniec = true){
+function graf7(dni, jeDnes, cas, jeKoniec = true, opt = null){
   if(!dni || !dni.length) return '<div class="prazdne">Údaje za posledné dni nie sú k dispozícii.</div>';
-  const max = Math.max(...dni.map(x => Number(x.obj)||0), 1);
+  const eurG = !!(opt && opt.eur);
+  const max = Math.max(...dni.map(x => Math.max(Number(x.obj)||0, eurG ? (Number(x.rok)||0) : 0)), 1);
+  const hT = v => eurG ? (v >= 1000 ? cis(v / 1000, v >= 10000 ? 0 : 1) + 'k' : cis(v)) : cis(v);
   const sTeraz = jeDnes && cas && dni.some(x => x.objTeraz != null);
   const vert = dni.length > 15; /* veľa stĺpcov: čísla zvislo, nech sú čitateľné aj v telefóne */
-  return mesPas(dni) + `<div class="graf7${dni.length > 10 ? ' husty' : ''}${vert ? ' velmihusty vert' : ''}"${sTeraz ? ` data-cas="${esc(cas)}"` : ''} style="grid-template-columns:repeat(${dni.length},1fr)">` + dni.map((x, idx) => {
+  return mesPas(dni) + `<div class="graf7${eurG ? ' eur' : ''}${dni.length > 10 ? ' husty' : ''}${vert ? ' velmihusty vert' : ''}"${sTeraz ? ` data-cas="${esc(cas)}"` : ''} style="grid-template-columns:repeat(${dni.length},1fr)">` + dni.map((x, idx) => {
     const posl = jeKoniec && idx === dni.length - 1;
     const v = (Number(x.obj)||0) > 0 ? Math.max(2, (Number(x.obj)||0) / max * 100) : 0;
     const tr = 'st' + (posl ? ' vybr' : '') + (posl && jeDnes ? ' ciastocny' : '');
@@ -1735,13 +1767,13 @@ function graf7(dni, jeDnes, cas, jeKoniec = true){
     const tyz = Math.floor((Date.parse(x.den + 'T12:00Z') / 864e5 + 3) / 7); /* číslo týždňa po–ne */
     const tz = Number(x.objTeraz)||0, ukazTz = sTeraz && !posl && x.objTeraz != null;
     const vt = tz > 0 ? Math.max(1, tz / max * 100) : 0;
-    return `<div class="${tr}${dni.length > 7 && tyz % 2 ? ' tyz-b' : ''}${dni.length > 7 && dow === 1 ? ' pon' : ''}" data-dow="${dow}" data-obj="${Number(x.obj)||0}"${sTeraz ? ` data-tz="${posl ? Number(x.obj)||0 : tz}"` : ''} data-dnes="${posl && jeDnes ? 1 : 0}" style="--fd:${fd}" title="${new Date(x.den + 'T12:00').toLocaleDateString('sk-SK',{weekday:'long', day:'numeric', month:'numeric'})}: ${cis(x.obj)} obj. · ${cis(x.metre,1)} m · ${cis(x.kusy)} ks${ukazTz ? ` · do ${esc(cas)}: ${cis(tz)} obj.` : ''}">
+    return `<div class="${tr}${dni.length > 7 && tyz % 2 ? ' tyz-b' : ''}${dni.length > 7 && dow === 1 ? ' pon' : ''}" data-dow="${dow}" data-obj="${Number(x.obj)||0}"${sTeraz ? ` data-tz="${posl ? Number(x.obj)||0 : tz}"` : ''} data-dnes="${posl && jeDnes ? 1 : 0}" style="--fd:${fd}" title="${new Date(x.den + 'T12:00').toLocaleDateString('sk-SK',{weekday:'long', day:'numeric', month:'numeric'})}: ${eurG ? `${cis(x.obj)} € · ${cis(x.pocet)} obj.${Number(x.rok) > 0 ? ` · pred rokom ${cis(x.rok)} €` : ''}` : `${cis(x.obj)} obj. · ${cis(x.metre,1)} m · ${cis(x.kusy)} ks`}${ukazTz ? ` · do ${esc(cas)}: ${cis(tz)} obj.` : ''}">
       <div class="plocha"><div class="vnutro">
-        <div class="stlp" style="height:${v.toFixed(1)}%"></div>${vert ? `${ukazTz ? `
+        <div class="stlp" style="height:${v.toFixed(1)}%"></div>${eurG && Number(x.rok) > 0 ? `<div class="rok-ciara" style="bottom:${(Number(x.rok) / max * 100).toFixed(1)}%"></div>` : ''}${vert ? `${ukazTz ? `
         <div class="tz-ciara" style="bottom:${vt.toFixed(1)}%"></div>${v - vt >= 14 ? `<div class="vh tz" style="bottom:${vt.toFixed(1)}%">${cis(tz)}</div>` : (vt >= 14 ? `<div class="vh tz dnu" style="bottom:${vt.toFixed(1)}%">${cis(tz)}</div>` : '')}` : ''}
-        <div class="vh hodn" style="bottom:${v.toFixed(1)}%">${cis(x.obj)}</div>` : `${ukazTz ? `
+        <div class="vh hodn" style="bottom:${v.toFixed(1)}%">${hT(Number(x.obj)||0)}</div>` : `${ukazTz ? `
         <div class="tz-ciara" style="bottom:${vt.toFixed(1)}%"></div>${v - vt > 14 ? `<div class="tz-hodn" style="bottom:${vt.toFixed(1)}%">${cis(tz)}</div>` : ''}` : ''}
-        <div class="hodn" style="bottom:${v.toFixed(1)}%">${cis(x.obj)}</div>`}
+        <div class="hodn" style="bottom:${v.toFixed(1)}%">${hT(Number(x.obj)||0)}</div>`}
       </div></div>
       <div class="den">${popisDna(x.den, dni.length > 10)}</div>
     </div>`;
@@ -1752,25 +1784,25 @@ function graf7(dni, jeDnes, cas, jeKoniec = true){
 const oknoData = {}; /* dáta grafu pre každý kľúč – aby sa pri posúvaní prekreslil len graf, nie celá stránka */
 const fDat = iso => { const d = new Date(iso + 'T12:00'); return `${d.getDate()}. ${d.getMonth()+1}.`; };
 function oknoVypocet(kluc){
-  const {dni, jeDnes, cas} = oknoData[kluc];
+  const {dni, jeDnes, cas, opt} = oknoData[kluc];
   const maxP = Math.max(0, dni.length - POCET_DNI);
   const p = Math.min(Math.max(0, okno[kluc] || 0), maxP);
   okno[kluc] = p;
   const koniec = dni.length - p;
   const cast = dni.slice(Math.max(0, koniec - POCET_DNI), koniec);
-  return {dni, jeDnes, cas, maxP, p, cast};
+  return {dni, jeDnes, cas, opt, maxP, p, cast};
 }
 function oknoGrafHtml(kluc, v){
   const sip = v.maxP > 0
     ? `<button type="button" class="okno-sip l" data-okno="${esc(kluc)}" data-smer="1" aria-label="Staršie dni"${v.p >= v.maxP ? ' disabled' : ''}>‹</button><button type="button" class="okno-sip p" data-okno="${esc(kluc)}" data-smer="-1" aria-label="Novšie dni"${v.p <= 0 ? ' disabled' : ''}>›</button>` : '';
-  return sip + graf7(v.cast, v.jeDnes, v.cas, v.p === 0);
+  return sip + graf7(v.cast, v.jeDnes, v.cas, v.p === 0, v.opt);
 }
 function oknoRozsahHtml(kluc, v){
   return `<span><b>${fDat(v.cast[0].den)} – ${fDat(v.cast[v.cast.length-1].den)}</b></span>${v.p > 0 ? `<button type="button" class="okno-sip-domov" data-okno="${esc(kluc)}">späť na najnovšie ›</button>` : '<span>najnovšie</span>'}`;
 }
-function grafOkno(kluc, dni, jeDnes, cas){
-  if(!dni || !dni.length) return graf7(dni, jeDnes, cas);
-  oknoData[kluc] = {dni, jeDnes, cas};
+function grafOkno(kluc, dni, jeDnes, cas, opt = null){
+  if(!dni || !dni.length) return graf7(dni, jeDnes, cas, true, opt);
+  oknoData[kluc] = {dni, jeDnes, cas, opt};
   const v = oknoVypocet(kluc);
   const ovl = v.maxP > 0 ? `<div class="okno-ovl">
       <input type="range" class="okno-posuv" data-okno="${esc(kluc)}" min="0" max="${v.maxP}" step="1" value="${v.maxP - v.p}" aria-label="Posun grafu v čase">
@@ -1857,7 +1889,13 @@ function vykresli7Prehlad(){
   obnovVyber();
 }
 
+let trKrMapa = {};
 function vykresliKrajiny(){
+  trKrMapa = {};
+  if(jeSpravca() && trzby && trzby.od === obdobie.od && trzby.do === obdobie.do){
+    const k = trzby.krajiny || [], spolu = k.reduce((a, x) => a + (+x.trzba || 0), 0) || 1;
+    k.forEach(x => { trKrMapa[x.krajina] = {trzba: +x.trzba, priemer: +x.priemer, podiel: (+x.trzba || 0) / spolu * 100}; });
+  }
   const pole = data && data.krajiny;
   const ciel = $('#krajiny');
   if(!ciel) return;
@@ -1880,7 +1918,10 @@ function vykresliKrajiny(){
     return `<div class="riadok klik${otv ? ' otvor' : ''}${tr ? ' ' + tr.trieda : ''}" data-kr="${esc(x.krajina)}" role="button" tabindex="0" style="--w:${sirka}%">
       <div class="nazov">${esc(vlajka(x.krajina) + '  ' + (KRAJINY[x.krajina] || x.krajina))}</div>
       <div class="hod cislo">${cis(h)}</div>
-      <div class="detail">${esc(`${cis(x.metre,1)} m · ${cis(x.kusy)} ks`)}${tr ? tr.html : ''}</div>
+      <div class="detail">${esc(`${cis(x.metre,1)} m · ${cis(x.kusy)} ks`)}${tr ? tr.html : ''}</div>${(function(){
+        const t = trKrMapa[x.krajina]; if(!t) return '';
+        return `<div class="detail tr-kr-d"><b style="color:var(--atrament)">${cis(t.trzba)} €</b> · priem. obj. ${cis(t.priemer, 2)} € · ${cis(t.podiel, 1)} %</div>`;
+      })()}
     </div>${rozbal}`;
   }).join('');
   obnovVyber();
@@ -2083,7 +2124,7 @@ async function nacitajTrzby(){
   catch(e){ if(obdobie.od === od && obdobie.do === dd) $('#trzby').innerHTML = `<div class="prazdne">Tržby sa nenačítali (${esc(e.message)}).</div>`; return; }
   if(obdobie.od !== od || obdobie.do !== dd) return;
   if(!d || d.chyba){ $('#trzbyBlok').hidden = true; $('#heroTrzba').hidden = true; return; }
-  if(!trzby || trzby.od !== od || trzby.do !== dd){ trKrok = null; trAkt = -1; trKrajVsetky = false; }
+  if(!trzby || trzby.od !== od || trzby.do !== dd){ trKrok = null; trAkt = -1; trKrajVsetky = false; okno['__trzby'] = 0; }
   trzby = d;
   vykresliTrzby();
 }
@@ -2132,11 +2173,10 @@ function vykresliTrzby(){
       <div class="tr-pozn">Zľavy kupónmi: <b>${eur(s.zlava)}</b>${priemPor && priemPor.priemer ? ` · priemerná obj. ${priemNazov}: ${eur(priemPor.priemer, 2)} ${trZnacka(s.priemer, priemPor.priemer)}` : ''}${s.bezCeny ? ` · ${cis(s.bezCeny)} obj. ešte čaká na cenu` : ''}</div>
       <div class="tr-porov">${por}</div>
     </div>
-    <div class="tr-graf-obal" id="trGrafObal"></div>
-    <div class="tr-kraj" id="trKraj"></div>`;
+    <div class="tr-graf-obal" id="trGrafObal"></div>`;
   $('#trzby').innerHTML = html;
   vykresliTrGraf();
-  vykresliTrKrajiny();
+  if(data) vykresliKrajiny();
 }
 function trMarzaHtml(d){
   const m = d.marza;
@@ -2166,7 +2206,18 @@ function vykresliTrGraf(){
   const graf = (trzby && trzby.graf) || [];
   const obal = $('#trGrafObal');
   if(!graf.length){ obal.innerHTML = '<div class="prazdne">Za toto obdobie nič.</div>'; return; }
-  if(!trKrok) trKrok = graf.length <= 45 ? 'dni' : (graf.length <= 200 ? 'tyzdne' : 'mesiace');
+  if(!trKrok) trKrok = 'dni';
+  const kroky0 = [['dni','Dni'],['tyzdne','Týždne'],['mesiace','Mesiace']]
+    .map(([k, n]) => `<button type="button" data-k="${k}" aria-pressed="${k === trKrok}">${n}</button>`).join('');
+  if(trKrok === 'dni'){
+    const jeDnesG = trzby.do === den(new Date());
+    const dni = graf.map(x => ({den: x.den, obj: Math.round(+x.trzba || 0), pocet: +x.obj || 0, rok: Math.round(+x.rok || 0), metre: 0, kusy: 0}));
+    obal.innerHTML = `<div class="tr-graf-hl"><div class="tr-krok">${kroky0}</div><div class="tr-leg"><span><i class="r"></i>pred rokom</span></div></div>`
+      + grafOkno('__trzby', dni, jeDnesG, null, {eur: true})
+      + `<div class="okno-pozn">Tržba bez DPH v €. Ťukni na deň – zvýraznia sa všetky rovnaké dni v týždni.${jeDnesG ? ' Dnešný deň je zatiaľ neúplný.' : ''}</div>`;
+    obnovVyber();
+    return;
+  }
   const sk = trSkupiny(graf, trKrok);
   const max = Math.max(1, ...sk.map(x => Math.max(x.trzba, x.rok)));
   if(trAkt >= sk.length) trAkt = -1;
@@ -2472,9 +2523,10 @@ function zvyrazniDen(g, dow){
   const priem = cele.length ? cele.reduce((a,b) => a+b, 0) / cele.length : 0;
   if(!info){ info = document.createElement('div'); info.className = 'graf-info'; g.after(info); }
   info.style.setProperty('--fd', FARBY_DNI[dow]);
+  const jd = g.classList.contains('eur') ? ' €' : '';
   info.innerHTML = `<b style="font-family:inherit">${MENA_DNI[dow].charAt(0).toUpperCase() + MENA_DNI[dow].slice(1)}:</b> ${
-    rovnake.map(x => `<b>${cis(Number(x.dataset.obj)||0)}</b>${x.dataset.dnes === '1' ? ' (dnes, zatiaľ)' : ''}`).join(' → ')}${
-    cele.length > 1 ? ` · priemer <b>${cis(priem,0)}</b>` : ''}${
+    rovnake.map(x => `<b>${cis(Number(x.dataset.obj)||0)}${jd}</b>${x.dataset.dnes === '1' ? ' (dnes, zatiaľ)' : ''}`).join(' → ')}${
+    cele.length > 1 ? ` · priemer <b>${cis(priem,0)}${jd}</b>` : ''}${
     g.dataset.cas ? (function(){
       const tz = rovnake.map(x => Number(x.dataset.tz)||0), pr = rovnake.filter(x => x.dataset.dnes !== '1').map(x => Number(x.dataset.tz)||0);
       const p2 = pr.length ? pr.reduce((a,b) => a+b, 0) / pr.length : 0;
@@ -2609,7 +2661,7 @@ function htDeltaHtml(ks, pred){
 }
 
 function htProdukt(r, i, sObj){
-  const zas = r[5] != null ? ` · zásoba <span class="ht-zas${Number(r[5]) <= 5 ? ' malo' : ''}">${htF(r[5])} ks</span>` : '';
+  const zas = r[5] != null ? ` · <span class="ht-zas${Number(r[5]) <= 5 ? ' malo' : ''}">skladom ${htF(r[5])} ks</span>` : '';
   return `<div class="ht-obal${spoluOtvorene.has(r[0]) ? ' otvoreny' : ''}"><div class="ht-produkt" data-sku="${esc(r[0])}"><span class="por">${i+1}.</span><img src="${htImg(r[2])}" alt="" loading="lazy" onerror="${HT_BEZ_OBR}"><div><div class="nazov">${esc(r[1]||r[0])}</div><div class="meta">${esc(r[0])}${zas}${priemTxt(r[6])}</div></div><div class="hod">${htF(r[3])} ks${sObj ? `<small>${htData ? objBtn(r[0], htData.od, htData.do, 'ht', htF(r[4]) + ' obj.') : htF(r[4]) + ' obj.'}</small>` : ''}</div></div><div class="spolu-box" data-box="${esc(r[0])}">${spoluBoxHtml(r[0])}</div>${htData ? objBoxHtml(r[0], htData.od, htData.do, 'ht') : ''}</div>`;
 }
 
