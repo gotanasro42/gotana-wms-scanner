@@ -275,6 +275,19 @@ h2:first-child{margin-top:2px}
 .tr-kr .pas i{display:block;height:100%;background:var(--safran)}
 .tr-viac{display:block;width:100%;border:0;background:none;padding:8px 0;font-size:12.5px;font-weight:600;color:var(--atrament);cursor:pointer;font-family:inherit}
 
+.tr-pr{margin-left:5px;color:var(--atrament);font-weight:600;white-space:nowrap}
+.tr-pr small{font-weight:400;color:var(--sedy);font-size:inherit}
+.tr-ak{margin-left:4px;background:#FCE9D2;color:#9A5B13;border-radius:3px;padding:0 4px;font-size:9.5px;font-weight:600;white-space:nowrap}
+.produkt .hod1.hod-tr small{display:block;font-size:10.5px;text-align:right}
+.tr-pozn-p{font-size:10.5px;color:var(--sedy);margin:2px 0 6px}
+.ht-tr{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.ht-tr>div{background:#fff;border:1px solid var(--linka);border-radius:8px;padding:8px 10px;border-top:3px solid var(--safran)}
+.ht-tr>div.hf{border-top-color:var(--hf)}
+.ht-tr .typ{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--sedy);font-weight:700}
+.ht-tr .velke{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;letter-spacing:-.03em;line-height:1.2}
+.ht-tr .pod{font-size:11px;color:var(--sedy)}
+.ht-tr .pod .odch{margin-left:0}
+
 /* ---------- Kupované spolu ---------- */
 .spolu-hlad{display:flex;gap:6px;margin:2px 0 8px}
 .spolu-hlad input{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--linka);border-radius:7px;font-size:14px;font-family:'IBM Plex Mono',monospace;background:#fff;color:var(--atrament);min-height:40px}
@@ -953,6 +966,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
     <div class="zorad" id="zorad"><span>Zoradiť:</span>
       <button data-z="mnozstvo" aria-pressed="true">podľa metrov / kusov</button>
       <button data-z="obj" aria-pressed="false">podľa objednávok</button>
+      <button data-z="trzba" aria-pressed="false" id="zoradTrzba" hidden>podľa tržby €</button>
     </div>
     <div class="spolu-pozn" id="spoluPozn" style="margin:6px 0 0">Klikni na produkt a rozbalí sa 10 najčastejších kombinácií (čo sa kupovalo spolu, posledných 12 mesiacov).</div>
     <div id="topProdukty"></div>
@@ -1333,14 +1347,77 @@ document.addEventListener('click', e => {
   if(r){ e.stopPropagation(); otvorObjednavku(r.dataset.cislo); }
 }, true);
 
+/* ====== Tržby pri produktoch (len správca) ====== */
+const trProd = {};          /* kľúč od|do|typ -> {top, sku:{}} */
+const trProdBezi = {};
+function trKluc(od, dd, typ){ return od + '|' + dd + '|' + typ; }
+function trTypProd(){ return jeSpravca() && ['metre','kusy','strihy','objednavka'].includes(zobrazUdaj) ? zobrazUdaj : null; }
+async function trNacitajProd(k, skus){
+  const z = trProd[k] || (trProd[k] = {top:null, sku:{}});
+  const chyba = skus.filter(x => !(x in z.sku));
+  if(z.top && !chyba.length) return z;
+  const bk = k + '#' + chyba.join(',');
+  if(trProdBezi[bk]) return trProdBezi[bk];
+  const [od, dd, typ] = k.split('|');
+  trProdBezi[bk] = (async () => {
+    try{
+      const d = await rpc('dash_trzby_produkty', {p_kod: localStorage.getItem('trh_kod') || '', p_od: od, p_do: dd, p_typ: typ, p_sku: chyba.length ? chyba : null});
+      if(d && !d.chyba){
+        if(d.top) z.top = d.top;
+        chyba.forEach(x => { z.sku[x] = (d.sku && d.sku[x]) || null; });
+        (d.top || []).forEach(x => { if(!(x.sku in z.sku)) z.sku[x.sku] = {trzba: x.trzba, cena: x.cena, akcia: x.akcia_pct, m: x.je_meter}; });
+      } else if(!z.top) z.top = [];
+    }catch(_e){ if(!z.top) z.top = []; }
+    delete trProdBezi[bk];
+    return z;
+  })();
+  return trProdBezi[bk];
+}
+function trMetaHtml(t, jeMeter, bezTrzby){
+  if(!t) return '';
+  return (bezTrzby ? `<span class="tr-pr"><small>${cis(t.cena, 2)} €/${jeMeter ? 'm' : 'ks'}</small></span>`
+                   : `<span class="tr-pr">${cis(t.trzba)} €<small> · ${cis(t.cena, 2)} €/${jeMeter ? 'm' : 'ks'}</small></span>`)
+    + (t.akcia > 0 ? `<span class="tr-ak">v zľave ${cis(t.akcia)} %</span>` : '');
+}
+/* doplní tržbu do riadkov produktov (data-sku) – načíta len tie, ktoré ešte nemáme */
+async function trDoplnPolozky(selektor, k, bezTrzby){
+  if(!jeSpravca() || !k) return;
+  const riadky = [...document.querySelectorAll(selektor)].filter(r => !r.querySelector('.tr-pr'));
+  if(!riadky.length) return;
+  const z = await trNacitajProd(k, [...new Set(riadky.map(r => r.dataset.sku))]);
+  riadky.forEach(r => {
+    if(!r.isConnected || r.querySelector('.tr-pr')) return;
+    const t = z.sku[r.dataset.sku]; const meta = r.querySelector('.meta');
+    if(t && meta) meta.insertAdjacentHTML('beforeend', trMetaHtml(t, t.m, bezTrzby));
+  });
+}
+
 function vykresliProdukty(){
   { const pz = $('#spoluPozn'); if(pz) pz.style.display = zobrazUdaj === 'mat' ? 'none' : ''; }
-  if(zobrazUdaj === 'mat'){ vykresliMat(); return; }
+  if(zobrazUdaj === 'mat'){
+    $('#zoradTrzba').hidden = true;
+    if(zoradPodla === 'trzba'){ zoradPodla = 'mnozstvo'; document.querySelectorAll('#zorad button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.z === 'mnozstvo'))); }
+    vykresliMat(); return;
+  }
   const naObj = zobrazUdaj === 'objednavka';
   const strihy = zobrazUdaj === 'strihy';
   if(naObj && !tlacObd){ $('#topProdukty').innerHTML = '<div class="kostra"></div>'; return; }
   if(strihy && !strihyObd){ $('#topProdukty').innerHTML = '<div class="kostra"></div>'; return; }
-  const pole = zoradPole(naObj ? tlacObd.top : strihy ? strihyObd : (zobrazUdaj === 'metre' ? data.topMetre : data.topKusy), 'mnozstvo', 1000);
+  const trTyp = trTypProd();
+  $('#zoradTrzba').hidden = !trTyp;
+  if(!trTyp && zoradPodla === 'trzba'){
+    zoradPodla = 'mnozstvo';
+    document.querySelectorAll('#zorad button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.z === 'mnozstvo')));
+  }
+  const podlaTrzby = trTyp && zoradPodla === 'trzba';
+  const trK = trTyp ? trKluc(obdobie.od, obdobie.do, trTyp) : null;
+  if(podlaTrzby && !(trProd[trK] && trProd[trK].top)){
+    $('#topProdukty').innerHTML = '<div class="kostra"></div>';
+    trNacitajProd(trK, []).then(() => { if(data) vykresliProdukty(); });
+    return;
+  }
+  const pole = podlaTrzby ? trProd[trK].top.slice()
+    : zoradPole(naObj ? tlacObd.top : strihy ? strihyObd : (zobrazUdaj === 'metre' ? data.topMetre : data.topKusy), 'mnozstvo', 1000);
   const vsetkoPol = pole.length; pole.length = Math.min(pole.length, zobrazPocet);
   const chybaju = (pole||[]).map(x=>x.sku).filter(x => !(x in zasoby));
   if(chybaju.length){ nacitajZasoby(chybaju).then(() => { if(data) vykresliProdukty(); }); }
@@ -1364,11 +1441,14 @@ function vykresliProdukty(){
           return v;
         })()}</div>
       </div>
-      <div class="hod hod1">${cis(p.mnozstvo, (naObj && !p.je_meter) || strihy ? 0 : 1)}<small> ${naObj ? (p.je_meter ? 'm' : 'ks') : jed} · ${objBtn(p.sku, obdobie.od, obdobie.do, naObj ? 'predaj' : 'bezne', cis(p.obj) + ' obj.')}</small></div>
+      <div class="hod hod1${podlaTrzby ? ' hod-tr' : ''}">${podlaTrzby ? `${cis(p.trzba)} €<small>${cis(p.mnozstvo, p.je_meter ? 1 : 0)} ${p.je_meter ? 'm' : 'ks'} · ${objBtn(p.sku, obdobie.od, obdobie.do, 'predaj', cis(p.obj) + ' obj.')}</small>`
+        : `${cis(p.mnozstvo, (naObj && !p.je_meter) || strihy ? 0 : 1)}<small> ${naObj ? (p.je_meter ? 'm' : 'ks') : jed} · ${objBtn(p.sku, obdobie.od, obdobie.do, naObj ? 'predaj' : 'bezne', cis(p.obj) + ' obj.')}</small>`}</div>
     </div>
     <div class="spolu-box" data-box="${esc(p.sku)}">${spoluBoxHtml(p.sku)}</div>
     ${objBoxHtml(p.sku, obdobie.od, obdobie.do, naObj ? 'predaj' : 'bezne')}
-    </div>`).join('') + viacTlacidlo(vsetkoPol, pole.length);
+    </div>`).join('') + viacTlacidlo(vsetkoPol, pole.length)
+    + (trTyp ? `<div class="tr-pozn-p">Tržby pri produktoch sú bez DPH v € a len z predaných objednávok${obdobie.od < '2026-01-01' ? ' – po produktoch ich máme od 1. 1. 2026' : ''}. „V zľave" = koľko % tržby išlo pod pôvodnou cenou (akcia alebo množstevná zľava).</div>` : '');
+  if(trTyp) trDoplnPolozky('#topProdukty .produkt[data-sku]', trK, podlaTrzby);
 }
 
 function vykresliTrend(){
@@ -2733,6 +2813,8 @@ function vykresliHT(){
       <div class="pomer"><i style="width:${podielHT.toFixed(1)}%;background:var(--safran)"></i><i style="width:${(100-podielHT).toFixed(1)}%;background:var(--hf)"></i></div>
     </div>
 
+    <div id="htTrzby"></div>
+
     <h2>HT vs HF <span class="h2-pozn">· ${htPredTxt(d)}</span></h2>
     <div class="ht-dve">
       <div class="ht-blok"><div class="typ">HT<span>hotový tovar zo skladu</span></div>
@@ -2768,6 +2850,44 @@ function vykresliHT(){
   htPripojRozbal('#htTypy', d.typy, r => htTypObsah(r));
   $('#htTypy').addEventListener('click', e => { const b = e.target.closest('.ht-typ-viac'); if(b){ e.stopPropagation(); htTypViac(b); } });
   htPripojRozbal('#htKrajiny', d.krajiny, r => htKrajGraf(r.dni || []));
+  nacitajHtTrzby();
+  htTrSledovanie();
+}
+
+/* ====== Hometextil: tržby (len správca) ====== */
+let htTrPoz = null;
+function htTrKluc(){ return htData ? trKluc(htData.od, htData.do, 'ht') : null; }
+async function nacitajHtTrzby(){
+  const el = $('#htTrzby');
+  if(!el || !jeSpravca() || !htData) return;
+  const od = htData.od, dd = htData.do;
+  el.innerHTML = '<div class="kostra"></div>';
+  let d;
+  try{ d = await rpc('dash_trzby_ht', {p_kod: localStorage.getItem('trh_kod') || '', p_od: od, p_do: dd}); }catch(_e){ d = null; }
+  if(!htData || htData.od !== od || htData.do !== dd || !$('#htTrzby')) return;
+  if(!d || d.chyba){ $('#htTrzby').innerHTML = ''; return; }
+  const t = d.typy || {}, ht = t.HT || {trzba:0, obj:0, pred:0}, hf = t.HF || {trzba:0, obj:0, pred:0};
+  const dnes = od === dd && dd === den(new Date());
+  const por = x => (!dnes && d.predOk) ? `<div class="pod">predtým ${cis(x.pred)} € ${trZnacka(x.trzba, x.pred)}</div>` : '';
+  $('#htTrzby').innerHTML = `
+    <h2>Tržby Hometextilu <span class="h2-pozn">· bez DPH, v €${od < '2026-01-01' ? ', od 1. 1. 2026' : ''}</span></h2>
+    <div class="ht-tr">
+      <div><div class="typ">HT · hotový tovar</div><div class="velke">${cis(ht.trzba)} €</div><div class="pod">${cis(ht.obj)} obj. · priem. ${eur(ht.obj ? ht.trzba / ht.obj : 0, 2)}</div>${por(ht)}</div>
+      <div class="hf"><div class="typ">HF · od dodávateľa</div><div class="velke">${cis(hf.trzba)} €</div><div class="pod">${cis(hf.obj)} obj. · priem. ${eur(hf.obj ? hf.trzba / hf.obj : 0, 2)}</div>${por(hf)}</div>
+    </div>
+    <div class="tr-pozn-p">Spolu ${eur(+ht.trzba + +hf.trzba)}${dnes ? ' · dnes zatiaľ, bez porovnania' : (d.predOk ? ' · porovnanie s rovnako dlhým obdobím predtým' : '')}. Priemer = tržba Hometextilu na objednávku, v ktorej bol.</div>`;
+}
+/* tržby k jednotlivým HT/HF produktom – doplní sa aj do zoznamov, ktoré sa rozbalia neskôr */
+function htTrSledovanie(){
+  if(!jeSpravca()) return;
+  const obal = $('#htObsah');
+  if(!obal) return;
+  if(htTrPoz) htTrPoz.disconnect();
+  let cakaj = null;
+  const dopln = () => { clearTimeout(cakaj); cakaj = setTimeout(() => trDoplnPolozky('#s-hometextil .ht-produkt[data-sku]', htTrKluc()), 120); };
+  htTrPoz = new MutationObserver(dopln);
+  htTrPoz.observe(obal, {childList:true, subtree:true});
+  dopln();
 }
 
 /* Podľa typu produktu: prvých 8 hneď, ďalšie po 20 cez tlačidlo (dotiahnu sa z databázy až po kliknutí) */
