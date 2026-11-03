@@ -307,6 +307,7 @@ h2:first-child{margin-top:2px}
 #krajiny .kr-karta>.rozbal{border-bottom:0;border-top:1px solid var(--linka)}
 #krajiny .kr-karta.otvor{border-color:var(--atrament-svetly);box-shadow:0 2px 8px rgba(20,33,61,.12)}
 .odch[data-vys]{cursor:help}
+.riadok .hod .obj-zn .odch{margin:0 7px 0 0;vertical-align:2px;font-size:10px;padding:0 6px}
 .vysvetlivka{position:fixed;z-index:9999;max-width:290px;background:var(--atrament);color:var(--platno);font-size:12px;line-height:1.45;padding:9px 11px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.25);pointer-events:none}
 .vysvetlivka b{color:var(--safran);font-family:'IBM Plex Mono',monospace}
 .graf7 .pr-hod{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;text-align:center;line-height:1;padding:3px 0 2px;border-radius:3px;margin:2px 0 1px;white-space:nowrap;overflow:hidden}
@@ -1994,8 +1995,8 @@ function vykresliKrajiny(){
     }
     return `<div class="kr-karta${otv ? ' otvor' : ''}"><div class="riadok klik${otv ? ' otvor' : ''}${tr ? ' ' + tr.trieda : ''}" data-kr="${esc(x.krajina)}" role="button" tabindex="0" style="--w:${sirka}%">
       <div class="nazov">${esc(vlajka(x.krajina) + '  ' + (KRAJINY[x.krajina] || x.krajina))}</div>
-      <div class="hod cislo">${cis(h)}</div>
-      <div class="detail">${esc(`${cis(x.metre,1)} m · ${cis(x.kusy)} ks`)}${trKrMapa[x.krajina] ? ` · <b style="color:var(--atrament)">${cis(trKrMapa[x.krajina].podiel, 1)} %</b> tržieb` : ''}${tr ? tr.html : ''}</div>${(function(){
+      <div class="hod cislo">${tr ? `<span class="obj-zn">${tr.html}</span>` : ''}${cis(h)}</div>
+      <div class="detail">${esc(`${cis(x.metre,1)} m · ${cis(x.kusy)} ks`)}${trKrMapa[x.krajina] ? ` · <b style="color:var(--atrament)">${cis(trKrMapa[x.krajina].podiel, 1)} %</b> tržieb` : ''}</div>${(function(){
         const t = trKrMapa[x.krajina]; if(!t) return '';
         return `<div class="detail tr-kr-d"><span class="t">${cis(t.trzba)} €</span>${trZnacka(t.trzba, t.trzbaPor, trPorTxt('Tržba ' + (KRAJINY[x.krajina] || x.krajina), t.trzba, t.trzbaPor, '€'))}<span class="sep">|</span><span class="p"><small>Ø obj.</small>${cis(t.priemer, 2)} €</span>${trZnacka(t.priemer, t.priemerPor, trPorTxt('Priemerná objednávka', t.priemer, t.priemerPor, '€'))}</div>`;
       })()}
