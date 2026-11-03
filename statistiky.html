@@ -288,6 +288,14 @@ h2:first-child{margin-top:2px}
 .ht-tr .pod{font-size:11px;color:var(--sedy)}
 .ht-tr .pod .odch{margin-left:0}
 
+.tr-marza{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:8px;padding:8px 10px;background:#EAF3EE;border-radius:7px;border-left:3px solid var(--mach)}
+.tr-marza .t{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mach);font-weight:700}
+.tr-marza b{font-family:'IBM Plex Mono',monospace;font-size:18px;letter-spacing:-.02em}
+.tr-marza .pct{font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--mach)}
+.tr-marza .poz{flex-basis:100%;font-size:10.5px;color:var(--sedy)}
+.tr-mz{margin-left:4px;background:#E3F0E8;color:var(--mach);border-radius:3px;padding:0 4px;font-size:9.5px;font-weight:600;white-space:nowrap}
+.tr-mz.nizka{background:#F6E0E0;color:var(--tehla)}
+
 /* ---------- Kupované spolu ---------- */
 .spolu-hlad{display:flex;gap:6px;margin:2px 0 8px}
 .spolu-hlad input{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--linka);border-radius:7px;font-size:14px;font-family:'IBM Plex Mono',monospace;background:#fff;color:var(--atrament);min-height:40px}
@@ -1365,7 +1373,7 @@ async function trNacitajProd(k, skus){
       if(d && !d.chyba){
         if(d.top) z.top = d.top;
         chyba.forEach(x => { z.sku[x] = (d.sku && d.sku[x]) || null; });
-        (d.top || []).forEach(x => { if(!(x.sku in z.sku)) z.sku[x.sku] = {trzba: x.trzba, cena: x.cena, akcia: x.akcia_pct, m: x.je_meter}; });
+        (d.top || []).forEach(x => { if(!(x.sku in z.sku)) z.sku[x.sku] = {trzba: x.trzba, cena: x.cena, akcia: x.akcia_pct, m: x.je_meter, marza: x.marza_pct}; });
       } else if(!z.top) z.top = [];
     }catch(_e){ if(!z.top) z.top = []; }
     delete trProdBezi[bk];
@@ -1377,6 +1385,7 @@ function trMetaHtml(t, jeMeter, bezTrzby){
   if(!t) return '';
   return (bezTrzby ? `<span class="tr-pr"><small>${cis(t.cena, 2)} €/${jeMeter ? 'm' : 'ks'}</small></span>`
                    : `<span class="tr-pr">${cis(t.trzba)} €<small> · ${cis(t.cena, 2)} €/${jeMeter ? 'm' : 'ks'}</small></span>`)
+    + (t.marza !== null && t.marza !== undefined ? `<span class="tr-mz${+t.marza < 30 ? ' nizka' : ''}">marža ${cis(t.marza, 0)} %</span>` : '')
     + (t.akcia > 0 ? `<span class="tr-ak">v zľave ${cis(t.akcia)} %</span>` : '');
 }
 /* doplní tržbu do riadkov produktov (data-sku) – načíta len tie, ktoré ešte nemáme */
@@ -1447,7 +1456,7 @@ function vykresliProdukty(){
     <div class="spolu-box" data-box="${esc(p.sku)}">${spoluBoxHtml(p.sku)}</div>
     ${objBoxHtml(p.sku, obdobie.od, obdobie.do, naObj ? 'predaj' : 'bezne')}
     </div>`).join('') + viacTlacidlo(vsetkoPol, pole.length)
-    + (trTyp ? `<div class="tr-pozn-p">Tržby pri produktoch sú bez DPH v € a len z predaných objednávok${obdobie.od < '2026-01-01' ? ' – po produktoch ich máme od 1. 1. 2026' : ''}. „V zľave" = koľko % tržby išlo pod pôvodnou cenou (akcia alebo množstevná zľava).</div>` : '');
+    + (trTyp ? `<div class="tr-pozn-p">Tržby pri produktoch sú bez DPH v € a len z predaných objednávok${obdobie.od < '2026-01-01' ? ' – po produktoch ich máme od 1. 1. 2026' : ''}. „V zľave" = koľko % tržby išlo pod pôvodnou cenou (akcia alebo množstevná zľava). Marža = (tržba − nákupná cena z Magenta) / tržba; červenou pod 30 %.</div>` : '');
   if(trTyp) trDoplnPolozky('#topProdukty .produkt[data-sku]', trK, podlaTrzby);
 }
 
@@ -2119,6 +2128,7 @@ function vykresliTrzby(){
         <div><b>${eur(s.tovar)}</b><span>Tovar</span></div>
         <div><b>${eur(s.doprava)}</b><span>Doprava</span></div>
       </div>
+      ${trMarzaHtml(d)}
       <div class="tr-pozn">Zľavy kupónmi: <b>${eur(s.zlava)}</b>${priemPor && priemPor.priemer ? ` · priemerná obj. ${priemNazov}: ${eur(priemPor.priemer, 2)} ${trZnacka(s.priemer, priemPor.priemer)}` : ''}${s.bezCeny ? ` · ${cis(s.bezCeny)} obj. ešte čaká na cenu` : ''}</div>
       <div class="tr-porov">${por}</div>
     </div>
@@ -2127,6 +2137,16 @@ function vykresliTrzby(){
   $('#trzby').innerHTML = html;
   vykresliTrGraf();
   vykresliTrKrajiny();
+}
+function trMarzaHtml(d){
+  const m = d.marza;
+  if(!m || !(+m.trzba > 0)) return '';
+  if(!(+m.sNakladom > 0)) return `<div class="tr-marza"><span class="t">Hrubá marža</span><span class="poz">Zatiaľ bez nákupných cien pre predané produkty.</span></div>`;
+  const pozn = [];
+  if(+m.pokrytie < 100) pozn.push(`počítané z ${cis(m.pokrytie)} % tržby tovaru – zvyšok produktov nemá v Magente nákupnú cenu`);
+  if(m.od > d.od) pozn.push('po produktoch od 1. 1. 2026');
+  return `<div class="tr-marza"><span class="t">Hrubá marža tovaru</span><b>${cis(m.marza)} €</b><span class="pct">${cis(m.pct, 1)} %</span>
+    <span class="poz">Tržba tovaru ${eur(m.sNakladom)} − nákup ${eur(m.naklad)} (nákupné ceny z Magenta${pozn.length ? '; ' + pozn.join('; ') : ''}). Doprava nie je započítaná.</span></div>`;
 }
 function trSkupiny(graf, krok){
   if(krok === 'dni') return graf.map(x => ({od:x.den, do:x.den, trzba:+x.trzba, obj:+x.obj, rok:+x.rok}));
