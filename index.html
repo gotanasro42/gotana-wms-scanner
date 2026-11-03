@@ -3308,9 +3308,9 @@
    Dočasná evidencia naskenovaných kusov (tabuľka koberce_sken v Supabase). Nič sa nezapisuje do skladu.
    Číta: štítok z výroby 9628-100004_HT-01605_1_0, náš skladový štítok NS-21890_1032,
    štítok rolky 123;NS-1;3.7;1 a obyčajný kód produktu HT-01605.
-   Kusy s jedinečným štítkom sa nedajú uložiť dvakrát. Obyčajný kód produktu sa môže opakovať. */
+   Každý sken sa započíta, aj keď je štítok rovnaký (iba ten istý štítok ešte v zábere kamery sa ignoruje 2,5 s). */
 (function(){
-  var filter = 'dnes', riadky = [], znameKody = {}, posledny = { kod: '', cas: 0 };
+  var filter = 'dnes', riadky = [], posledny = { kod: '', cas: 0 };
   var FRONTA_KLUC = 'gotana_koberce_fronta', posielam = false;
 
   function $(id){ return document.getElementById(id); }
@@ -3394,17 +3394,6 @@
     }
     return vsetko;
   }
-  async function nacitajKody(){
-    var od = 0, nove = {};
-    while(true){
-      var r = await sbFetch('koberce_sken?select=kod&kod=not.is.null&order=id', { headers: { Range: od + '-' + (od + 999) } });
-      (r || []).forEach(function(x){ nove[x.kod] = 1; });
-      if(!r || r.length < 1000) break;
-      od += 1000;
-    }
-    fronta().forEach(function(x){ if(x.kod) nove[x.kod] = 1; });
-    znameKody = nove;
-  }
   async function nacitaj(){
     try{ riadky = await nacitajVsetky(filter); }
     catch(e){ $('kobZoznam').innerHTML = '<div class="text-center text-red-600 py-6 font-bold">Nepodarilo sa načítať: ' + esc(e.message) + '</div>'; return; }
@@ -3419,12 +3408,10 @@
     try{
       var cast = f.slice(0, 100);
       var telo = cast.map(function(r){ return { kod: r.kod, sku: r.sku, obj: r.obj, kus: r.kus, udaj: r.udaj, typ: r.typ, povodny: r.povodny, skenoval: r.skenoval, vytvorene: r.vytvorene }; });
-      var res = await sbFetch('koberce_sken?on_conflict=kod', { method: 'POST', headers: { Prefer: 'resolution=ignore-duplicates,return=representation' }, body: JSON.stringify(telo) });
+      var res = await sbFetch('koberce_sken', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(telo) });
       var ulozene = res || [];
       var poslane = {}; cast.forEach(function(r){ poslane[r.uid] = 1; });
       ulozFrontu(fronta().filter(function(r){ return !poslane[r.uid]; }));
-      var duplicitne = cast.length - ulozene.length;
-      if(duplicitne > 0) ukazPosledny(false, duplicitne + ' ks už niekto naskenoval na inom telefóne – vynechané');
       riadky = ulozene.slice().reverse().concat(riadky);
       vykresli();
       posielam = false;
@@ -3439,16 +3426,10 @@
   /* ---------- skenovanie ---------- */
   function spracuj(raw, zKamery){
     var txt = String(raw || '').trim(), t = Date.now();
-    if(txt === posledny.kod && t - posledny.cas < 3000) return false;
+    if(zKamery && txt === posledny.kod && t - posledny.cas < 2500) return false;   /* ten istý štítok ešte v zábere kamery */
     posledny = { kod: txt, cas: t };
     var z = rozpoznaj(txt);
     if(!z){ beep('error'); ukazPosledny(false, 'Neznámy kód: ' + esc(txt.slice(0, 40))); return false; }
-    if(z.kod && znameKody[z.kod]){
-      beep('error'); ukazPosledny(false, 'UŽ NASKENOVANÉ<div class="text-sm font-bold opacity-90">' + esc(z.sku) + (z.kus ? ' • kus ' + esc(z.kus) : '') + '</div>');
-      if(zKamery) setTimeout(function(){ var o = $('scanOverlay'); if(o) o.innerHTML = '<span class="material-icons text-6xl text-red-400 mb-2">block</span><span class="font-bold text-2xl text-red-400">UŽ NASKENOVANÉ</span>'; }, 0);
-      return false;
-    }
-    if(z.kod) znameKody[z.kod] = 1;
     z.povodny = txt; z.skenoval = (typeof currentUser !== 'undefined' ? currentUser : '') || null;
     z.vytvorene = new Date().toISOString(); z.uid = t + '-' + Math.random().toString(36).slice(2, 7);
     var f = fronta(); f.push(z); ulozFrontu(f);
@@ -3469,7 +3450,6 @@
   window.kobOtvor = async function(){
     switchView('koberce'); $('kobPosledny').classList.add('hidden');
     vykresli();
-    try{ await nacitajKody(); }catch(e){}
     nacitaj(); odosli(); window.kobKamera();
   };
   window.kobZavri = function(){ stopCamera(); resetScanScreen(); switchView('scan'); };
@@ -3484,7 +3464,7 @@
     if(!(await showCustomConfirm('Zmazať kus?', esc(r.sku) + (r.kus ? ' • kus ' + esc(r.kus) : ''), 'Zmazať'))) return;
     try{
       await sbFetch('koberce_sken?id=eq.' + id, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
-      riadky = riadky.filter(function(x){ return x.id !== id; }); if(r.kod) delete znameKody[r.kod]; vykresli();
+      riadky = riadky.filter(function(x){ return x.id !== id; }); vykresli();
     }catch(e){ beep('error'); showCustomAlert('Nepodarilo sa zmazať', esc(e.message)); }
   };
 
@@ -3495,7 +3475,7 @@
     try{
       setLoading(true, 'Mažem...');
       await sbFetch('koberce_sken?' + podmienka(filter), { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
-      setLoading(false); await nacitajKody(); await nacitaj(); beep('success');
+      setLoading(false); await nacitaj(); beep('success');
     }catch(e){ setLoading(false); beep('error'); showCustomAlert('Nepodarilo sa vymazať', esc(e.message)); }
   };
 
