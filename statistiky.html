@@ -283,6 +283,7 @@ h2:first-child{margin-top:2px}
 .tr-riadok b{font-weight:700}
 .tr-riadok .jc{color:var(--sedy)}
 .tr-riadok .tr-mz{margin-left:2px}
+.tr-ceka{margin-left:2px;background:#ECEAE6;color:var(--sedy);border-radius:3px;padding:0 4px;font-size:9.5px;font-weight:600;white-space:nowrap}
 .graf7 .rok-ciara{position:absolute;left:-1px;right:-1px;border-top:2px solid var(--atrament-svetly);opacity:.7;pointer-events:none}
 .graf7.utlm .st:not(.zvyr) .rok-ciara{opacity:.3}
 .okno-suhrn.tr-o{grid-template-columns:repeat(4,1fr);margin-top:6px;background:#EAF3EE;border-left:3px solid var(--mach)}
@@ -1436,7 +1437,7 @@ async function trNacitajProd(k, skus){
       if(d && !d.chyba){
         if(d.top) z.top = d.top;
         chyba.forEach(x => { z.sku[x] = (d.sku && d.sku[x]) || null; });
-        (d.top || []).forEach(x => { if(!(x.sku in z.sku)) z.sku[x.sku] = {trzba: x.trzba, cena: x.cena, akcia: x.akcia_pct, m: x.je_meter, marza: x.marza_pct}; });
+        (d.top || []).forEach(x => { if(!(x.sku in z.sku)) z.sku[x.sku] = {trzba: x.trzba, cena: x.cena, akcia: x.akcia_pct, m: x.je_meter, marza: x.marza_pct, ceka: x.ceka}; });
       } else if(!z.top) z.top = [];
     }catch(_e){ if(!z.top) z.top = []; }
     delete trProdBezi[bk];
@@ -1448,6 +1449,7 @@ function trMetaHtml(t, jeMeter, bezTrzby){
   if(!t) return '';
   return `<div class="tr-riadok">${bezTrzby ? '' : `<b>${cis(t.trzba, t.trzba < 100 ? 2 : 0)} €</b> · `}<span class="jc">${cis(t.cena, 2)} €/${jeMeter ? 'm' : 'ks'}</span>`
     + (t.marza !== null && t.marza !== undefined ? `<span class="tr-mz${+t.marza < 30 ? ' nizka' : ''}">marža ${cis(t.marza, 0)} %</span>` : '')
+    + (+t.ceka > 0 ? `<span class="tr-ceka">${+t.ceka >= +t.trzba - 0.01 ? 'čaká na platbu' : `z toho ${cis(t.ceka, t.ceka < 100 ? 2 : 0)} € čaká na platbu`}</span>` : '')
     + `</div>`;
 }
 /* doplní tržbu do riadkov produktov (data-sku) – načíta len tie, ktoré ešte nemáme */
@@ -1518,7 +1520,7 @@ function vykresliProdukty(){
     <div class="spolu-box" data-box="${esc(p.sku)}">${spoluBoxHtml(p.sku)}</div>
     ${objBoxHtml(p.sku, obdobie.od, obdobie.do, naObj ? 'predaj' : 'bezne')}
     </div>`).join('') + viacTlacidlo(vsetkoPol, pole.length)
-    + (trTyp ? `<div class="tr-pozn-p">Tržby pri produktoch sú bez DPH v € a len z predaných objednávok${obdobie.od < '2026-01-01' ? ' – po produktoch ich máme od 1. 1. 2026' : ''}. Marža = (tržba − nákupná cena z Magenta) / tržba; červenou pod 30 %.</div>` : '');
+    + (trTyp ? `<div class="tr-pozn-p">Tržby pri produktoch sú bez DPH v €, z predaných aj nezaplatených objednávok (sivý štítok „čaká na platbu“)${obdobie.od < '2026-01-01' ? ' – po produktoch ich máme od 1. 1. 2026' : ''}. Marža = (tržba − nákupná cena z Magenta) / tržba; červenou pod 30 %.</div>` : '');
   if(trTyp) trDoplnPolozky('#topProdukty .produkt[data-sku]', trK, podlaTrzby);
 }
 
