@@ -440,7 +440,17 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
   background:#fff;border:1px solid var(--tehla);border-left-width:3px;
   border-radius:var(--r);padding:13px;color:var(--tehla);font-size:13.5px;margin-top:12px;
 }
-.kostra{background:var(--platno-tmavsi);border-radius:var(--r);height:70px;animation:puls 1.4s ease-in-out infinite}
+.kostra{background:var(--platno-tmavsi);border-radius:var(--r);height:70px;animation:puls 1.4s ease-in-out infinite;position:relative}
+.kostra::after{content:'';position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:3px solid rgba(20,33,61,.15);border-top-color:var(--safran);animation:tocka .8s linear infinite}
+@keyframes tocka{to{transform:rotate(360deg)}}
+.tocka{display:inline-block;width:.85em;height:.85em;border-radius:50%;border:2.5px solid rgba(255,255,255,.25);border-top-color:var(--safran);animation:tocka .8s linear infinite;vertical-align:middle}
+.nac-ukaz{display:none;align-items:center;gap:5px;font-size:10px;color:var(--safran);font-family:'IBM Plex Mono',monospace;white-space:nowrap;margin-left:auto}
+.nac-ukaz.bezi{display:inline-flex}
+.nac-ukaz.bezi + .stav-syn{display:none}
+.nac-pas{position:fixed;top:0;left:0;right:0;height:3px;z-index:10000;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .2s}
+.nac-pas.bezi{opacity:1}
+.nac-pas::before{content:'';position:absolute;top:0;bottom:0;width:35%;background:var(--safran);animation:pas 1.1s ease-in-out infinite}
+@keyframes pas{0%{left:-35%}100%{left:100%}}
 @keyframes puls{0%,100%{opacity:1}50%{opacity:.5}}
 .prazdne{color:var(--sedy);font-size:13px;padding:18px 0;text-align:center}
 :focus-visible{outline:2px solid var(--safran);outline-offset:2px}
@@ -901,9 +911,11 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 </head>
 <body>
 
+<div class="nac-pas" id="nacPas"></div>
 <header>
   <div class="znacka">
     <h1>Gotana · Štatistiky</h1>
+    <span class="nac-ukaz" id="nacUkaz"><span class="tocka"></span><span id="nacText">načítavam</span></span>
     <span class="stav-syn" id="stavSyn"></span>
     <button class="obnov" id="obnov" type="button" title="Stiahnuť najnovšie objednávky"><span class="ik">↻</span><span class="tx">Obnoviť</span></button>
   </div>
@@ -1164,7 +1176,7 @@ async function nacitaj(tiche){
   $('#chyba').innerHTML = '';
   const dl = ['#velkosti','#krajiny','#topProdukty','#pracoviska','#extremy'];
   if(!tiche){
-    $('#hlavnaHodnota').textContent = '···';
+    $('#hlavnaHodnota').innerHTML = '<span class="tocka" style="width:22px;height:22px"></span>';
     dl.forEach(s => { const e = $(s); if (e) e.innerHTML = '<div class="kostra"></div>'; });
     $('#alarm').innerHTML = '';
     $('#minulyRok').innerHTML = '<div class="kostra"></div>';
@@ -1175,27 +1187,22 @@ async function nacitaj(tiche){
   $('#rozsah').textContent = obdobie.od === obdobie.do ? a : a + ' — ' + b;
   if($('#s-hometextil').classList.contains('aktivna')) nacitajHT();
 
+  /* všetko ostatné sa začne sťahovať hneď, nečaká na Prehľad (výsledky sa potom vezmú z rozbehnutých dopytov) */
+  prednacitaj();
   try{
-    const r = await fetch(`${URL_SUP}/rest/v1/rpc/dash_prehlad`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json', apikey:KLUC, Authorization:'Bearer '+KLUC},
-      body: JSON.stringify({p_od:obdobie.od, p_do:obdobie.do})
-    });
-    if(!r.ok){
-      let d = null; try { d = await r.json(); } catch(_e){}
-      if(d && d.code === '57014') throw new Error('CAS');
-      throw new Error('Databáza odpovedala chybou ' + r.status);
-    }
-    data = await r.json();
+    const od0 = obdobie.od, do0 = obdobie.do;
+    let d;
+    try{ d = await rpc('dash_prehlad', {p_od: od0, p_do: do0}); }
+    catch(e){ if(e.kod === '57014') throw new Error('CAS'); throw new Error('Databáza odpovedala chybou (' + e.message + ')'); }
+    if(obdobie.od !== od0 || obdobie.do !== do0) return;   /* medzitým sa zmenilo obdobie */
+    data = d;
     vykresli();
     nacitajTrzby();
     nacitajTop3();
     nacitaj7();
     nacitajMinulyRok();
     nacitajPredikciu();
-    nacitajTlacObdobie();
-    nacitajStrihy();
-    nacitajMat();
+    nacitajPodlaZobrazenia();
   }catch(e){
     $('#hlavnaHodnota').textContent = '—';
     dl.forEach(s => { const el = $(s); if (el) el.innerHTML = ''; });
@@ -1206,6 +1213,24 @@ async function nacitaj(tiche){
   }
 }
 
+function prednacitaj(){
+  const od = obdobie.od, dd = obdobie.do, ticho = () => {};
+  if(jeSpravca()) rpc('dash_trzby', {p_kod: localStorage.getItem('trh_kod') || '', p_od: od, p_do: dd}).catch(ticho);
+  rpc('dash_top3', {p_od: od, p_do: dd, p_podla: 'poloziek'}).catch(ticho);
+  rpc('dash_top3', {p_od: od, p_do: dd, p_podla: 'metre'}).catch(ticho);
+  rpc('dash_dni', {p_do: dd, p_dni: POCET_DNI}).catch(ticho);
+  rpc('dash_minuly_rok', {p_od: od, p_do: dd}).catch(ticho);
+}
+/* Vzory, PDF strihy a Na objednávku sa sťahujú až keď sú na obrazovke */
+let tlacK = '', strihyK = '', matK = '';
+function nacitajPodlaZobrazenia(){
+  if(!data) return;
+  const k = obdobie.od + '|' + obdobie.do;
+  const sklad = $('#s-sklad').classList.contains('aktivna'), prod = $('#s-produkty').classList.contains('aktivna');
+  if((sklad || (prod && zobrazUdaj === 'objednavka')) && tlacK !== k) nacitajTlacObdobie();
+  if(prod && zobrazUdaj === 'strihy' && strihyK !== k) nacitajStrihy();
+  if(prod && zobrazUdaj === 'mat' && matK !== k + '|' + matSku + '|' + matZdroj) nacitajMat();
+}
 function riadky(pole, cielSel, kluc, hodnota, popis){
   const ciel = $(cielSel);
   if(!ciel) return;
@@ -1633,11 +1658,7 @@ function vykresliRekordy(){
 
 async function nacitajTop3(){
   try{
-    const vol = (podla) => fetch(`${URL_SUP}/rest/v1/rpc/dash_top3`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json', apikey:KLUC, Authorization:'Bearer '+KLUC},
-      body: JSON.stringify({p_od:obdobie.od, p_do:obdobie.do, p_podla:podla})
-    }).then(r => r.ok ? r.json() : []);
+    const vol = (podla) => rpc('dash_top3', {p_od: obdobie.od, p_do: obdobie.do, p_podla: podla}).catch(() => []);
     const [a,b] = await Promise.all([vol('poloziek'), vol('metre')]);
     top3 = { poloziek: a || [], metre: b || [] };
   }catch(_e){ top3 = { poloziek: [], metre: [] }; }
@@ -1741,13 +1762,7 @@ const HISTORIA_DNI = 84;   /* koľko dní sa dá prelistovať šípkami (12 tý�
 const okno = {};           /* posun grafu v týždňoch: '__spolu' alebo kód krajiny → 0 = najnovšie */
 
 async function stiahniDni(pre, n){
-  const r = await fetch(`${URL_SUP}/rest/v1/rpc/dash_dni`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json', apikey:KLUC, Authorization:'Bearer '+KLUC},
-    body: JSON.stringify({p_do: pre, p_dni: n})
-  });
-  if(!r.ok) throw new Error(r.status);
-  return r.json();
+  return rpc('dash_dni', {p_do: pre, p_dni: n});
 }
 function prekresli7(){
   if(data){ if(obdobie.od === obdobie.do) vykresli7Prehlad(); vykresliKrajiny(); }
@@ -2407,6 +2422,7 @@ document.addEventListener('visibilitychange', () => {
 let strihyObd = null;
 async function nacitajStrihy(){
   const od = obdobie.od, dd = obdobie.do;
+  strihyK = od + '|' + dd;
   strihyObd = null;
   if(zobrazUdaj === 'strihy' && data) vykresliProdukty();
   let t = null;
@@ -2420,6 +2436,7 @@ async function nacitajStrihy(){
 let matObd = null, matSku = '', matZdroj = 'vsetko', matOtvorene = new Set();
 async function nacitajMat(){
   const od = obdobie.od, dd = obdobie.do;
+  matK = od + '|' + dd + '|' + matSku + '|' + matZdroj;
   matObd = null;
   if(zobrazUdaj === 'mat' && data) vykresliProdukty();
   let t = null;
@@ -2494,6 +2511,7 @@ document.addEventListener('click', e => {
 let tlacObd = null;
 async function nacitajTlacObdobie(){
   const od = obdobie.od, dd = obdobie.do;
+  tlacK = od + '|' + dd;
   tlacObd = null;
   if(zobrazUdaj === 'objednavka' && data) vykresliProdukty();
   let t = null;
@@ -2565,14 +2583,51 @@ function hlaska(t, ms=3500){
   const h = $('#hlaska'); h.textContent = t; h.classList.add('zobraz');
   clearTimeout(hlaska._t); hlaska._t = setTimeout(() => h.classList.remove('zobraz'), ms);
 }
-async function rpc(meno, telo){
-  const r = await fetch(`${URL_SUP}/rest/v1/rpc/${meno}`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json', apikey:KLUC, Authorization:'Bearer '+KLUC},
-    body: JSON.stringify(telo || {})
-  });
-  if(!r.ok) throw new Error('chyba ' + r.status);
-  return r.json();
+/* Všetky dopyty do databázy idú cez rpc():
+   - rovnaký dopyt, ktorý práve beží, sa nepošle druhýkrát (počká sa na ten istý),
+   - hotový výsledok si appka pamätá 3 minúty (prepínanie období je okamžité),
+   - počíta, koľko dopytov beží, a ukazuje koliesko hore. */
+const rpcPamat = new Map();
+const RPC_ZIVE = new Set(['dash_obnov_zacni','dash_obnov_dokonci','dash_sync_info','dash_zasoby','trh_over_kod']);
+const RPC_PAMAT_MS = 3 * 60 * 1000;
+let rpcBezi = 0;
+function rpcStav(z){
+  rpcBezi = Math.max(0, rpcBezi + z);
+  const u = document.getElementById('nacUkaz'), p = document.getElementById('nacPas');
+  if(u) u.classList.toggle('bezi', rpcBezi > 0);
+  if(p) p.classList.toggle('bezi', rpcBezi > 0);
+  const t = document.getElementById('nacText'); if(t) t.textContent = rpcBezi > 1 ? `načítavam (${rpcBezi})` : 'načítavam';
+}
+function rpcVymaz(){ rpcPamat.clear(); }
+async function rpc(meno, telo, opt){
+  const k = meno + '|' + JSON.stringify(telo || {});
+  const pam = !RPC_ZIVE.has(meno) && !(opt && opt.cerstve);
+  if(pam){
+    const c = rpcPamat.get(k);
+    if(c && c.p) return c.p.then(d => d === null || typeof d !== 'object' ? d : structuredClone(d));
+    if(c && Date.now() - c.t < RPC_PAMAT_MS) return c.d === null || typeof c.d !== 'object' ? c.d : structuredClone(c.d);
+  }
+  const p = (async () => {
+    rpcStav(1);
+    try{
+      const r = await fetch(`${URL_SUP}/rest/v1/rpc/${meno}`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json', apikey:KLUC, Authorization:'Bearer '+KLUC},
+        body: JSON.stringify(telo || {})
+      });
+      if(!r.ok){
+        let d = null; try{ d = await r.json(); }catch(_e){}
+        const e = new Error('chyba ' + r.status); e.kod = d && d.code; throw e;
+      }
+      return await r.json();
+    } finally { rpcStav(-1); }
+  })();
+  if(pam) rpcPamat.set(k, {p});
+  try{
+    const d = await p;
+    if(pam) rpcPamat.set(k, {d, t: Date.now()});
+    return d === null || typeof d !== 'object' ? d : structuredClone(d);
+  }catch(e){ if(pam) rpcPamat.delete(k); throw e; }
 }
 function oknoObnovy(stav, nadpis, text){
   const o = $('#obnova');
@@ -2605,6 +2660,7 @@ async function obnov(){
     b.querySelector('.tx').textContent = 'Počítam…';
     oknoObnovy('bezi', 'Prepočítavam čísla…', 'Už len chvíľku.');
     await rpc('dash_obnov_dokonci');
+    rpcVymaz();
     oknoObnovy('ok', 'Hotovo', stiahnute ? 'Objednávky sú aktuálne.' : 'Dáta boli stiahnuté pred chvíľou, zobrazujem najnovší stav.');
     zavriObnovu(1800);
   }catch(e){
@@ -2699,6 +2755,7 @@ $('#nav').addEventListener('click', e => {
   document.querySelectorAll('.sekcia').forEach(x => x.classList.remove('aktivna'));
   $('#s-' + b.dataset.s).classList.add('aktivna');
   if(b.dataset.s === 'hometextil') nacitajHT();
+  nacitajPodlaZobrazenia();
   window.scrollTo({top:0, behavior:'instant'});
 });
 
@@ -2714,7 +2771,7 @@ document.querySelectorAll('.prepinac').forEach(pr => {
   pr.addEventListener('click', e => {
     const b = e.target.closest('button'); if(!b) return;
     [...b.parentElement.children].forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-    if(b.dataset.p){ zobrazUdaj = b.dataset.p; zobrazPocet = 30; if(data) vykresliProdukty(); }
+    if(b.dataset.p){ zobrazUdaj = b.dataset.p; zobrazPocet = 30; nacitajPodlaZobrazenia(); if(data) vykresliProdukty(); }
   });
 });
 
