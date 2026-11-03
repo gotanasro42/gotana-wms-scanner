@@ -821,6 +821,10 @@
       function extractRealId(rawText) {
           if(!rawText) return "";
           let text = rawText.toUpperCase().trim();
+          // Štítok z výroby: "9628-100004_HT-01605_1_0" alebo "149-109450__NS-21709__100564"
+          // (číslo objednávky _ SKU _ ...) -> vrátime len SKU
+          const vyrobaM = text.match(/^\d{2,6}-\d{3,}_{1,2}([A-Z]{2,4}-\d+(?:-\d+)?)(?:_|$)/);
+          if (vyrobaM) return vyrobaM[1];
           if (text.includes('\n')) {
               const lines = text.split('\n').map(l => l.trim());
               const skuLine = lines.find(l => /^[A-Z]+-[0-9]+/.test(l));
