@@ -295,6 +295,8 @@ h2:first-child{margin-top:2px}
 .tr-kr-d .p small{font-weight:500;color:var(--sedy);font-size:11px;margin-right:2px}
 .tr-kr-d .odch{margin-left:0;font-size:10px;padding:0 6px}
 .tr-kr-d .sep{color:var(--linka);font-weight:700}
+.tr-kr-d .pr-riadok{flex-basis:100%;display:flex;align-items:center;gap:6px;margin-top:1px}
+.tr-kr-d .pr-riadok .p{font-size:12.5px}
 .tr-kr-d .pod{color:var(--sedy);font-family:'IBM Plex Mono',monospace;font-size:11px}
 .tr-sub{margin-top:10px;padding-top:8px;border-top:2px solid var(--safran)}
 .tr-sub-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
@@ -2070,7 +2072,7 @@ function vykresliKrajiny(){
       <div class="hod cislo">${tr ? `<span class="obj-zn">${tr.html}</span>` : ''}${cis(h)}</div>
       <div class="detail">${esc(`${cis(x.metre,1)} m · ${cis(x.kusy)} ks`)}${trKrMapa[x.krajina] ? ` · <b style="color:var(--atrament)">${cis(trKrMapa[x.krajina].podiel, 1)} %</b> tržieb` : ''}</div>${(function(){
         const t = trKrMapa[x.krajina]; if(!t) return '';
-        return `<div class="detail tr-kr-d"><span class="t">${cis(t.trzba)} €</span>${trZnacka(t.trzba, t.trzbaPor, trPorTxt('Tržba ' + (KRAJINY[x.krajina] || x.krajina), t.trzba, t.trzbaPor, '€'))}<span class="sep">|</span><span class="p"><small>Ø obj.</small>${cis(t.priemer, 2)} €</span>${trZnacka(t.priemer, t.priemerPor, trPorTxt('Priemerná objednávka', t.priemer, t.priemerPor, '€'))}</div>`;
+        return `<div class="detail tr-kr-d"><span class="t">${cis(t.trzba)} €</span>${trZnacka(t.trzba, t.trzbaPor, trPorTxt('Tržba ' + (KRAJINY[x.krajina] || x.krajina), t.trzba, t.trzbaPor, '€'))}<span class="pr-riadok"><span class="p"><small>Ø obj.</small>${cis(t.priemer, 2)} €</span>${trZnacka(t.priemer, t.priemerPor, trPorTxt('Priemerná objednávka', t.priemer, t.priemerPor, '€'))}</span></div>`;
       })()}
     </div>${rozbal}</div>`;
   }).join('');
