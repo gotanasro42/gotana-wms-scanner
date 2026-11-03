@@ -335,6 +335,41 @@ h2:first-child{margin-top:2px}
 .tr-mz{margin-left:4px;background:#E3F0E8;color:var(--mach);border-radius:3px;padding:0 4px;font-size:9.5px;font-weight:600;white-space:nowrap}
 .tr-mz.nizka{background:#F6E0E0;color:var(--tehla)}
 
+/* ---------- Chatbot „Opýtaj sa“ (len správca) ---------- */
+.ch-tl{position:fixed;right:14px;bottom:calc(128px + env(safe-area-inset-bottom));z-index:65;width:54px;height:54px;border-radius:50%;border:0;background:var(--atrament);color:var(--safran);box-shadow:0 6px 18px rgba(20,33,61,.35);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.ch-tl svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ch-tl[hidden]{display:none}
+.ch-panel{position:fixed;inset:0;z-index:150;background:rgba(20,33,61,.45);display:none;align-items:flex-end;justify-content:center}
+.ch-panel.zobraz{display:flex}
+.ch-okno{background:var(--platno);width:100%;max-width:680px;height:min(88vh,760px);border-radius:16px 16px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -8px 30px rgba(0,0,0,.25)}
+.ch-hl{background:var(--atrament);color:var(--platno);padding:12px 14px;display:flex;align-items:center;gap:10px}
+.ch-hl b{font-size:14px;letter-spacing:.06em;text-transform:uppercase}
+.ch-hl small{display:block;font-size:10.5px;color:#9FB0CE;font-weight:400;letter-spacing:0;text-transform:none}
+.ch-hl button{margin-left:auto;background:rgba(250,247,242,.12);border:0;color:var(--platno);width:34px;height:34px;border-radius:8px;font-size:18px;cursor:pointer}
+.ch-spravy{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:10px}
+.ch-msg{max-width:92%;padding:9px 12px;border-radius:12px;font-size:13.5px;line-height:1.5;white-space:normal;word-wrap:break-word}
+.ch-msg.ja{align-self:flex-end;background:var(--atrament);color:var(--platno);border-bottom-right-radius:4px}
+.ch-msg.bot{align-self:flex-start;background:#fff;border:1px solid var(--linka);border-bottom-left-radius:4px}
+.ch-msg.bot b{font-family:'IBM Plex Mono',monospace;font-weight:700}
+.ch-msg.bot ul{margin:4px 0;padding-left:18px}
+.ch-msg.chyba{border-color:var(--tehla);color:var(--tehla)}
+.ch-msg .ch-obj{color:var(--atrament);font-family:'IBM Plex Mono',monospace;font-weight:700;text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer}
+.ch-msg .ch-meta{font-size:10px;color:var(--sedy);margin-top:6px}
+.ch-tab{margin-top:8px;overflow-x:auto;border:1px solid var(--linka);border-radius:8px}
+.ch-tab table{border-collapse:collapse;font-size:11.5px;width:100%}
+.ch-tab th{background:var(--platno-tmavsi);text-align:left;padding:5px 7px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--sedy);white-space:nowrap}
+.ch-tab td{padding:5px 7px;border-top:1px solid var(--linka);font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+.ch-tab td.num{text-align:right}
+.ch-cakaj{align-self:flex-start;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--sedy);padding:6px 4px}
+.ch-cakaj .tocka{border-color:rgba(20,33,61,.15);border-top-color:var(--safran);width:16px;height:16px}
+.ch-priklady{display:flex;flex-wrap:wrap;gap:6px}
+.ch-priklady button{border:1px solid var(--linka);background:#fff;border-radius:14px;padding:6px 11px;font-size:12px;cursor:pointer;text-align:left;color:var(--atrament);font-family:inherit}
+.ch-uvod{font-size:12.5px;color:var(--sedy);line-height:1.5}
+.ch-vstup{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--linka);background:#fff}
+.ch-vstup textarea{flex:1;resize:none;border:1px solid var(--linka);border-radius:10px;padding:9px 11px;font:inherit;font-size:14px;max-height:120px;min-height:42px;color:var(--atrament)}
+.ch-vstup button{border:0;background:var(--safran);color:var(--atrament);font-weight:700;border-radius:10px;padding:0 16px;cursor:pointer;font-family:inherit;font-size:14px}
+.ch-vstup button:disabled{opacity:.5;cursor:default}
+
 /* ---------- Kupované spolu ---------- */
 .spolu-hlad{display:flex;gap:6px;margin:2px 0 8px}
 .spolu-hlad input{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--linka);border-radius:7px;font-size:14px;font-family:'IBM Plex Mono',monospace;background:#fff;color:var(--atrament);min-height:40px}
@@ -1100,6 +1135,18 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
   <div class="obnova-nadpis" id="obnovaNadpis"></div>
   <div class="obnova-text" id="obnovaText"></div>
 </div></div>
+
+<button type="button" class="ch-tl" id="chTl" hidden aria-label="Opýtaj sa – chatbot"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"/><path d="M8.5 10.5h7M8.5 13.5h4.5"/></svg></button>
+<div class="ch-panel" id="chPanel" role="dialog" aria-modal="true" aria-label="Opýtaj sa">
+  <div class="ch-okno">
+    <div class="ch-hl"><div><b>Opýtaj sa</b><small>Odpovede z dát appky · len na čítanie · vidí len správca</small></div><button type="button" id="chZavri" aria-label="Zavrieť">×</button></div>
+    <div class="ch-spravy" id="chSpravy"></div>
+    <form class="ch-vstup" id="chForm" autocomplete="off">
+      <textarea id="chText" rows="1" placeholder="Napr. ktorá objednávka mala najvyššiu maržu za posledný týždeň?"></textarea>
+      <button type="submit" id="chPosli">Poslať</button>
+    </form>
+  </div>
+</div>
 
 <div class="zaclona" id="zaclona">
   <div class="okno" role="dialog" aria-modal="true" aria-labelledby="oknoCislo">
@@ -2406,6 +2453,93 @@ document.addEventListener('click', e => {
   }
   if(e.target.closest('#trKrajViac')){ trKrajVsetky = !trKrajVsetky; vykresliTrKrajiny(); }
 });
+
+/* ====== Chatbot „Opýtaj sa“ (len správca) ====== */
+(function(){
+  const PRIKLADY = [
+    'Ktorá objednávka mala najvyššiu maržu za posledný týždeň?',
+    'Aká bola tržba a marža podľa krajín za tento mesiac?',
+    'Ktoré produkty mali najnižšiu maržu za posledných 30 dní?',
+    'Porovnaj tržby tohto týždňa s minulým týždňom.',
+  ];
+  const hist = [];
+  let bezi = false;
+  const el = id => document.getElementById(id);
+  function ukazTlacidlo(){ el('chTl').hidden = !jeSpravca(); }
+  function md(t){
+    let h = esc(t);
+    h = h.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    h = h.replace(/(^|[\s(>])(\d{9,10})(?=[\s,.;:)<]|$)/g, '$1<span class="ch-obj" data-cislo="$2">$2</span>');
+    const riadky = h.split(/\n/);
+    let out = '', vZozname = false;
+    riadky.forEach(r => {
+      const m = r.match(/^\s*(?:[-•*]|\d+\.)\s+(.*)$/);
+      if(m){ if(!vZozname){ out += '<ul>'; vZozname = true; } out += '<li>' + m[1] + '</li>'; }
+      else { if(vZozname){ out += '</ul>'; vZozname = false; } out += r.trim() ? r + '<br>' : '<br>'; }
+    });
+    if(vZozname) out += '</ul>';
+    return out.replace(/(<br>)+$/, '');
+  }
+  function bunka(k, v){
+    if(v === null || v === undefined) return '<td>–</td>';
+    if(typeof v === 'number'){
+      const d = Number.isInteger(v) ? 0 : 2;
+      const eurK = /eur|trzba|marza|naklad|cena|tovar|doprava|zlava/i.test(k) && !/pct/i.test(k);
+      return `<td class="num">${cis(v, d)}${eurK ? ' €' : (/pct/i.test(k) ? ' %' : '')}</td>`;
+    }
+    const s = String(v);
+    if(/^cislo$/i.test(k) || /^\d{9,10}$/.test(s)) return `<td><span class="ch-obj" data-cislo="${esc(s)}">${esc(s)}</span></td>`;
+    if(/^\d{4}-\d{2}-\d{2}T/.test(s)) return `<td>${esc(s.slice(0,16).replace('T',' '))}</td>`;
+    return `<td>${esc(s)}</td>`;
+  }
+  function tabulka(rows){
+    if(!rows || !rows.length) return '';
+    const kl = Object.keys(rows[0]);
+    return `<div class="ch-tab"><table><thead><tr>${kl.map(k => `<th>${esc(k.replace(/_/g,' '))}</th>`).join('')}</tr></thead><tbody>${
+      rows.map(r => `<tr>${kl.map(k => bunka(k, r[k])).join('')}</tr>`).join('')}</tbody></table></div>`;
+  }
+  function pridaj(html, trieda){
+    const d = document.createElement('div'); d.className = trieda; d.innerHTML = html;
+    el('chSpravy').appendChild(d); el('chSpravy').scrollTop = el('chSpravy').scrollHeight; return d;
+  }
+  function uvod(){
+    if(el('chSpravy').children.length) return;
+    pridaj(`<div class="ch-uvod">Opýtaj sa na objednávky, tržby, marže, produkty alebo krajiny. Odpovedám len z dát appky (objednávky od 1. 1. 2025, položky a marže od 1. 1. 2026), sumy sú bez DPH v €. Na číslo objednávky môžeš ťuknúť.</div>`, 'ch-msg bot');
+    const p = pridaj(`<div class="ch-priklady">${PRIKLADY.map(x => `<button type="button">${esc(x)}</button>`).join('')}</div>`, 'ch-priklady-obal');
+    p.addEventListener('click', e => { const b = e.target.closest('button'); if(b){ el('chText').value = b.textContent; posli(); } });
+  }
+  async function posli(){
+    const t = el('chText').value.trim();
+    if(!t || bezi) return;
+    bezi = true; el('chPosli').disabled = true; el('chText').value = '';
+    const pr = el('chSpravy').querySelector('.ch-priklady-obal'); if(pr) pr.remove();
+    pridaj(esc(t), 'ch-msg ja');
+    const c = pridaj('<span class="tocka"></span> Premýšľam a počítam z dát…', 'ch-cakaj');
+    try{
+      const r = await fetch(`${URL_SUP}/functions/v1/chatbot`, {
+        method: 'POST', headers: {'Content-Type':'application/json', apikey: KLUC, Authorization: 'Bearer ' + KLUC},
+        body: JSON.stringify({kod: localStorage.getItem('trh_kod') || '', otazka: t, historia: hist.slice(-6)})
+      });
+      const d = await r.json().catch(() => ({}));
+      c.remove();
+      if(!r.ok || d.chyba){
+        pridaj(esc(d.chyba === 'nepovolene' ? 'Chatbot je len pre správcu.' : (d.chyba || ('Chyba ' + r.status))), 'ch-msg bot chyba');
+      } else {
+        pridaj(md(d.odpoved || '') + tabulka(d.tabulka) + `<div class="ch-meta">${d.dopyty ? `${d.dopyty}× dopyt do databázy · ` : ''}${cis((d.ms || 0) / 1000, 1)} s</div>`, 'ch-msg bot');
+        hist.push({rola:'user', text: t}, {rola:'assistant', text: d.odpoved || ''});
+      }
+    }catch(e){ c.remove(); pridaj('Spojenie zlyhalo, skús to znova.', 'ch-msg bot chyba'); }
+    bezi = false; el('chPosli').disabled = false; el('chText').focus();
+  }
+  el('chTl').addEventListener('click', () => { el('chPanel').classList.add('zobraz'); document.body.style.overflow = 'hidden'; uvod(); setTimeout(() => el('chText').focus(), 50); });
+  const zavri = () => { el('chPanel').classList.remove('zobraz'); document.body.style.overflow = ''; };
+  el('chZavri').addEventListener('click', zavri);
+  el('chPanel').addEventListener('click', e => { if(e.target.id === 'chPanel') zavri(); const o = e.target.closest('.ch-obj'); if(o) otvorObjednavku(o.dataset.cislo); });
+  el('chForm').addEventListener('submit', e => { e.preventDefault(); posli(); });
+  el('chText').addEventListener('keydown', e => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); posli(); } });
+  el('chText').addEventListener('input', e => { e.target.style.height = 'auto'; e.target.style.height = Math.min(120, e.target.scrollHeight) + 'px'; });
+  ukazTlacidlo();
+})();
 
 /* ---- Automatické načítanie každých 10 minút ---- */
 function tichaObnova(){
