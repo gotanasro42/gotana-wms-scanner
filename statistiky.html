@@ -302,6 +302,20 @@ h2:first-child{margin-top:2px}
 .graf7 .pr-bod{position:absolute;left:50%;width:7px;height:7px;margin:0 0 -3.5px -3.5px;border-radius:50%;background:var(--atrament);border:1.5px solid #fff;box-shadow:0 0 0 1px var(--atrament);pointer-events:none;z-index:2}
 .graf7.utlm .st:not(.zvyr) .pr-bod{opacity:.35}
 .tr-sub .porov b.e{font-family:'IBM Plex Mono',monospace}
+#krajiny .kr-karta{border:1px solid #CFC7B8;border-radius:10px;overflow:hidden;margin-bottom:9px;background:#fff;box-shadow:0 1px 2px rgba(20,33,61,.06)}
+#krajiny .kr-karta>.riadok{border-bottom:0}
+#krajiny .kr-karta>.rozbal{border-bottom:0;border-top:1px solid var(--linka)}
+#krajiny .kr-karta.otvor{border-color:var(--atrament-svetly);box-shadow:0 2px 8px rgba(20,33,61,.12)}
+.odch[data-vys]{cursor:help}
+.vysvetlivka{position:fixed;z-index:9999;max-width:290px;background:var(--atrament);color:var(--platno);font-size:12px;line-height:1.45;padding:9px 11px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.25);pointer-events:none}
+.vysvetlivka b{color:var(--safran);font-family:'IBM Plex Mono',monospace}
+.graf7 .pr-hod{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;text-align:center;line-height:1;padding:3px 0 2px;border-radius:3px;margin:2px 0 1px;white-space:nowrap;overflow:hidden}
+.graf7 .pr-hod.nad{color:#fff;background:#2F8F5B}
+.graf7 .pr-hod.pod{color:#fff;background:#E0892F}
+.graf7 .pr-hod.nic{color:var(--sedy)}
+.graf7.utlm .st:not(.zvyr) .pr-hod{opacity:.35}
+.pr-leg{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--sedy);margin:4px 0 2px}
+.pr-leg i{display:inline-block;width:12px;height:9px;border-radius:2px}
 .tr-pozn-p{font-size:10.5px;color:var(--sedy);margin:2px 0 6px}
 .ht-tr{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
 .ht-tr>div{background:#fff;border:1px solid var(--linka);border-radius:8px;padding:8px 10px;border-top:3px solid var(--safran)}
@@ -1773,7 +1787,7 @@ function graf7(dni, jeDnes, cas, jeKoniec = true, opt = null){
   const prG = !!(opt && opt.priem);
   const prVals = prG ? dni.filter(x => x.pocet).map(x => Number(x.priem) || 0) : [];
   const minPr = prVals.length ? Math.min(...prVals) : 0, maxPr = prVals.length ? Math.max(...prVals) : 1;
-  const prPos = v => maxPr > minPr ? 18 + (v - minPr) / (maxPr - minPr) * 52 : 44;
+  const prAvg = prVals.length ? prVals.reduce((a, b) => a + b, 0) / prVals.length : 0;
   const sTeraz = jeDnes && cas && dni.some(x => x.objTeraz != null);
   const vert = dni.length > 15; /* veľa stĺpcov: čísla zvislo, nech sú čitateľné aj v telefóne */
   return mesPas(dni) + `<div class="graf7${eurG ? ' eur' : ''}${dni.length > 10 ? ' husty' : ''}${vert ? ' velmihusty vert' : ''}"${sTeraz ? ` data-cas="${esc(cas)}"` : ''} style="grid-template-columns:repeat(${dni.length},1fr)">` + dni.map((x, idx) => {
@@ -1787,13 +1801,13 @@ function graf7(dni, jeDnes, cas, jeKoniec = true, opt = null){
     const vt = tz > 0 ? Math.max(1, tz / max * 100) : 0;
     return `<div class="${tr}${dni.length > 7 && tyz % 2 ? ' tyz-b' : ''}${dni.length > 7 && dow === 1 ? ' pon' : ''}" data-dow="${dow}" data-obj="${Number(x.obj)||0}"${prG ? ` data-pr="${(Number(x.priem)||0).toFixed(2)}"` : ''}${sTeraz ? ` data-tz="${posl ? Number(x.obj)||0 : tz}"` : ''} data-dnes="${posl && jeDnes ? 1 : 0}" style="--fd:${fd}" title="${new Date(x.den + 'T12:00').toLocaleDateString('sk-SK',{weekday:'long', day:'numeric', month:'numeric'})}: ${eurG ? `${cis(x.obj)} € · ${cis(x.pocet)} obj.${prG && x.pocet ? ` · Ø obj. ${cis(x.priem, 2)} €` : ''}${Number(x.rok) > 0 ? ` · pred rokom ${cis(x.rok)} €` : ''}` : `${cis(x.obj)} obj. · ${cis(x.metre,1)} m · ${cis(x.kusy)} ks`}${ukazTz ? ` · do ${esc(cas)}: ${cis(tz)} obj.` : ''}">
       <div class="plocha"><div class="vnutro">
-        <div class="stlp" style="height:${v.toFixed(1)}%"></div>${eurG && Number(x.rok) > 0 ? `<div class="rok-ciara" style="bottom:${(Number(x.rok) / max * 100).toFixed(1)}%"></div>` : ''}${prG && x.pocet ? `<div class="pr-bod" style="bottom:${prPos(Number(x.priem) || 0).toFixed(1)}%"></div>` : ''}${vert ? `${ukazTz ? `
+        <div class="stlp" style="height:${v.toFixed(1)}%"></div>${eurG && Number(x.rok) > 0 ? `<div class="rok-ciara" style="bottom:${(Number(x.rok) / max * 100).toFixed(1)}%"></div>` : ''}${vert ? `${ukazTz ? `
         <div class="tz-ciara" style="bottom:${vt.toFixed(1)}%"></div>${v - vt >= 14 ? `<div class="vh tz" style="bottom:${vt.toFixed(1)}%">${cis(tz)}</div>` : (vt >= 14 ? `<div class="vh tz dnu" style="bottom:${vt.toFixed(1)}%">${cis(tz)}</div>` : '')}` : ''}
         <div class="vh hodn" style="bottom:${v.toFixed(1)}%">${hT(Number(x.obj)||0)}</div>` : `${ukazTz ? `
         <div class="tz-ciara" style="bottom:${vt.toFixed(1)}%"></div>${v - vt > 14 ? `<div class="tz-hodn" style="bottom:${vt.toFixed(1)}%">${cis(tz)}</div>` : ''}` : ''}
         <div class="hodn" style="bottom:${v.toFixed(1)}%">${hT(Number(x.obj)||0)}</div>`}
       </div></div>
-      <div class="den">${popisDna(x.den, dni.length > 10)}</div>
+      ${prG ? `<div class="pr-hod ${!x.pocet ? 'nic' : (Number(x.priem) >= prAvg ? 'nad' : 'pod')}">${x.pocet ? cis(Number(x.priem) || 0, 0) : '–'}</div>` : ''}<div class="den">${popisDna(x.den, dni.length > 10)}</div>
     </div>`;
   }).join('') + '</div>';
 }
@@ -1927,8 +1941,10 @@ function trSubHtml(kr){
   const raw = (trKrDni.krajiny || {})[kr];
   if(!raw || !raw.length) return '';
   const dni = raw.map(x => ({den: x.den, obj: Math.round(+x.trzba || 0), pocet: +x.obj || 0, priem: +x.obj ? +x.trzba / +x.obj : 0, metre: 0, kusy: 0}));
-  return `<div class="tr-sub"><div class="tr-sub-h"><span>Tržba a priemerná objednávka</span><span class="tr-leg"><span><i></i>tržba €</span><span><i class="b"></i>Ø obj.</span></span></div>`
-    + grafOkno('tr:' + kr, dni, trKrDni.jeDnes, null, {eur: true, priem: true}) + trKrPorov(raw, trKrDni.jeDnes, trKrDni.cas) + '</div>';
+  return `<div class="tr-sub"><div class="tr-sub-h"><span>Tržba a priemerná objednávka</span><span class="tr-leg"><span><i></i>tržba €</span></span></div>`
+    + grafOkno('tr:' + kr, dni, trKrDni.jeDnes, null, {eur: true, priem: true})
+    + `<div class="pr-leg"><span>Čísla pod stĺpcami = Ø objednávka v €</span><i style="background:#2F8F5B"></i>nad <i style="background:#E0892F"></i>pod priemerom</div>`
+    + trKrPorov(raw, trKrDni.jeDnes, trKrDni.cas) + '</div>';
 }
 function trKrPorov(raw, jeDnes, cas){
   if(!raw || raw.length < 2) return '';
@@ -1948,7 +1964,7 @@ function trKrPorov(raw, jeDnes, cas){
   const doCas = jeDnes ? ` do ${esc(cas)}` : '';
   const kedy = jeDnes ? `Dnes do ${esc(cas)}` : new Date(posl.den + 'T12:00').toLocaleDateString('sk-SK', {weekday:'long', day:'numeric', month:'numeric'});
   return `<div class="porov">${kedy}: <b class="e">${cis(tTer)} €</b> · Ø obj. <b class="e">${cis(pTer, 2)} €</b>`
-    + riad(`${DNI_MN[dow]}${doCas} (posl. ${rd.length})`, rd) + riad(`${t4.length >= 28 ? '4 týždne' : t4.length + ' dní'}${doCas}`, t4) + '</div>';
+    + riad(`${DNI_MN[dow]}${doCas} (priemer posl. ${rd.length})`, rd) + '</div>';
 }
 function vykresliKrajiny(){
   trKrMapa = {};
@@ -1976,14 +1992,14 @@ function vykresliKrajiny(){
         : (dni ? grafOkno(x.krajina, dni, sedem.jeDnes, sedem.cas) + legendaTz(sedem.jeDnes, sedem.cas) + porovnanie(dni, sedem.jeDnes, sedem.cas)
                : `<div class="prazdne">Za posledných ${POCET_DNI} dní žiadne objednávky.</div>`)}${trSubHtml(x.krajina)}</div>`;
     }
-    return `<div class="riadok klik${otv ? ' otvor' : ''}${tr ? ' ' + tr.trieda : ''}" data-kr="${esc(x.krajina)}" role="button" tabindex="0" style="--w:${sirka}%">
+    return `<div class="kr-karta${otv ? ' otvor' : ''}"><div class="riadok klik${otv ? ' otvor' : ''}${tr ? ' ' + tr.trieda : ''}" data-kr="${esc(x.krajina)}" role="button" tabindex="0" style="--w:${sirka}%">
       <div class="nazov">${esc(vlajka(x.krajina) + '  ' + (KRAJINY[x.krajina] || x.krajina))}</div>
       <div class="hod cislo">${cis(h)}</div>
       <div class="detail">${esc(`${cis(x.metre,1)} m · ${cis(x.kusy)} ks`)}${trKrMapa[x.krajina] ? ` · <b style="color:var(--atrament)">${cis(trKrMapa[x.krajina].podiel, 1)} %</b> tržieb` : ''}${tr ? tr.html : ''}</div>${(function(){
         const t = trKrMapa[x.krajina]; if(!t) return '';
-        return `<div class="detail tr-kr-d"><span class="t">${cis(t.trzba)} €</span>${trZnacka(t.trzba, t.trzbaPor)}<span class="sep">|</span><span class="p"><small>Ø obj.</small>${cis(t.priemer, 2)} €</span>${trZnacka(t.priemer, t.priemerPor)}</div>`;
+        return `<div class="detail tr-kr-d"><span class="t">${cis(t.trzba)} €</span>${trZnacka(t.trzba, t.trzbaPor, trPorTxt('Tržba ' + (KRAJINY[x.krajina] || x.krajina), t.trzba, t.trzbaPor, '€'))}<span class="sep">|</span><span class="p"><small>Ø obj.</small>${cis(t.priemer, 2)} €</span>${trZnacka(t.priemer, t.priemerPor, trPorTxt('Priemerná objednávka', t.priemer, t.priemerPor, '€'))}</div>`;
       })()}
-    </div>${rozbal}`;
+    </div>${rozbal}</div>`;
   }).join('');
   obnovVyber();
 }
@@ -2022,12 +2038,13 @@ function znackaZmeny(z, minPriem){
 /* ---- Denné hlásenie podľa situácie ---- */
 function trendKrajiny(dni, jeDnes, teraz){
   const z = odchylka(dni, jeDnes);
+  const vys = z ? ` data-vys="${esc(`Objednávky ${jeDnes ? 'dnes do ' + (sedem && sedem.cas) : 'v tento deň'}: <b>${cis(z.teraz)}</b><br>oproti priemeru ${z.kedy === 'v predošlých dňoch' ? 'predošlých dní' : 'posledných 8 ' + DNI_GEN[new Date(dni[dni.length - 1].den + 'T12:00').getDay()]}${jeDnes ? ' do rovnakej hodiny' : ''}: <b>${cis(z.priem, z.priem < 10 ? 1 : 0)}</b>`)}"` : '';
   if(!z){
     return teraz > 0 ? {trieda:'tr-hore', html:'<span class="odch hore">nové</span>'} : null;
   }
-  if(z.pct >= 10) return {trieda:'tr-hore', html:`<span class="odch hore">↑ +${z.pct} %</span>`};
-  if(z.pct <= -10) return {trieda:'tr-dole', html:`<span class="odch dole">↓ ${z.pct} %</span>`};
-  return {trieda:'tr-rovno', html:`<span class="odch rovno">≈ ${z.pct >= 0 ? '+' : ''}${z.pct} %</span>`};
+  if(z.pct >= 10) return {trieda:'tr-hore', html:`<span class="odch hore"${vys}>↑ +${z.pct} %</span>`};
+  if(z.pct <= -10) return {trieda:'tr-dole', html:`<span class="odch dole"${vys}>↓ ${z.pct} %</span>`};
+  return {trieda:'tr-rovno', html:`<span class="odch rovno"${vys}>≈ ${z.pct >= 0 ? '+' : ''}${z.pct} %</span>`};
 }
 function vykresliAlarm(){
   const el = $('#alarm');
@@ -2189,12 +2206,46 @@ async function nacitajTrzby(){
   trzby = d;
   vykresliTrzby();
 }
-function trZnacka(a, b){
+function trZnacka(a, b, vys){
   a = Number(a)||0; b = Number(b)||0;
   if(!(b > 0)) return '';
   const p = Math.round((a - b) / b * 100);
-  return p >= 0 ? `<span class="odch hore">↑ +${p} %</span>` : `<span class="odch dole">↓ ${p} %</span>`;
+  const v = vys ? ` data-vys="${esc(vys)}"` : '';
+  return p >= 0 ? `<span class="odch hore"${v}>↑ +${p} %</span>` : `<span class="odch dole"${v}>↓ ${p} %</span>`;
 }
+const DNI_GEN = ['nedieľ','pondelkov','utorkov','stried','štvrtkov','piatkov','sobôt'];
+/* text vysvetlivky: s čím sa porovnáva */
+function trPorTxt(co, teraz, por, jed){
+  const d = trzby || {}, p = d.porovnanie || {};
+  const f = v => jed === '€' ? eur(v, v < 100 ? 2 : 0) : cis(v, v < 10 ? 1 : 0) + ' ' + jed;
+  if(d.jeDnes){
+    const dow = new Date(d.do + 'T12:00').getDay();
+    return `${co} dnes do ${p.cas}: <b>${f(teraz)}</b><br>oproti priemeru posledných 8 ${DNI_GEN[dow]} do rovnakej hodiny: <b>${f(por)}</b>`;
+  }
+  const r = p.rok && p.rok.obj ? p.rok : null, pr = p.predch;
+  const obd = trObd(d.od, d.do);
+  if(r) return `${co} za ${obd}: <b>${f(teraz)}</b><br>oproti rovnakému obdobiu pred rokom (${trObd(r.od, r.do)}): <b>${f(por)}</b>`;
+  if(pr) return `${co} za ${obd}: <b>${f(teraz)}</b><br>oproti rovnako dlhému obdobiu predtým (${trObd(pr.od, pr.do)}): <b>${f(por)}</b>`;
+  return '';
+}
+(function(){
+  let el = null, zdroj = null;
+  const skry = () => { if(el){ el.remove(); el = null; zdroj = null; } };
+  const ukaz = (t) => {
+    skry();
+    el = document.createElement('div'); el.className = 'vysvetlivka'; el.innerHTML = t.dataset.vys; document.body.appendChild(el);
+    const r = t.getBoundingClientRect(), w = el.offsetWidth, h = el.offsetHeight;
+    let x = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), window.innerWidth - w - 8);
+    let y = r.top - h - 8; if(y < 8) y = r.bottom + 8;
+    el.style.left = x + 'px'; el.style.top = y + 'px'; zdroj = t;
+  };
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-vys]');
+    if(t){ e.stopPropagation(); e.preventDefault(); if(zdroj === t) skry(); else ukaz(t); return; }
+    skry();
+  }, true);
+  window.addEventListener('scroll', skry, {passive: true});
+})();
 function trDatum(x, rok){ return new Date(x + 'T12:00').toLocaleDateString('sk-SK', rok ? {day:'numeric', month:'numeric', year:'numeric'} : {day:'numeric', month:'numeric'}); }
 function trObd(od, dd){ return od === dd ? trDatum(od, true) : `${trDatum(od)} – ${trDatum(dd, true)}`; }
 const DNI_KR = ['nedele','pondelky','utorky','stredy','štvrtky','piatky','soboty'];
@@ -2204,7 +2255,7 @@ function vykresliTrzby(){
   const hlavneZ = d.jeDnes ? p.tyzden : (p.rok && p.rok.obj ? p.rok : p.predch);
   $('#heroTrzba').hidden = false;
   $('#heroTrzbaH').textContent = cis(s.trzba);
-  $('#heroTrzbaZ').innerHTML = hlavneZ ? trZnacka(s.trzba, hlavneZ.trzba) : '';
+  $('#heroTrzbaZ').innerHTML = hlavneZ ? trZnacka(s.trzba, hlavneZ.trzba, trPorTxt('Tržba', s.trzba, hlavneZ.trzba, '€')) : '';
   /* porovnania */
   let por = '';
   const riadok = (nazov, x) => x ? `<span class="h">${nazov}</span><span class="c">${eur(x.trzba)}</span><span class="z">${trZnacka(s.trzba, x.trzba)}</span>` : '';
