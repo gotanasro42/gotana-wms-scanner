@@ -224,6 +224,57 @@ h2:first-child{margin-top:2px}
 .mat-suhrn b{font-family:'IBM Plex Mono',monospace;font-size:16px;color:var(--atrament);font-weight:600}
 
 
+/* ---------- Tržby (len správca) ---------- */
+[hidden]{display:none!important}
+.hlavne-trzba{display:flex;align-items:baseline;gap:7px;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(159,176,206,.35)}
+.hlavne-trzba .hodnota{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;letter-spacing:-.03em;line-height:1}
+.hlavne-trzba .jednotka{font-size:12px;color:var(--safran);font-weight:600}
+.hlavne-trzba .pop{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#9FB0CE;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:600}
+.hlavne-trzba .zm{margin-left:auto}
+.hlavne-trzba .zm .odch{margin-left:0}
+.tr-karta{background:#fff;border:1px solid var(--linka);border-top:3px solid var(--safran);border-radius:8px;padding:10px 10px 8px}
+.tr-hlava{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.tr-hlava .velke{font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;letter-spacing:-.04em;line-height:1}
+.tr-hlava .eur{font-size:15px;color:var(--sedy);font-weight:600}
+.tr-hlava .bez{font-size:10px;color:var(--sedy);letter-spacing:.08em;text-transform:uppercase;margin-left:auto}
+.tr-mriezka{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.tr-mriezka div{background:var(--platno);border-radius:6px;padding:6px 6px 5px}
+.tr-mriezka b{display:block;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;letter-spacing:-.02em;white-space:nowrap}
+.tr-mriezka span{font-size:9.5px;color:var(--sedy);text-transform:uppercase;letter-spacing:.06em}
+.tr-pozn{font-size:10.5px;color:var(--sedy);margin-top:6px}
+.tr-porov{margin-top:8px;display:grid;grid-template-columns:1fr auto auto;gap:4px 10px;align-items:center;font-size:12px;background:var(--platno-tmavsi);border-radius:7px;padding:7px 9px}
+.tr-porov .h{font-weight:600}
+.tr-porov .c{font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right;white-space:nowrap}
+.tr-porov .z{text-align:right;white-space:nowrap}
+.tr-porov .z .odch{margin-left:0}
+.tr-graf-obal{background:#fff;border:1px solid var(--linka);border-radius:8px;padding:8px 8px 6px;margin-top:8px}
+.tr-graf-hl{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:6px}
+.tr-krok{display:flex;gap:4px}
+.tr-krok button{border:1px solid var(--linka);background:#fff;border-radius:14px;padding:3px 10px;font-size:11.5px;cursor:pointer;font-family:inherit;color:var(--atrament)}
+.tr-krok button[aria-pressed="true"]{background:var(--atrament);border-color:var(--atrament);color:var(--platno);font-weight:600}
+.tr-leg{font-size:10px;color:var(--sedy);display:flex;gap:10px;align-items:center}
+.tr-leg i{display:inline-block;width:10px;height:8px;border-radius:2px;background:var(--safran);margin-right:3px;vertical-align:middle}
+.tr-leg i.r{background:none;border-top:2px solid var(--atrament-svetly);height:0;width:12px;border-radius:0}
+.tr-graf{display:flex;align-items:flex-end;height:130px;gap:2px;position:relative}
+.tr-st{flex:1;min-width:0;height:100%;position:relative;cursor:pointer;display:flex;align-items:flex-end}
+.tr-st .b{width:100%;background:var(--safran);border-radius:2px 2px 0 0;min-height:1px;opacity:.85}
+.tr-st.vik .b{opacity:.55}
+.tr-st.akt .b{background:var(--atrament);opacity:1}
+.tr-st .r{position:absolute;left:-1px;right:-1px;border-top:2px solid var(--atrament-svetly);opacity:.75}
+.tr-os{display:flex;justify-content:space-between;font-size:9.5px;color:var(--sedy);font-family:'IBM Plex Mono',monospace;padding-top:3px}
+.tr-info{font-size:12px;margin-top:6px;padding:6px 8px;background:var(--platno);border-radius:6px;min-height:20px}
+.tr-info b{font-family:'IBM Plex Mono',monospace}
+.tr-kraj{background:#fff;border:1px solid var(--linka);border-radius:8px;padding:2px 10px;margin-top:8px}
+.tr-kr{display:grid;grid-template-columns:1fr auto 64px;gap:2px 10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--linka);position:relative}
+.tr-kr:last-child{border-bottom:0}
+.tr-kr .n{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-kr .n small{display:block;font-size:10px;color:var(--sedy);font-weight:400}
+.tr-kr .t{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;text-align:right;white-space:nowrap}
+.tr-kr .p{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sedy);text-align:right}
+.tr-kr .pas{grid-column:1/-1;height:4px;background:var(--platno-tmavsi);border-radius:2px;overflow:hidden}
+.tr-kr .pas i{display:block;height:100%;background:var(--safran)}
+.tr-viac{display:block;width:100%;border:0;background:none;padding:8px 0;font-size:12.5px;font-weight:600;color:var(--atrament);cursor:pointer;font-family:inherit}
+
 /* ---------- Kupované spolu ---------- */
 .spolu-hlad{display:flex;gap:6px;margin:2px 0 8px}
 .spolu-hlad input{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--linka);border-radius:7px;font-size:14px;font-family:'IBM Plex Mono',monospace;background:#fff;color:var(--atrament);min-height:40px}
@@ -826,6 +877,9 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
     <span class="vedlajsie"><b class="cislo" id="hlavneKusy">—</b> ks</span>
   </div>
   <div class="hlavne-popis">Metrov látky a kusov tovaru predaných</div>
+  <div class="hlavne-trzba" id="heroTrzba" hidden>
+    <span class="hodnota" id="heroTrzbaH">—</span><span class="jednotka">€</span><span class="pop">tržba bez DPH</span><span class="zm" id="heroTrzbaZ"></span>
+  </div>
   <div class="meter"><svg id="stupnica" preserveAspectRatio="none"></svg></div>
 </div>
 
@@ -834,6 +888,10 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 
   <!-- PREHĽAD -->
   <section class="sekcia aktivna" id="s-prehlad">
+    <div id="trzbyBlok" hidden>
+      <h2>Tržby <span class="h2-pozn">· bez DPH, v €, vidí len správca</span></h2>
+      <div id="trzby"><div class="kostra"></div></div>
+    </div>
     <h2>Súhrn obdobia</h2>
     <div class="spolu">
       <div class="spolu-hlava"><span class="t">Všetky objednávky</span><b id="kVsetky">—</b></div>
@@ -1070,6 +1128,7 @@ async function nacitaj(tiche){
     }
     data = await r.json();
     vykresli();
+    nacitajTrzby();
     nacitajTop3();
     nacitaj7();
     nacitajMinulyRok();
@@ -1920,6 +1979,152 @@ function vykresliMinulyRok(){
     ${riadok('Kusy', s.kusy, m.kusy, 0, ' ks')}
   </div><div class="mr-pozn">${rokVtedy} = ${esc(obd)}${m.jeDnes ? ` do ${esc(m.cas)}` : ''} (rovnaký deň v týždni)</div></div>`;
 }
+
+/* ====== TRŽBY (len správca; databáza overí správcovský kód) ====== */
+let trzby = null, trKrok = null, trAkt = -1, trKrajVsetky = false;
+const jeSpravca = () => !!(window.GotanaUcet && window.GotanaUcet.spravca());
+const eur = (v, d = 0) => cis(v, d) + ' €';
+async function nacitajTrzby(){
+  if(!jeSpravca()){ $('#trzbyBlok').hidden = true; $('#heroTrzba').hidden = true; return; }
+  const od = obdobie.od, dd = obdobie.do;
+  $('#trzbyBlok').hidden = false;
+  if(!trzby || trzby.od !== od || trzby.do !== dd) $('#trzby').innerHTML = '<div class="kostra"></div>';
+  let d;
+  try{ d = await rpc('dash_trzby', {p_kod: localStorage.getItem('trh_kod') || '', p_od: od, p_do: dd}); }
+  catch(e){ if(obdobie.od === od && obdobie.do === dd) $('#trzby').innerHTML = `<div class="prazdne">Tržby sa nenačítali (${esc(e.message)}).</div>`; return; }
+  if(obdobie.od !== od || obdobie.do !== dd) return;
+  if(!d || d.chyba){ $('#trzbyBlok').hidden = true; $('#heroTrzba').hidden = true; return; }
+  if(!trzby || trzby.od !== od || trzby.do !== dd){ trKrok = null; trAkt = -1; trKrajVsetky = false; }
+  trzby = d;
+  vykresliTrzby();
+}
+function trZnacka(a, b){
+  a = Number(a)||0; b = Number(b)||0;
+  if(!(b > 0)) return '';
+  const p = Math.round((a - b) / b * 100);
+  return p >= 0 ? `<span class="odch hore">↑ +${p} %</span>` : `<span class="odch dole">↓ ${p} %</span>`;
+}
+function trDatum(x, rok){ return new Date(x + 'T12:00').toLocaleDateString('sk-SK', rok ? {day:'numeric', month:'numeric', year:'numeric'} : {day:'numeric', month:'numeric'}); }
+function trObd(od, dd){ return od === dd ? trDatum(od, true) : `${trDatum(od)} – ${trDatum(dd, true)}`; }
+const DNI_KR = ['nedele','pondelky','utorky','stredy','štvrtky','piatky','soboty'];
+function vykresliTrzby(){
+  const d = trzby, s = d.suhrn || {}, p = d.porovnanie || {};
+  /* hore v páse */
+  const hlavneZ = d.jeDnes ? p.tyzden : (p.rok && p.rok.obj ? p.rok : p.predch);
+  $('#heroTrzba').hidden = false;
+  $('#heroTrzbaH').textContent = cis(s.trzba);
+  $('#heroTrzbaZ').innerHTML = hlavneZ ? trZnacka(s.trzba, hlavneZ.trzba) : '';
+  /* porovnania */
+  let por = '';
+  const riadok = (nazov, x) => x ? `<span class="h">${nazov}</span><span class="c">${eur(x.trzba)}</span><span class="z">${trZnacka(s.trzba, x.trzba)}</span>` : '';
+  if(d.jeDnes){
+    const dow = new Date(d.do + 'T12:00').getDay();
+    por = `<span class="h">Dnes do ${esc(p.cas)}</span><span class="c">${eur(s.trzba)}</span><span class="z"></span>`
+      + riadok(`${DNI_KR[dow].charAt(0).toUpperCase() + DNI_KR[dow].slice(1)} do ${esc(p.cas)} (priemer 8)`, p.tyzden)
+      + riadok(`4 týždne do ${esc(p.cas)} (priemer dňa)`, p.styri)
+      + (p.rok && p.rok.obj ? riadok(`Pred rokom (${trDatum(p.rok.od, true)}) do ${esc(p.cas)}`, p.rok) : '');
+  } else {
+    por = riadok(`Predchádzajúce obdobie (${trObd(p.predch.od, p.predch.do)})`, p.predch)
+      + (p.rok && p.rok.obj ? riadok(`Pred rokom (${trObd(p.rok.od, p.rok.do)})`, p.rok) : '');
+  }
+  const priemPor = hlavneZ;
+  const dowP = new Date(d.do + 'T12:00').getDay();
+  const priemNazov = d.jeDnes ? `v ${DNI_KR[dowP]}` : (p.rok && p.rok.obj ? 'pred rokom' : 'v predch. období');
+  const html = `
+    <div class="tr-karta">
+      <div class="tr-hlava"><span class="velke">${cis(s.trzba)}</span><span class="eur">€</span><span class="bez">bez DPH · vrátane dopravy</span></div>
+      <div class="tr-mriezka">
+        <div><b>${eur(s.priemer, 2)}</b><span>Priem. obj.</span></div>
+        <div><b>${cis(s.obj)}</b><span>Objednávok</span></div>
+        <div><b>${eur(s.tovar)}</b><span>Tovar</span></div>
+        <div><b>${eur(s.doprava)}</b><span>Doprava</span></div>
+      </div>
+      <div class="tr-pozn">Zľavy kupónmi: <b>${eur(s.zlava)}</b>${priemPor && priemPor.priemer ? ` · priemerná obj. ${priemNazov}: ${eur(priemPor.priemer, 2)} ${trZnacka(s.priemer, priemPor.priemer)}` : ''}${s.bezCeny ? ` · ${cis(s.bezCeny)} obj. ešte čaká na cenu` : ''}</div>
+      <div class="tr-porov">${por}</div>
+    </div>
+    <div class="tr-graf-obal" id="trGrafObal"></div>
+    <div class="tr-kraj" id="trKraj"></div>`;
+  $('#trzby').innerHTML = html;
+  vykresliTrGraf();
+  vykresliTrKrajiny();
+}
+function trSkupiny(graf, krok){
+  if(krok === 'dni') return graf.map(x => ({od:x.den, do:x.den, trzba:+x.trzba, obj:+x.obj, rok:+x.rok}));
+  const mapa = new Map();
+  graf.forEach(x => {
+    const dt = new Date(x.den + 'T12:00');
+    let k;
+    if(krok === 'tyzdne'){ const m = new Date(dt); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); k = den(m); }
+    else k = x.den.slice(0, 7);
+    const g = mapa.get(k) || {od:x.den, do:x.den, trzba:0, obj:0, rok:0, dni:0};
+    g.do = x.den; g.trzba += +x.trzba; g.obj += +x.obj; g.rok += +x.rok; g.dni++;
+    mapa.set(k, g);
+  });
+  return [...mapa.values()];
+}
+function vykresliTrGraf(){
+  const graf = (trzby && trzby.graf) || [];
+  const obal = $('#trGrafObal');
+  if(!graf.length){ obal.innerHTML = '<div class="prazdne">Za toto obdobie nič.</div>'; return; }
+  if(!trKrok) trKrok = graf.length <= 45 ? 'dni' : (graf.length <= 200 ? 'tyzdne' : 'mesiace');
+  const sk = trSkupiny(graf, trKrok);
+  const max = Math.max(1, ...sk.map(x => Math.max(x.trzba, x.rok)));
+  if(trAkt >= sk.length) trAkt = -1;
+  const akt = trAkt >= 0 ? trAkt : sk.length - 1;
+  const stlpce = sk.map((x, i) => {
+    const vik = trKrok === 'dni' && [0,6].includes(new Date(x.od + 'T12:00').getDay());
+    return `<div class="tr-st${vik ? ' vik' : ''}${i === akt ? ' akt' : ''}" data-i="${i}" title="${esc(trObd(x.od, x.do))}">
+      <div class="b" style="height:${(x.trzba / max * 100).toFixed(1)}%"></div>
+      ${x.rok > 0 ? `<div class="r" style="bottom:${(x.rok / max * 100).toFixed(1)}%"></div>` : ''}
+    </div>`;
+  }).join('');
+  const kroky = [['dni','Dni'],['tyzdne','Týždne'],['mesiace','Mesiace']]
+    .map(([k, n]) => `<button type="button" data-k="${k}" aria-pressed="${k === trKrok}">${n}</button>`).join('');
+  const prvy = sk[0], posl = sk[sk.length - 1];
+  obal.innerHTML = `
+    <div class="tr-graf-hl"><div class="tr-krok">${kroky}</div><div class="tr-leg"><span><i></i>tržba</span><span><i class="r"></i>pred rokom</span></div></div>
+    <div class="tr-graf">${stlpce}</div>
+    <div class="tr-os"><span>${trDatum(prvy.od)}</span><span>${trDatum(posl.do)}</span></div>
+    <div class="tr-info" id="trInfo"></div>`;
+  trInfo(sk, akt);
+}
+function trInfo(sk, i){
+  const x = sk[i]; if(!x) return;
+  const nazov = trKrok === 'dni'
+    ? new Date(x.od + 'T12:00').toLocaleDateString('sk-SK', {weekday:'short', day:'numeric', month:'numeric', year:'numeric'})
+    : (trKrok === 'mesiace' ? new Date(x.od + 'T12:00').toLocaleDateString('sk-SK', {month:'long', year:'numeric'}) : 'týždeň ' + trObd(x.od, x.do));
+  const neuplny = trKrok !== 'dni' && x.dni && ((trKrok === 'tyzdne' && x.dni < 7) || (trKrok === 'mesiace' && x.do.slice(8) !== String(new Date(+x.od.slice(0,4), +x.od.slice(5,7), 0).getDate())));
+  const doCasu = trzby.jeDnes && x.do === trzby.do && trzby.porovnanie && trzby.porovnanie.cas ? ` <small>(do ${esc(trzby.porovnanie.cas)})</small>` : '';
+  $('#trInfo').innerHTML = `${esc(nazov)}${neuplny ? ' <small>(neúplné)</small>' : ''}${doCasu}: <b>${eur(x.trzba)}</b> · ${cis(x.obj)} obj. · priem. ${eur(x.obj ? x.trzba / x.obj : 0, 2)}`
+    + (x.rok > 0 ? ` · pred rokom <b>${eur(x.rok)}</b> ${trZnacka(x.trzba, x.rok)}` : '');
+}
+function vykresliTrKrajiny(){
+  const k = (trzby && trzby.krajiny) || [];
+  const el = $('#trKraj');
+  if(!k.length){ el.innerHTML = ''; return; }
+  const spolu = k.reduce((a, x) => a + (+x.trzba || 0), 0) || 1;
+  const max = Math.max(...k.map(x => +x.trzba || 0), 1);
+  const zoz = trKrajVsetky ? k : k.slice(0, 8);
+  el.innerHTML = zoz.map(x => `<div class="tr-kr">
+      <div class="n">${vlajka(x.krajina)} ${esc(KRAJINY[x.krajina] || x.krajina)}<small>${cis(x.obj)} obj. · priem. ${eur(x.priemer, 2)}</small></div>
+      <div class="t">${eur(x.trzba)}</div>
+      <div class="p">${cis((+x.trzba || 0) / spolu * 100, 1)} %</div>
+      <div class="pas"><i style="width:${((+x.trzba || 0) / max * 100).toFixed(1)}%"></i></div>
+    </div>`).join('')
+    + (k.length > 8 ? `<button type="button" class="tr-viac" id="trKrajViac">${trKrajVsetky ? 'Zobraziť menej ▴' : `Všetky krajiny (${k.length}) ▾`}</button>` : '');
+}
+document.addEventListener('click', e => {
+  if(!trzby) return;
+  const kb = e.target.closest('#trGrafObal .tr-krok button');
+  if(kb){ trKrok = kb.dataset.k; trAkt = -1; vykresliTrGraf(); return; }
+  const st = e.target.closest('#trGrafObal .tr-st');
+  if(st){
+    trAkt = +st.dataset.i;
+    document.querySelectorAll('#trGrafObal .tr-st').forEach(x => x.classList.toggle('akt', x === st));
+    trInfo(trSkupiny(trzby.graf, trKrok), trAkt); return;
+  }
+  if(e.target.closest('#trKrajViac')){ trKrajVsetky = !trKrajVsetky; vykresliTrKrajiny(); }
+});
 
 /* ---- Automatické načítanie každých 10 minút ---- */
 function tichaObnova(){
