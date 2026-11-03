@@ -1,6 +1,6 @@
 /* Gotana – service worker: appka sa otvára ako aplikácia a štartuje z pamäte telefónu.
    Živé dáta (Supabase) idú vždy priamo z internetu, nikdy z pamäte. */
-const VERZIA = 'gotana-v1';
+const VERZIA = 'gotana-v2';
 const JADRO = ['/', '/index.html', '/statistiky.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -23,7 +23,7 @@ self.addEventListener('fetch', e => {
   if (u.hostname.endsWith('supabase.co') || u.hostname.endsWith('huggingface.co')) return;
 
   const vlastna = u.origin === self.location.origin;
-  const stranka = r.mode === 'navigate' || (vlastna && (/\.(html|json)$/.test(u.pathname) || u.pathname.endsWith('/')));
+  const stranka = r.mode === 'navigate' || (vlastna && (/\.(html|json|css)$/.test(u.pathname) || u.pathname.endsWith('/')));
 
   if (stranka) {
     /* stránky a dáta: najprv internet (vždy najnovšia verzia), pri výpadku siete z pamäte */
