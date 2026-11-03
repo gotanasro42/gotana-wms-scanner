@@ -1552,9 +1552,9 @@ async function doplnCenyObjednavky(cislo){
         <div><span>Tržba bez DPH</span><b class="cislo">${eur(c.trzba, 2)}</b></div>
         <div><span>Tovar</span><b class="cislo">${eur(c.tovar, 2)}</b></div>
         <div><span>Doprava</span><b class="cislo">${eur(c.doprava, 2)}</b></div>
-        <div><span>Marža</span><b class="cislo">${c.marza !== null ? eur(c.marza, 2) : '—'}</b></div>
+        <div><span>Marža</span><b class="cislo">${c.pct !== null ? cis(c.pct, 1) + ' %' : '—'}</b></div>
       </div>
-      <div class="okno-pozn">${c.pct !== null ? `Marža tovaru <b>${cis(c.pct, 1)} %</b>${+c.pokrytie < 100 ? ` (z ${cis(c.pokrytie)} % tovaru, zvyšok nemá nákupnú cenu)` : ''}` : 'Bez nákupných cien.'}${+c.zlava > 0 ? ` · zľava ${eur(c.zlava, 2)}${c.kupon ? ' (kupón ' + esc(c.kupon) + ')' : ''}` : ''}${c.mena && c.mena !== 'EUR' ? ` · prepočet z ${esc(c.mena)} kurzom ECB ${cis(c.kurz, 3)}` : ''}</div>`);
+      <div class="okno-pozn">${c.pct !== null ? `Marža tovaru <b>${eur(c.marza, 2)}</b>${+c.pokrytie < 100 ? ` (z ${cis(c.pokrytie)} % tovaru, zvyšok nemá nákupnú cenu)` : ''}` : 'Bez nákupných cien.'}${+c.zlava > 0 ? ` · zľava ${eur(c.zlava, 2)}${c.kupon ? ' (kupón ' + esc(c.kupon) + ')' : ''}` : ''}${c.mena && c.mena !== 'EUR' ? ` · prepočet z ${esc(c.mena)} kurzom ECB ${cis(c.kurz, 3)}` : ''}</div>`);
   }
   document.querySelectorAll('#oknoTelo .produkt[data-sku]').forEach(r => {
     const t = (c.polozky || {})[r.dataset.sku], meta = r.querySelector('.meta');
