@@ -355,6 +355,7 @@
               <button data-f="vsetko" onclick="stkFilter('vsetko')" class="flex-1 py-2 rounded-lg text-xs font-bold border-2 tap-feedback">Všetko</button>
           </div>
           <div class="flex gap-2 mb-2 justify-end">
+              <button onclick="stkZmazVsetko()" class="mr-auto bg-white text-red-600 border-2 border-red-200 px-3 py-2 rounded-lg text-xs font-bold tap-feedback flex items-center gap-1"><span class="material-icons text-sm">delete_sweep</span> Vymazať</button>
               <button onclick="stkExport(false)" class="bg-emerald-600 active:bg-emerald-800 text-white px-3 py-2 rounded-lg text-xs font-bold tap-feedback flex items-center gap-1"><span class="material-icons text-sm">download</span> Excel</button>
               <button onclick="stkExport(true)" class="bg-slate-700 active:bg-slate-900 text-white px-3 py-2 rounded-lg text-xs font-bold tap-feedback flex items-center gap-1" title="Zdieľať"><span class="material-icons text-sm">share</span> Zdieľať</button>
           </div>
@@ -3262,6 +3263,29 @@
     if(!(await showCustomConfirm('Zmazať záznam?', esc(r.ns) + ' • ' + m2(r.metraz) + ' m', 'Zmazať'))) return;
     try{ await sbFetch('stitky_rolky?id=eq.' + id, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); riadky = riadky.filter(function(x){ return x.id !== id; }); vykresli(); }
     catch(e){ beep('error'); showCustomAlert('Nepodarilo sa zmazať', esc(e.message)); }
+  };
+
+  /* hromadné vymazanie všetkého, čo je v práve zvolenom filtri (Dnes / Nevyexportované / Všetko) */
+  window.stkZmazVsetko = async function(){
+    try{
+      setLoading(true, 'Načítavam...');
+      var data = await nacitajVsetky(filter);
+      setLoading(false);
+      if(!data.length){ showCustomAlert('Vymazať', 'V tomto zozname nič nie je.'); return; }
+      var suma = data.reduce(function(a, r){ return a + Number(r.metraz); }, 0);
+      var neexp = data.filter(function(r){ return !r.exportovane; }).length;
+      var nazvy = { dnes: 'dnešné', nove: 'nevyexportované', vsetko: 'VŠETKY' };
+      var sprava = 'Zmažú sa ' + nazvy[filter] + ' štítky (' + m2(suma) + ' m). Nedá sa to vrátiť späť.'
+        + (neexp ? '<br><b class="text-red-600">Pozor: ' + neexp + ' z nich ešte nie je vyexportovaných do Excelu.</b>' : '');
+      if(!(await showCustomConfirm('Vymazať ' + data.length + ' štítkov?', sprava, 'Vymazať'))) return;
+      setLoading(true, 'Mažem ' + data.length + ' štítkov...');
+      var ids = data.map(function(r){ return r.id; });
+      for(var i = 0; i < ids.length; i += 200){
+        await sbFetch('stitky_rolky?id=in.(' + ids.slice(i, i + 200).join(',') + ')', { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+      }
+      setLoading(false); beep('success'); updateLastAction('VYMAZANÝCH ' + ids.length + ' ŠTÍTKOV');
+      await nacitaj();
+    }catch(e){ setLoading(false); beep('error'); showCustomAlert('Nepodarilo sa vymazať', esc(e.message)); await nacitaj(); }
   };
 
   function csv(data){
