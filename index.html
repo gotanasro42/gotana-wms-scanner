@@ -1001,10 +1001,24 @@
         }
         
         document.getElementById('reader').innerHTML = '';
-        html5Qrcode = new Html5Qrcode("reader");
-        const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+        // Lepšie čítanie hustých QR: natívna čítačka telefónu (ak ju má), len QR, vyššie rozlíšenie kamery
+        let qrOpts = { verbose: false, experimentalFeatures: { useBarCodeDetectorIfSupported: true } };
+        try { if (window.Html5QrcodeSupportedFormats) qrOpts.formatsToSupport = [Html5QrcodeSupportedFormats.QR_CODE]; } catch(e){}
+        html5Qrcode = new Html5Qrcode("reader", qrOpts);
+        const config = {
+            fps: 15,
+            qrbox: function(w, h){ const m = Math.floor(Math.min(w, h) * 0.85); return { width: Math.max(200, m), height: Math.max(200, m) }; },
+            aspectRatio: 1.0,
+            videoConstraints: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, advanced: [{ focusMode: "continuous" }] }
+        };
 
-        const successCb = async (decodedText) => {
+        // Ochrana proti chybnému prečítaniu: kód sa prijme až keď ho kamera prečíta 2x rovnako za sebou
+        let potvrdKod = '', potvrdCas = 0;
+        const successCb = async (rawDecoded) => {
+             const now = Date.now();
+             if (rawDecoded !== potvrdKod || now - potvrdCas > 1500) { potvrdKod = rawDecoded; potvrdCas = now; return; }
+             potvrdKod = ''; potvrdCas = 0;
+             const decodedText = rawDecoded;
              if (isContinuousScan) {
                  if (isProcessingBulk) return;
                  isProcessingBulk = true;
@@ -1035,9 +1049,14 @@
 
         try {
             await html5Qrcode.start({ facingMode: "environment" }, config, successCb, () => {});
-        } catch (err) {
-            try { await html5Qrcode.start({ facingMode: "user" }, config, successCb, () => {}); } 
+        } catch (err0) {
+          try {
+            const cfg2 = Object.assign({}, config); delete cfg2.videoConstraints;
+            await html5Qrcode.start({ facingMode: "environment" }, cfg2, successCb, () => {});
+          } catch (err) {
+            try { const cfg3 = Object.assign({}, config); delete cfg3.videoConstraints; await html5Qrcode.start({ facingMode: "user" }, cfg3, successCb, () => {}); } 
             catch (fallbackErr) { document.getElementById('scanner-container').classList.add('hidden'); stopCamera(); showChromePermissionGuide(); }
+        }
         }
       }
 
