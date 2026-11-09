@@ -3699,6 +3699,27 @@
 <script>
   /* ================= PWA: appka ako ikonka na telefóne ================= */
   (function(){
+    /* Kontrola novej verzie appky: keď je appka otvorená dlho, ponúkne obnovenie */
+    (function(){
+      var APP_VERZIA = '2026-11-09c';
+      async function skontroluj(){
+        try{
+          var t = await (await fetch('/index.html?v=' + Date.now(), { cache: 'no-store' })).text();
+          var m = t.match(/APP_VERZIA = '([^']+)'/);
+          if(m && m[1] !== APP_VERZIA && !document.getElementById('novaVerziaBanner')){
+            var b = document.createElement('div');
+            b.id = 'novaVerziaBanner';
+            b.style.cssText = 'position:fixed;left:8px;right:8px;top:8px;z-index:99999;background:#dc2626;color:#fff;padding:14px;border-radius:14px;font-weight:800;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.35);font-size:16px';
+            b.innerHTML = 'Je nová verzia appky – ťukni sem na obnovenie<br><span style="font-weight:500;font-size:13px">(najprv ulož rozrobený hromadný príjem)</span>';
+            b.onclick = function(){ location.reload(); };
+            document.body.appendChild(b);
+          }
+        }catch(e){}
+      }
+      setInterval(skontroluj, 3 * 60 * 1000);
+      document.addEventListener('visibilitychange', function(){ if(!document.hidden) skontroluj(); });
+      setTimeout(skontroluj, 20000);
+    })();
     if('serviceWorker' in navigator){
       window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw.js').catch(function(){}); });
     }
