@@ -2544,9 +2544,26 @@
 
         if (action === "createBulkItems") {
             const polozky = P.items || [];
-            const existujuce = await sbFetch("polozky?select=id");
+            // Overíme len kódy, ktoré sa práve prijímajú (databáza vracia max. 1000 riadkov naraz,
+            // preto nikdy nesťahujeme celý sklad – inak by sa prepísali existujúce kusy)
             const set = {};
-            (existujuce || []).forEach(function (x) { set[String(x.id).toUpperCase()] = 1; });
+            const zaklady = [];
+            polozky.forEach(function (it) {
+                [String(it.baseCode || it.code || "").trim().toUpperCase(), String(it.code || "").trim().toUpperCase()].forEach(function (z) {
+                    if (z && zaklady.indexOf(z) < 0) zaklady.push(z);
+                });
+            });
+            for (let i = 0; i < zaklady.length; i += 25) {
+                const cast = zaklady.slice(i, i + 25);
+                const podm = cast.map(function (z) { const q = z.replace(/[(),"*\\]/g, ""); return 'id.eq."' + q + '",id.like."' + q + '_*"'; }).join(",");
+                let od = 0;
+                while (true) {
+                    const r = await sbFetch("polozky?select=id&or=(" + encodeURIComponent(podm) + ")", { headers: { Range: od + "-" + (od + 999) } });
+                    (r || []).forEach(function (x) { set[String(x.id).toUpperCase()] = 1; });
+                    if (!r || r.length < 1000) break;
+                    od += 1000;
+                }
+            }
             const nove = [], zaznamy = [];
             polozky.forEach(function (it) {
                 let fin = String(it.code || "").trim().toUpperCase();
@@ -2557,7 +2574,7 @@
                 zaznamy.push({ akcia: "PRIJEM", pouzivatel: kto, polozka_id: fin, nazov: fin, dlzka: 0, pozicia: P.loc || "", popis: "Hromadny prijem" });
             });
             if (nove.length) {
-                await sbFetch("polozky?on_conflict=id", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify(nove) });
+                await sbFetch("polozky", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify(nove) }); // len nové kusy, nikdy neprepíše existujúci
             }
             sbLog(zaznamy);
             return { success: true, processed: nove.length };
