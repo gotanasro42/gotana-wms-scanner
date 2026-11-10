@@ -114,6 +114,17 @@ Statistiky za dlhe obdobia (Tento rok, Vlastne) sa nepocitaju z polozky po poloz
   dash_tlac_obdobie_raw, dash_top_strihy_raw, dash_top_vzory_raw, dash_hometextil_raw, dash_hometextil_top_raw,
   dash_hometextil_typ_raw, dash_ht_vyvoj_raw, dash_trzby_ht_vypocet. Vysledky su overene ako zhodne so starymi.
 - Povodne verzie su zalohovane ako `*_stary` (napr. `dash_prehlad_raw_stary`). Navrat: premenovat spat.
-- Predhriatie `dash-predhrej-rok` bezi kazdych 30 min (6:09-22:39), cele trva ~26 s.
+- Predhriatie `dash-predhrej-rok` bezi 2x denne (7:05 a 13:05) s limitom 5 min; `dash-predhrej-kratke` kazdych 30 min.
 - Pozor pri uprave: `predaj_obdobie(...)` volat s jednoduchymi parametrami (nie s vnorenym `select`),
   inak ju databaza nezlucuje s dotazom a nacita vsetko (10+ s namiesto desatin).
+
+## Sucet za celu sekciu Najpredavanejsie (od 10. 11. 2026)
+Statistiky -> Produkty -> nad zoznamom je riadok "Spolu za sekciu": mnozstvo (m / ks), pocet objednavok a produktov
+za CELU sekciu v obdobi (nie len zobrazenych 30 / top 100). Plati pre Na metre, Na kusy, Na objednavku a PDF strihy,
+aj pri vybere krajiny. Pri Vzoroch sa nezobrazuje.
+- Funkcia `dash_sekcia_suhrn(p_od, p_do, p_typ, p_krajina)` (cache cez `dash_cache_volaj`), vypocet v `dash_sekcia_suhrn_raw`.
+  p_typ: metre | kusy | objednavka | strihy. Filtre su rovnake ako pri zoznamoch.
+- Objednavky sa ratajú bez dvojitania (rozne cisla objednavok z `predaj_den.obj_ids`), preto je cislo mensie
+  ako sucet "obj." pri jednotlivych produktoch.
+- Na metre / Na kusy / PDF strihy: rovnako ako zoznam vratane objednavok cakajucich na platbu a stornovanych,
+  preto moze byt viac ako cislo v hlavicke (ta rata len predane). Na objednavku: len stav predaj.

@@ -400,6 +400,10 @@ h2:first-child{margin-top:2px}
 .spolu-hlavicka{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 6px;font-size:13px}
 .spolu-hlavicka button{border:1px solid var(--linka);background:#fff;border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif}
 .spolu-pozn{font-size:10.5px;color:var(--sedy);margin:2px 0 6px}
+.sek-suhrn{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin:6px 0 8px;padding:8px 12px;border:1px solid var(--linka);border-radius:10px;background:#fff;font-size:12px;color:var(--sedy)}
+.sek-suhrn span{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.sek-suhrn b{font-size:15px;color:var(--atrament);font-variant-numeric:tabular-nums}
+.sek-suhrn small{font-size:11px;margin-left:auto}
 .spolu-r{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--linka);cursor:pointer}
 .spolu-r img{width:34px;height:34px;object-fit:cover;border-radius:5px;background:var(--platno-tmavsi);border:1px solid var(--linka);cursor:zoom-in}
 .spolu-r .nazov{font-size:12px;font-weight:500;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -1574,6 +1578,38 @@ async function trDoplnPolozky(selektor, k, bezTrzby){
   });
 }
 
+/* ====== Súčet za celú sekciu (všetky produkty obdobia, nielen zobrazené; objednávky bez dvojitého rátania) ====== */
+const sekSuhrn = {}, sekSuhrnBezi = {};
+function sekKluc(){ return obdobie.od + '|' + obdobie.do + '|' + zobrazUdaj + '|' + (prodKr || ''); }
+function sekSuhrnHtml(){
+  if(!['metre','kusy','objednavka','strihy'].includes(zobrazUdaj)) return '';
+  const k = sekKluc(), s = sekSuhrn[k];
+  if(s === undefined){ nacitajSekSuhrn(k); return `<div class="sek-suhrn" data-sek="${esc(k)}"><span>Spolu za sekciu</span><small>počítam…</small></div>`; }
+  if(!s) return '';
+  let mn;
+  if(zobrazUdaj === 'objednavka'){
+    const c = [];
+    if(+s.metre) c.push(cis(s.metre, 1) + ' m');
+    if(+s.kusy) c.push(cis(s.kusy, 0) + ' ks');
+    mn = c.join(' + ') || '0';
+  } else mn = cis(s.mnozstvo, zobrazUdaj === 'metre' ? 1 : 0) + (zobrazUdaj === 'metre' ? ' m' : ' ks');
+  const pozn = zobrazUdaj === 'objednavka' ? 'Len zaplatené / spracovávané objednávky, rovnako ako zoznam.'
+    : 'Rovnako ako zoznam: vrátane objednávok, ktoré čakajú na platbu alebo sú stornované – preto môže byť viac ako číslo hore.';
+  return `<div class="sek-suhrn" data-sek="${esc(k)}" title="${esc(pozn)}"><span>Spolu za sekciu</span><b>${mn}</b><b>${cis(s.obj)} obj.</b><small>${cis(s.produktov)} produktov</small></div>`;
+}
+async function nacitajSekSuhrn(k){
+  if(sekSuhrnBezi[k]) return;
+  sekSuhrnBezi[k] = 1;
+  const [od, dd, typ, kr] = k.split('|');
+  const telo = {p_od: od, p_do: dd, p_typ: typ}; if(kr) telo.p_krajina = kr;
+  let d = null;
+  try{ d = await rpc('dash_sekcia_suhrn', telo); }catch(_e){ d = null; }
+  sekSuhrn[k] = d && !d.chyba ? d : null;
+  delete sekSuhrnBezi[k];
+  if(k !== sekKluc()) return;
+  document.querySelectorAll('.sek-suhrn[data-sek]').forEach(el => { if(el.dataset.sek === k) el.outerHTML = sekSuhrnHtml(); });
+}
+
 function vykresliProdukty(){
   { const pz = $('#spoluPozn'); if(pz) pz.style.display = zobrazUdaj === 'mat' ? 'none' : ''; }
   { const ko = $('#krVyberObal'); if(ko) ko.style.display = zobrazUdaj === 'mat' ? 'none' : ''; }
@@ -1615,7 +1651,7 @@ function vykresliProdukty(){
   const jed = zobrazUdaj === 'metre' ? 'm' : 'ks';
   const ciel = $('#topProdukty');
   if(!pole || !pole.length){ ciel.innerHTML = krPas + `<div class="prazdne">${kr ? 'V tejto krajine sa za toto obdobie z tejto skupiny nič nepredalo.' : 'Za toto obdobie zatiaľ nič.'}</div>`; return; }
-  ciel.innerHTML = krPas + pole.map(p => `
+  ciel.innerHTML = krPas + sekSuhrnHtml() + pole.map(p => `
     <div class="produkt-obal${spoluOtvorene.has(p.sku) ? ' otvoreny' : ''}">
     <div class="produkt" data-sku="${esc(p.sku)}">
       ${p.obrazok ? `<img src="${esc(p.obrazok)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<div></div>'}
@@ -2806,7 +2842,7 @@ function rpcStav(z){
   if(p) p.classList.toggle('bezi', rpcBezi > 0);
   const t = document.getElementById('nacText'); if(t) t.textContent = rpcBezi > 1 ? `načítavam (${rpcBezi})` : 'načítavam';
 }
-function rpcVymaz(){ rpcPamat.clear(); }
+function rpcVymaz(){ rpcPamat.clear(); for(const k in sekSuhrn) delete sekSuhrn[k]; }
 async function rpc(meno, telo, opt){
   const k = meno + '|' + JSON.stringify(telo || {});
   const pam = !RPC_ZIVE.has(meno) && !(opt && opt.cerstve);
