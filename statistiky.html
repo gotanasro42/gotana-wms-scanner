@@ -75,10 +75,10 @@ header{
   font-weight:600;font-size:12.5px;min-height:36px;cursor:pointer;
 }
 .rozsah{font-size:10px;color:#9FB0CE;padding-bottom:7px;font-family:'IBM Plex Mono',monospace}
-/* pri skrolovaní nadol zostane z hlavičky len riadok s obdobiami (a Vlastné…, ak je otvorené) */
-header.zbalena{padding-top:env(safe-area-inset-top);box-shadow:0 2px 8px rgba(20,33,61,.25)}
-header.zbalena .znacka,header.zbalena .hladanie,header.zbalena .rozsah{display:none}
-header.zbalena .obdobia{padding-top:6px;padding-bottom:6px}
+/* hlavička je prilepená s posunom: názov, hľadanie a dátum plynulo odídu so stránkou, riadok s obdobiami zostane hore */
+header .hladanie{margin-top:8px}
+header .rozsah{padding-bottom:0}
+header{top:calc(var(--hl-posun, 0px) + env(safe-area-inset-top, 0px))}
 
 /* ---------- Rekordy ---------- */
 .rekord{
@@ -1010,6 +1010,11 @@ h2{font-size:12px;letter-spacing:.12em}
     <span class="stav-syn" id="stavSyn"></span>
     <button class="obnov" id="obnov" type="button" title="Stiahnuť najnovšie objednávky"><span class="ik">↻</span><span class="tx">Obnoviť</span></button>
   </div>
+  <div class="hladanie" id="hladanie">
+    <input type="search" id="hladajCislo" inputmode="numeric" placeholder="číslo objednávky…" aria-label="Číslo objednávky">
+    <button id="hladajBtn">Nájsť</button>
+  </div>
+  <div class="rozsah" id="rozsah"></div>
   <div class="obdobia" id="obdobia">
     <button class="chip" data-o="dnes" aria-pressed="true">Dnes</button>
     <button class="chip" data-o="vcera">Včera</button>
@@ -1025,11 +1030,6 @@ h2{font-size:12px;letter-spacing:.12em}
     <input type="date" id="datDo" aria-label="Do dátumu">
     <button id="pouzi">Zobraziť</button>
   </div>
-  <div class="hladanie" id="hladanie">
-    <input type="search" id="hladajCislo" inputmode="numeric" placeholder="číslo objednávky…" aria-label="Číslo objednávky">
-    <button id="hladajBtn">Nájsť</button>
-  </div>
-  <div class="rozsah" id="rozsah"></div>
 </header>
 
 <div class="hlavne">
@@ -2448,25 +2448,15 @@ function trPorTxt(co, teraz, por, jed){
   }, true);
   window.addEventListener('scroll', skry, {passive: true});
 })();
-/* Menšia hlavička pri skrolovaní: dole len obdobia, hore celá. Pri zbalení sa posun vyrovná, aby obsah neskočil. */
+/* Prilepená hlavička: hore zostane len riadok s obdobiami (a Vlastné…, ak je otvorené).
+   top = −(výška časti nad obdobiami), takže horná časť plynulo odíde so stránkou, bez skokov. */
 (function(){
-  const h = document.querySelector('header'); if(!h) return;
-  let zbalena = false, cakaj = false;
-  const ZBAL = 200, ROZBAL = 30;
-  const kontrola = () => {
-    cakaj = false;
-    const y = window.scrollY;
-    if(!zbalena && y > ZBAL){
-      const pred = h.offsetHeight;
-      zbalena = true; h.classList.add('zbalena');
-      const rozdiel = pred - h.offsetHeight;
-      if(rozdiel > 0) window.scrollTo(0, Math.max(ROZBAL + 1, y - rozdiel));
-    } else if(zbalena && y < ROZBAL){
-      zbalena = false; h.classList.remove('zbalena');
-    }
-  };
-  window.addEventListener('scroll', () => { if(!cakaj){ cakaj = true; requestAnimationFrame(kontrola); } }, {passive: true});
-  kontrola();
+  const h = document.querySelector('header'), o = document.getElementById('obdobia'); if(!h || !o) return;
+  const nastav = () => { h.style.setProperty('--hl-posun', (-o.offsetTop) + 'px'); };
+  nastav();
+  if(window.ResizeObserver) new ResizeObserver(nastav).observe(h);
+  window.addEventListener('resize', nastav);
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(nastav);
 })();
 function trDatum(x, rok){ return new Date(x + 'T12:00').toLocaleDateString('sk-SK', rok ? {day:'numeric', month:'numeric', year:'numeric'} : {day:'numeric', month:'numeric'}); }
 function trObd(od, dd){ return od === dd ? trDatum(od, true) : `${trDatum(od)} – ${trDatum(dd, true)}`; }

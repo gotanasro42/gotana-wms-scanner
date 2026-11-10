@@ -129,10 +129,11 @@ aj pri vybere krajiny. Pri Vzoroch sa nezobrazuje.
 - Na metre / Na kusy / PDF strihy: rovnako ako zoznam vratane objednavok cakajucich na platbu a stornovanych,
   preto moze byt viac ako cislo v hlavicke (ta rata len predane). Na objednavku: len stav predaj.
 
-## Mensia hlavicka pri skrolovani (od 10. 11. 2026)
-Statistiky: po odskrolovani nadol (viac ako 200 px) sa z tmavej hlavicky skryje nazov s tlacidlom Obnovit,
-hladanie objednavky a datum - zostane len riadok s obdobiami (a Vlastne..., ak je otvorene). Na mobile 46 px namiesto 162 px.
-Pri navrate hore (pod 30 px) sa zobrazi cela. Riesi to trieda `header.zbalena` (CSS) a maly skript pri skrolovani.
+## Hlavicka pri skrolovani (od 10. 11. 2026)
+Statistiky: poradie v hlavicke je nazov s Obnovit -> hladanie objednavky -> datum -> obdobia (-> Vlastne...).
+Hlavicka je prilepena (sticky) so zapornym posunom `top = -(vyska casti nad obdobiami)` (premenna `--hl-posun`,
+nastavuje ju maly skript cez ResizeObserver). Horna cast preto plynulo odide spolu so strankou a hore zostane
+len riadok s obdobiami (a Vlastne..., ak je otvorene). Ziadne prepinanie tried ani skoky.
 
 ## Citatelnost (od 10. 11. 2026)
 - Nadpisy sekcii 12 px (predtym 10), podnadpisy a stitky 11 px (predtym 9-10), poznamky a popisy 11-11.5 px (predtym 10-10.5).
