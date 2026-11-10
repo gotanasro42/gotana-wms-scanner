@@ -75,6 +75,10 @@ header{
   font-weight:600;font-size:12.5px;min-height:36px;cursor:pointer;
 }
 .rozsah{font-size:10px;color:#9FB0CE;padding-bottom:7px;font-family:'IBM Plex Mono',monospace}
+/* pri skrolovaní nadol zostane z hlavičky len riadok s obdobiami (a Vlastné…, ak je otvorené) */
+header.zbalena{padding-top:env(safe-area-inset-top);box-shadow:0 2px 8px rgba(20,33,61,.25)}
+header.zbalena .znacka,header.zbalena .hladanie,header.zbalena .rozsah{display:none}
+header.zbalena .obdobia{padding-top:6px;padding-bottom:6px}
 
 /* ---------- Rekordy ---------- */
 .rekord{
@@ -2418,6 +2422,26 @@ function trPorTxt(co, teraz, por, jed){
     skry();
   }, true);
   window.addEventListener('scroll', skry, {passive: true});
+})();
+/* Menšia hlavička pri skrolovaní: dole len obdobia, hore celá. Pri zbalení sa posun vyrovná, aby obsah neskočil. */
+(function(){
+  const h = document.querySelector('header'); if(!h) return;
+  let zbalena = false, cakaj = false;
+  const ZBAL = 200, ROZBAL = 30;
+  const kontrola = () => {
+    cakaj = false;
+    const y = window.scrollY;
+    if(!zbalena && y > ZBAL){
+      const pred = h.offsetHeight;
+      zbalena = true; h.classList.add('zbalena');
+      const rozdiel = pred - h.offsetHeight;
+      if(rozdiel > 0) window.scrollTo(0, Math.max(ROZBAL + 1, y - rozdiel));
+    } else if(zbalena && y < ROZBAL){
+      zbalena = false; h.classList.remove('zbalena');
+    }
+  };
+  window.addEventListener('scroll', () => { if(!cakaj){ cakaj = true; requestAnimationFrame(kontrola); } }, {passive: true});
+  kontrola();
 })();
 function trDatum(x, rok){ return new Date(x + 'T12:00').toLocaleDateString('sk-SK', rok ? {day:'numeric', month:'numeric', year:'numeric'} : {day:'numeric', month:'numeric'}); }
 function trObd(od, dd){ return od === dd ? trDatum(od, true) : `${trDatum(od)} – ${trDatum(dd, true)}`; }

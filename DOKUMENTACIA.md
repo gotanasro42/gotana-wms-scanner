@@ -128,3 +128,9 @@ aj pri vybere krajiny. Pri Vzoroch sa nezobrazuje.
   ako sucet "obj." pri jednotlivych produktoch.
 - Na metre / Na kusy / PDF strihy: rovnako ako zoznam vratane objednavok cakajucich na platbu a stornovanych,
   preto moze byt viac ako cislo v hlavicke (ta rata len predane). Na objednavku: len stav predaj.
+
+## Mensia hlavicka pri skrolovani (od 10. 11. 2026)
+Statistiky: po odskrolovani nadol (viac ako 200 px) sa z tmavej hlavicky skryje nazov s tlacidlom Obnovit,
+hladanie objednavky a datum - zostane len riadok s obdobiami (a Vlastne..., ak je otvorene). Na mobile 46 px namiesto 162 px.
+Pri navrate hore (pod 30 px) sa zobrazi cela. Riesi to trieda `header.zbalena` (CSS) a maly skript pri skrolovani.
+
