@@ -845,6 +845,19 @@ h2{font-size:12px;letter-spacing:.12em}
 .sek-suhrn span{font-size:11px;letter-spacing:.04em}
 .sek-suhrn b{font-size:13.5px}
 .sek-suhrn small{font-size:11px;margin-left:auto;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- Prepojenie Krajiny ↔ Produkty (11/2026) ---------- */
+.pk-box{margin:0 0 8px;padding:7px 9px;background:var(--platno-tmavsi);border-radius:8px}
+.pk-hl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--sedy);font-weight:700;margin-bottom:5px;font-family:'IBM Plex Sans Condensed',sans-serif}
+.pk-hl span{text-transform:none;letter-spacing:0;font-weight:500}
+.pk-chips{display:flex;flex-wrap:wrap;gap:4px}
+.pk-chip{font:inherit;font-size:12px;border:1px solid var(--linka);background:#fff;border-radius:12px;padding:3px 9px;cursor:pointer;color:var(--atrament);white-space:nowrap;font-family:'IBM Plex Sans',sans-serif}
+.pk-chip b{font-family:'IBM Plex Mono',monospace;font-weight:600}
+.pk-chip small{color:var(--sedy);font-size:11px}
+.pk-chip:disabled{cursor:default;opacity:.7}
+.pk-chip.pk-viac{background:transparent;border-style:dashed;color:var(--sedy)}
+.kr-top-btn{display:block;width:100%;margin:0 0 10px;padding:9px;border:0;border-radius:7px;background:var(--atrament);color:var(--platno);font:inherit;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13px;cursor:pointer}
+#s-produkty .np-hl{scroll-margin-top:64px}
 </style>
 <script>
 /* ---- Prihlásenie do aplikácie Gotana ---- */
@@ -1457,10 +1470,54 @@ function spoluBoxHtml(sku){
   if(!d) return '<div class="spolu-pozn">Načítavam…</div>';
   return d.length ? spoluRiadky(d) : '<div class="spolu-pozn">Zatiaľ nie je dosť objednávok na kombinácie.</div>';
 }
+/* Pri produkte: v ktorých krajinách sa predáva (za zvolené obdobie). Klik na krajinu = Najpredávanejšie len v nej. */
+const pkPamat = {}, pkVsetky = new Set(), pkBezi = new Set();
+function pkKluc(sku){ return sku + '|' + obdobie.od + '|' + obdobie.do; }
+function pkHtml(sku){
+  if(!spoluOtvorene.has(sku)) return '';
+  const k = pkKluc(sku), d = pkPamat[k];
+  if(d === undefined){ pkNacitaj(sku, k); return '<div class="pk-box"><div class="pk-hl">Predaj podľa krajín</div><span class="spolu-pozn">načítavam…</span></div>'; }
+  if(!d || !d.length) return '';
+  const MAX = 6, vsetky = pkVsetky.has(k), ukaz = vsetky ? d : d.slice(0, MAX);
+  return `<div class="pk-box"><div class="pk-hl">Predaj podľa krajín <span>· klik = top produkty v krajine</span></div><div class="pk-chips">`
+    + ukaz.map(x => {
+        const meno = x.krajina === '??' ? 'Neuvedená krajina' : (KRAJINY[x.krajina] || x.krajina);
+        return `<button type="button" class="pk-chip"${x.krajina === '??' ? ' disabled' : ` data-pkkr="${esc(x.krajina)}"`} title="${esc(meno)}">${esc((vlajka(x.krajina) + ' ' + x.krajina).trim())} <b>${cis(x.mnozstvo, x.je_meter ? 1 : 0)} ${x.je_meter ? 'm' : 'ks'}</b> <small>· ${cis(x.obj)} obj.</small></button>`;
+      }).join('')
+    + (d.length > MAX ? `<button type="button" class="pk-chip pk-viac" data-pkviac="${esc(k)}" data-pksku="${esc(sku)}">${vsetky ? 'menej ▴' : `+${d.length - MAX} ďalších ▾`}</button>` : '')
+    + '</div></div>';
+}
+async function pkNacitaj(sku, k){
+  if(pkPamat[k] !== undefined || pkBezi.has(k)) return;
+  pkBezi.add(k);
+  const [s0, od, dd] = k.split('|');
+  let d;
+  try{ d = await rpc('dash_produkt_krajiny', {p_od: od, p_do: dd, p_sku: s0}) || []; }catch(_e){ d = null; }
+  pkBezi.delete(k);
+  pkPamat[k] = d;                         /* null = nepodarilo sa, nič sa nezobrazí */
+  spoluBoxy(sku);
+}
+/* skok na Produkty → Najpredávanejšie len v danej krajine */
+function chodNaProdKr(kr){
+  if(!kr) return;
+  const nb = document.querySelector('#nav button[data-s="produkty"]');
+  if(nb && nb.getAttribute('aria-pressed') !== 'true') nb.click();
+  if(zobrazUdaj === 'mat'){ const b = document.querySelector('#s-produkty .prepinac [data-p="metre"]'); if(b) b.click(); }
+  nastavProdKr(kr);
+  requestAnimationFrame(() => { const h = document.querySelector('#s-produkty .np-hl'); if(h) h.scrollIntoView({block: 'start', behavior: 'smooth'}); });
+}
+document.addEventListener('click', e => {
+  const v = e.target.closest('[data-pkviac]');
+  if(v){ e.stopPropagation(); const k = v.dataset.pkviac; if(pkVsetky.has(k)) pkVsetky.delete(k); else pkVsetky.add(k); spoluBoxy(v.dataset.pksku); return; }
+  const c = e.target.closest('[data-pkkr]');
+  if(c){ e.stopPropagation(); chodNaProdKr(c.dataset.pkkr); return; }
+  const t = e.target.closest('[data-krtop]');
+  if(t){ e.stopPropagation(); chodNaProdKr(t.dataset.krtop); }
+}, true);
 function spoluBoxy(sku){
   document.querySelectorAll('.spolu-box').forEach(b => {
     if(b.dataset.box !== sku) return;
-    b.innerHTML = spoluBoxHtml(sku);
+    b.innerHTML = (b.closest('#topProdukty') ? pkHtml(sku) : '') + spoluBoxHtml(sku);
     b.parentElement.classList.toggle('otvoreny', spoluOtvorene.has(sku));
   });
 }
@@ -1700,7 +1757,7 @@ function vykresliProdukty(){
       <div class="hod hod1${podlaTrzby ? ' hod-tr' : ''}">${podlaTrzby ? `${cis(p.trzba)} €<small>${cis(p.mnozstvo, p.je_meter ? 1 : 0)} ${p.je_meter ? 'm' : 'ks'} · ${objBtn(p.sku, obdobie.od, obdobie.do, 'predaj', cis(p.obj) + ' obj.', kr)}</small>`
         : `${cis(p.mnozstvo, (naObj && !p.je_meter) || strihy ? 0 : 1)}<small> ${naObj ? (p.je_meter ? 'm' : 'ks') : jed} · ${objBtn(p.sku, obdobie.od, obdobie.do, naObj ? 'predaj' : 'bezne', cis(p.obj) + ' obj.', kr)}</small>`}</div>
     </div>
-    <div class="spolu-box" data-box="${esc(p.sku)}">${spoluBoxHtml(p.sku)}</div>
+    <div class="spolu-box" data-box="${esc(p.sku)}">${pkHtml(p.sku) + spoluBoxHtml(p.sku)}</div>
     ${objBoxHtml(p.sku, obdobie.od, obdobie.do, naObj ? 'predaj' : 'bezne', kr)}
     </div>`).join('') + viacTlacidlo(vsetkoPol, pole.length)
     + (trTyp ? `<div class="tr-pozn-p">Tržby pri produktoch sú bez DPH v €, z predaných aj nezaplatených objednávok (sivý štítok „čaká na platbu“)${obdobie.od < '2026-01-01' ? ' – po produktoch ich máme od 1. 1. 2026' : ''}. Marža = (tržba − nákupná cena z Magenta) / tržba; červenou pod 30 %.</div>` : '');
@@ -2189,7 +2246,7 @@ function vykresliKrajiny(){
     let rozbal = '';
     if(otv){
       const dni = ok7 ? sedem.krajiny[x.krajina] : null;
-      rozbal = `<div class="rozbal">${
+      rozbal = `<div class="rozbal"><button type="button" class="kr-top-btn" data-krtop="${esc(x.krajina)}">Top produkty v tejto krajine ›</button>${
         !ok7 ? '<div class="kostra"></div>'
         : (dni ? grafOkno(x.krajina, dni, sedem.jeDnes, sedem.cas) + legendaTz(sedem.jeDnes, sedem.cas) + porovnanie(dni, sedem.jeDnes, sedem.cas)
                : `<div class="prazdne">Za posledných ${POCET_DNI} dní žiadne objednávky.</div>`)}${trSubHtml(x.krajina)}</div>`;

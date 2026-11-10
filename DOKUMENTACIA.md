@@ -147,3 +147,10 @@ Ovladanie nad zoznamom zabera na mobile ~145 px namiesto ~275 px:
 - zoradenie "m / ks", "obj.", "€" a poznamka "klik = co sa kupovalo spolu" v jednom riadku,
 - sucet "Spolu" ako jeden tenky riadok (nie karta). CSS blok "Najpredavanejsie kompaktne (11/2026)".
 
+## Prepojenie Krajiny <-> Produkty (od 10. 11. 2026)
+- Krajiny: v rozbalenej krajine je tlacidlo "Top produkty v tejto krajine" - prepne na Produkty a nastavi vyber krajiny.
+- Produkty -> Najpredavanejsie: po kliknuti na produkt sa nad kombinaciami zobrazi "Predaj podla krajin" za zvolene
+  obdobie (mnozstvo a pocet objednavok, prvych 6, zvysok cez "+N dalsich"). Klik na krajinu = Najpredavanejsie len v nej.
+- Funkcia `dash_produkt_krajiny(p_od, p_do, p_sku)` z `predaj_den` (+ dnesok nazivo), filtre rovnake ako zoznam
+  (vratane cakajucich a stornovanych). Index `ix_predaj_den_sku_den`. Odozva ~35 ms aj za cely rok.
+
