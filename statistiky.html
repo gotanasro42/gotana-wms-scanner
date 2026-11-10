@@ -856,7 +856,6 @@ h2{font-size:12px;letter-spacing:.12em}
 .pk-chip small{color:var(--sedy);font-size:11px}
 .pk-chip:disabled{cursor:default;opacity:.7}
 .pk-chip.pk-viac{background:transparent;border-style:dashed;color:var(--sedy)}
-.kr-top-btn{display:block;width:100%;margin:0 0 10px;padding:9px;border:0;border-radius:7px;background:var(--atrament);color:var(--platno);font:inherit;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13px;cursor:pointer}
 #s-produkty .np-hl{scroll-margin-top:64px}
 </style>
 <script>
@@ -1511,8 +1510,6 @@ document.addEventListener('click', e => {
   if(v){ e.stopPropagation(); const k = v.dataset.pkviac; if(pkVsetky.has(k)) pkVsetky.delete(k); else pkVsetky.add(k); spoluBoxy(v.dataset.pksku); return; }
   const c = e.target.closest('[data-pkkr]');
   if(c){ e.stopPropagation(); chodNaProdKr(c.dataset.pkkr); return; }
-  const t = e.target.closest('[data-krtop]');
-  if(t){ e.stopPropagation(); chodNaProdKr(t.dataset.krtop); }
 }, true);
 function spoluBoxy(sku){
   document.querySelectorAll('.spolu-box').forEach(b => {
@@ -2246,7 +2243,7 @@ function vykresliKrajiny(){
     let rozbal = '';
     if(otv){
       const dni = ok7 ? sedem.krajiny[x.krajina] : null;
-      rozbal = `<div class="rozbal"><button type="button" class="kr-top-btn" data-krtop="${esc(x.krajina)}">Top produkty v tejto krajine ›</button>${
+      rozbal = `<div class="rozbal">${
         !ok7 ? '<div class="kostra"></div>'
         : (dni ? grafOkno(x.krajina, dni, sedem.jeDnes, sedem.cas) + legendaTz(sedem.jeDnes, sedem.cas) + porovnanie(dni, sedem.jeDnes, sedem.cas)
                : `<div class="prazdne">Za posledných ${POCET_DNI} dní žiadne objednávky.</div>`)}${trSubHtml(x.krajina)}</div>`;
