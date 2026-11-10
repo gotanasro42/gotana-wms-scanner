@@ -140,3 +140,9 @@ Pri navrate hore (pod 30 px) sa zobrazi cela. Riesi to trieda `header.zbalena` (
 - Riadky (Velkost objednavok, Krajiny, Pracoviska): nazov vzdy vlavo, cislo vpravo. Predtym mriezka davala cislo
   (s grid-row 1/3) na prve miesto, preto bolo na mobile vlavo. Oprava: `.riadok > .nazov{grid-column:1}`, `.riadok > .hod{grid-column:2}`.
 
+## Najpredavanejsie kompaktne (od 10. 11. 2026)
+Ovladanie nad zoznamom zabera na mobile ~145 px namiesto ~275 px:
+- prepinac v jednom riadku s kratkymi nazvami (Metre, Kusy, Na obj., Strihy, Vzory; plny nazov v title),
+- zoradenie "m / ks", "obj.", "€" a poznamka "klik = co sa kupovalo spolu" v jednom riadku,
+- sucet "Spolu" ako jeden tenky riadok (nie karta). CSS blok "Najpredavanejsie kompaktne (11/2026)".
+

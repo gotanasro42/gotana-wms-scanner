@@ -833,6 +833,18 @@ h2{font-size:12px;letter-spacing:.12em}
 .spolu-pozn,.tr-pozn,.tr-pozn-p,.okno-pozn,.mr-pozn,.ht-pozn,.spolu .pozn,#tPozn,#noPozn,
 .tr-leg,.pr-leg,.tz-leg,.rekord .spodok,.rekord .cifry span,.riadok .detail,.ch-msg .ch-meta{font-size:11.5px}
 .karta .pop,.rozsah,.trend-popis,.stav-syn{font-size:11px}
+
+/* ---------- Najpredávanejšie kompaktne (11/2026): prepínače v jednom riadku, súčet ako jeden riadok ---------- */
+#s-produkty .np-hl{margin:12px 0 6px}
+#s-produkty .prepinac{flex-wrap:nowrap;gap:4px}
+#s-produkty .prepinac button{min-width:0;flex:1 1 0;padding:6px 2px;min-height:32px;font-size:12.5px;border-radius:6px;white-space:nowrap}
+#s-produkty .zorad{margin:6px 0 0;gap:4px}
+#s-produkty .zorad button{padding:4px 10px;font-size:12px;white-space:nowrap;flex:0 0 auto}
+#s-produkty .zorad .spolu-pozn{margin:0 0 0 auto;padding-left:6px;min-width:0;flex:0 1 auto;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
+.sek-suhrn{flex-wrap:nowrap;gap:0 8px;margin:6px 0 4px;padding:5px 10px;border:0;border-radius:6px;background:var(--platno-tmavsi);font-size:12px;white-space:nowrap;overflow:hidden}
+.sek-suhrn span{font-size:11px;letter-spacing:.04em}
+.sek-suhrn b{font-size:13.5px}
+.sek-suhrn small{font-size:11px;margin-left:auto;overflow:hidden;text-overflow:ellipsis}
 </style>
 <script>
 /* ---- Prihlásenie do aplikácie Gotana ---- */
@@ -1096,18 +1108,18 @@ h2{font-size:12px;letter-spacing:.12em}
       <label class="kr-vyber" id="krVyberObal"><select id="prodKrajina" aria-label="Krajina, za ktorú sa zobrazia najpredávanejšie produkty"><option value="">Všetky krajiny</option></select></label>
     </div>
     <div class="prepinac">
-      <button data-p="metre" aria-pressed="true">Na metre</button>
-      <button data-p="kusy" aria-pressed="false">Na kusy</button>
-      <button data-p="objednavka" aria-pressed="false">Na objednávku</button>
-      <button data-p="strihy" aria-pressed="false">PDF strihy</button>
+      <button data-p="metre" aria-pressed="true" title="Na metre">Metre</button>
+      <button data-p="kusy" aria-pressed="false" title="Na kusy">Kusy</button>
+      <button data-p="objednavka" aria-pressed="false" title="Na objednávku">Na obj.</button>
+      <button data-p="strihy" aria-pressed="false" title="PDF strihy">Strihy</button>
       <button data-p="mat" aria-pressed="false">Vzory</button>
     </div>
     <div class="zorad" id="zorad"><span>Zoradiť:</span>
-      <button data-z="mnozstvo" aria-pressed="true">podľa metrov / kusov</button>
-      <button data-z="obj" aria-pressed="false">podľa objednávok</button>
-      <button data-z="trzba" aria-pressed="false" id="zoradTrzba" hidden>podľa tržby €</button>
+      <button data-z="mnozstvo" aria-pressed="true" title="podľa metrov / kusov">m / ks</button>
+      <button data-z="obj" aria-pressed="false" title="podľa objednávok">obj.</button>
+      <button data-z="trzba" aria-pressed="false" id="zoradTrzba" title="podľa tržby €" hidden>€</button>
+      <span class="spolu-pozn" id="spoluPozn" title="Klikni na produkt a rozbalí sa 10 najčastejších kombinácií (čo sa kupovalo spolu, posledných 12 mesiacov).">klik = čo sa kupovalo spolu</span>
     </div>
-    <div class="spolu-pozn" id="spoluPozn" style="margin:6px 0 0">Klikni na produkt a rozbalí sa 10 najčastejších kombinácií (čo sa kupovalo spolu, posledných 12 mesiacov).</div>
     <div id="topProdukty"></div>
   </section>
 
@@ -1601,7 +1613,7 @@ function sekKluc(){ return obdobie.od + '|' + obdobie.do + '|' + zobrazUdaj + '|
 function sekSuhrnHtml(){
   if(!['metre','kusy','objednavka','strihy'].includes(zobrazUdaj)) return '';
   const k = sekKluc(), s = sekSuhrn[k];
-  if(s === undefined){ nacitajSekSuhrn(k); return `<div class="sek-suhrn" data-sek="${esc(k)}"><span>Spolu za sekciu</span><small>počítam…</small></div>`; }
+  if(s === undefined){ nacitajSekSuhrn(k); return `<div class="sek-suhrn" data-sek="${esc(k)}"><span>Spolu</span><small>počítam…</small></div>`; }
   if(!s) return '';
   let mn;
   if(zobrazUdaj === 'objednavka'){
@@ -1612,7 +1624,7 @@ function sekSuhrnHtml(){
   } else mn = cis(s.mnozstvo, zobrazUdaj === 'metre' ? 1 : 0) + (zobrazUdaj === 'metre' ? ' m' : ' ks');
   const pozn = zobrazUdaj === 'objednavka' ? 'Len zaplatené / spracovávané objednávky, rovnako ako zoznam.'
     : 'Rovnako ako zoznam: vrátane objednávok, ktoré čakajú na platbu alebo sú stornované – preto môže byť viac ako číslo hore.';
-  return `<div class="sek-suhrn" data-sek="${esc(k)}" title="${esc(pozn)}"><span>Spolu za sekciu</span><b>${mn}</b><b>${cis(s.obj)} obj.</b><small>${cis(s.produktov)} produktov</small></div>`;
+  return `<div class="sek-suhrn" data-sek="${esc(k)}" title="${esc(pozn)}"><span>Spolu</span><b>${mn}</b><b>${cis(s.obj)} obj.</b><small>${cis(s.produktov)} prod.</small></div>`;
 }
 async function nacitajSekSuhrn(k){
   if(sekSuhrnBezi[k]) return;
