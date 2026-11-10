@@ -1321,7 +1321,7 @@ async function nacitajKrTop(){
 function vykresliKrVyber(){
   const sel = $('#prodKrajina'); if(!sel) return;
   const kr = ((data && data.krajiny) || []).filter(x => x.krajina && x.krajina !== '??');
-  const meno = k => ((vlajka(k) + ' ').replace(/^ /, '')) + (KRAJINY[k] || k);
+  const meno = k => KRAJINY[k] || k;   /* bez vlajky – vo výbere ju Windows nevie nakresliť */
   let h = '<option value="">Všetky krajiny</option>' + kr.map(x => `<option value="${esc(x.krajina)}">${esc(meno(x.krajina))} · ${cis(x.obj)} obj.</option>`).join('');
   if(prodKr && !kr.some(x => x.krajina === prodKr)) h += `<option value="${esc(prodKr)}">${esc(meno(prodKr))} · 0 obj.</option>`;
   sel.innerHTML = h; sel.value = prodKr;

@@ -95,3 +95,10 @@ nic sa nepridava ani neodpisuje zo skladovych poloziek.
 - Podpracoviska: najprv rucne v Sheets, potom Apps Script, dnes automaticky z Magenta.
 - 8/2026: prechod zo Sheets/Apps Script na Supabase (rychlost, subezne skenovanie, ziadne denne limity).
 
+
+## Najpredavanejsie podla krajiny (od 11/2026)
+Statistiky -> Produkty -> vyber krajiny vpravo od nadpisu "Najpredavanejsie". Plati pre Na metre, Na kusy,
+Na objednavku a PDF strihy (pri Vzoroch sa vyber skryje). V ponuke su krajiny, kam sa v zvolenom obdobi predavalo.
+- Data: funkcia `dash_top_krajina(od, do, krajina)` (vysledok sa pamata v `dash_cache`, kluc `topkr|...`).
+- Trzby/marze a zoznam objednavok pri produkte: `dash_trzby_produkty` a `dash_produkt_objednavky` maju
+  volitelny parameter `p_krajina` (bez neho = vsetky krajiny, ako doteraz).
