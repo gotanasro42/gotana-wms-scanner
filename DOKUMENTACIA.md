@@ -102,3 +102,18 @@ Na objednavku a PDF strihy (pri Vzoroch sa vyber skryje). V ponuke su krajiny, k
 - Data: funkcia `dash_top_krajina(od, do, krajina)` (vysledok sa pamata v `dash_cache`, kluc `topkr|...`).
 - Trzby/marze a zoznam objednavok pri produkte: `dash_trzby_produkty` a `dash_produkt_objednavky` maju
   volitelny parameter `p_krajina` (bez neho = vsetky krajiny, ako doteraz).
+
+## Rychle statistiky - predpocitana denna tabulka (od 11/2026)
+Statistiky za dlhe obdobia (Tento rok, Vlastne) sa nepocitaju z polozky po polozke, ale z tabulky `predaj_den`
+(den x SKU x krajina x stav; mnozstvo, trzba bez DPH v EUR, naklad, pocty objednavok, cisla objednavok `obj_ids`).
+- Doplna ju sama: triggery na `objednavky` a `objednavky_polozky` zapisu zmeneny den do `predaj_zmeny`,
+  plan `predaj-den-obnova` (kazde 3 minuty) ho prepocita funkciou `predaj_obnov()`. Tlacidlo Obnovit robi to iste hned.
+- Dnesok sa vzdy cita nazivo z poloziek (funkcia `predaj_obdobie(od, do)`), takze "Dnes" je presne na minutu.
+- Pocty objednavok za skupiny (na objednavku/tlac, HT, HF) su v `predaj_den_skupiny`.
+- Prerobene funkcie: dash_prehlad_raw, dash_top_krajina_raw, dash_trzby_produkty_vypocet, dash_trzby_vypocet (marza),
+  dash_tlac_obdobie_raw, dash_top_strihy_raw, dash_top_vzory_raw, dash_hometextil_raw, dash_hometextil_top_raw,
+  dash_hometextil_typ_raw, dash_ht_vyvoj_raw, dash_trzby_ht_vypocet. Vysledky su overene ako zhodne so starymi.
+- Povodne verzie su zalohovane ako `*_stary` (napr. `dash_prehlad_raw_stary`). Navrat: premenovat spat.
+- Predhriatie `dash-predhrej-rok` bezi kazdych 30 min (6:09-22:39), cele trva ~26 s.
+- Pozor pri uprave: `predaj_obdobie(...)` volat s jednoduchymi parametrami (nie s vnorenym `select`),
+  inak ju databaza nezlucuje s dotazom a nacita vsetko (10+ s namiesto desatin).
