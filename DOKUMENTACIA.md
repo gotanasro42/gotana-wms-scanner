@@ -134,3 +134,9 @@ Statistiky: po odskrolovani nadol (viac ako 200 px) sa z tmavej hlavicky skryje 
 hladanie objednavky a datum - zostane len riadok s obdobiami (a Vlastne..., ak je otvorene). Na mobile 46 px namiesto 162 px.
 Pri navrate hore (pod 30 px) sa zobrazi cela. Riesi to trieda `header.zbalena` (CSS) a maly skript pri skrolovani.
 
+## Citatelnost (od 10. 11. 2026)
+- Nadpisy sekcii 12 px (predtym 10), podnadpisy a stitky 11 px (predtym 9-10), poznamky a popisy 11-11.5 px (predtym 10-10.5).
+  Vsetko je v jednom bloku na konci stylov ("Citatelnost (11/2026)"); grafy, stitky a spodne menu sa nemenili.
+- Riadky (Velkost objednavok, Krajiny, Pracoviska): nazov vzdy vlavo, cislo vpravo. Predtym mriezka davala cislo
+  (s grid-row 1/3) na prve miesto, preto bolo na mobile vlavo. Oprava: `.riadok > .nazov{grid-column:1}`, `.riadok > .hod{grid-column:2}`.
+
