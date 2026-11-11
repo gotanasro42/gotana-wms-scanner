@@ -152,4 +152,7 @@ Ovladanie nad zoznamom zabera na mobile ~145 px namiesto ~275 px:
   obdobie (mnozstvo a pocet objednavok, prvych 6, zvysok cez "+N dalsich"). Klik na krajinu = Najpredavanejsie len v nej.
 - Funkcia `dash_produkt_krajiny(p_od, p_do, p_sku)` z `predaj_den` (+ dnesok nazivo), filtre rovnake ako zoznam
   (vratane cakajucich a stornovanych). Index `ix_predaj_den_sku_den`. Odozva ~35 ms aj za cely rok.
+- Od 11. 11. 2026 aj v Hometextile (HT aj HF): po kliknuti na produkt "Predaj podla krajin" za obdobie Hometextilu.
+  Rata ako Hometextil - len stav predaj a mnozstvo bez storna (`dash_produkt_krajiny(..., p_len_predaj => true)`),
+  takze sucet sedi s cislami v zozname (overene na top 8 HT za 30 dni: kusy aj objednavky zhodne). Krajiny tu nie su klikatelne.
 

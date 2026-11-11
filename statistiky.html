@@ -855,6 +855,7 @@ h2{font-size:12px;letter-spacing:.12em}
 .pk-chip b{font-family:'IBM Plex Mono',monospace;font-weight:600}
 .pk-chip small{color:var(--sedy);font-size:11px}
 .pk-chip:disabled{cursor:default;opacity:.7}
+.pk-chip.pk-info{cursor:default}
 .pk-chip.pk-viac{background:transparent;border-style:dashed;color:var(--sedy)}
 #s-produkty .np-hl{scroll-margin-top:64px}
 </style>
@@ -1471,17 +1472,20 @@ function spoluBoxHtml(sku){
 }
 /* Pri produkte: v ktorých krajinách sa predáva (za zvolené obdobie). Klik na krajinu = Najpredávanejšie len v nej. */
 const pkPamat = {}, pkVsetky = new Set(), pkBezi = new Set();
-function pkKluc(sku){ return sku + '|' + obdobie.od + '|' + obdobie.do; }
-function pkHtml(sku){
+/* ht = Hometextil: len predané objednávky a bez storna (ako čísla Hometextilu); krajiny tam nie sú klikateľné */
+function pkKluc(sku, od, dd, ht){ return [sku, od, dd, ht ? 1 : 0].join('|'); }
+function pkHtml(sku, od = obdobie.od, dd = obdobie.do, ht = false){
   if(!spoluOtvorene.has(sku)) return '';
-  const k = pkKluc(sku), d = pkPamat[k];
+  const k = pkKluc(sku, od, dd, ht), d = pkPamat[k];
   if(d === undefined){ pkNacitaj(sku, k); return '<div class="pk-box"><div class="pk-hl">Predaj podľa krajín</div><span class="spolu-pozn">načítavam…</span></div>'; }
   if(!d || !d.length) return '';
   const MAX = 6, vsetky = pkVsetky.has(k), ukaz = vsetky ? d : d.slice(0, MAX);
-  return `<div class="pk-box"><div class="pk-hl">Predaj podľa krajín <span>· klik = top produkty v krajine</span></div><div class="pk-chips">`
+  return `<div class="pk-box"><div class="pk-hl">Predaj podľa krajín${ht ? '' : ' <span>· klik = top produkty v krajine</span>'}</div><div class="pk-chips">`
     + ukaz.map(x => {
         const meno = x.krajina === '??' ? 'Neuvedená krajina' : (KRAJINY[x.krajina] || x.krajina);
-        return `<button type="button" class="pk-chip"${x.krajina === '??' ? ' disabled' : ` data-pkkr="${esc(x.krajina)}"`} title="${esc(meno)}">${esc((vlajka(x.krajina) + ' ' + x.krajina).trim())} <b>${cis(x.mnozstvo, x.je_meter ? 1 : 0)} ${x.je_meter ? 'm' : 'ks'}</b> <small>· ${cis(x.obj)} obj.</small></button>`;
+        const obsah = `${esc((vlajka(x.krajina) + ' ' + x.krajina).trim())} <b>${cis(x.mnozstvo, x.je_meter ? 1 : 0)} ${x.je_meter ? 'm' : 'ks'}</b> <small>· ${cis(x.obj)} obj.</small>`;
+        if(ht) return `<span class="pk-chip pk-info" title="${esc(meno)}">${obsah}</span>`;
+        return `<button type="button" class="pk-chip"${x.krajina === '??' ? ' disabled' : ` data-pkkr="${esc(x.krajina)}"`} title="${esc(meno)}">${obsah}</button>`;
       }).join('')
     + (d.length > MAX ? `<button type="button" class="pk-chip pk-viac" data-pkviac="${esc(k)}" data-pksku="${esc(sku)}">${vsetky ? 'menej ▴' : `+${d.length - MAX} ďalších ▾`}</button>` : '')
     + '</div></div>';
@@ -1489,9 +1493,9 @@ function pkHtml(sku){
 async function pkNacitaj(sku, k){
   if(pkPamat[k] !== undefined || pkBezi.has(k)) return;
   pkBezi.add(k);
-  const [s0, od, dd] = k.split('|');
+  const [s0, od, dd, ht] = k.split('|');
   let d;
-  try{ d = await rpc('dash_produkt_krajiny', {p_od: od, p_do: dd, p_sku: s0}) || []; }catch(_e){ d = null; }
+  try{ d = await rpc('dash_produkt_krajiny', {p_od: od, p_do: dd, p_sku: s0, p_len_predaj: ht === '1'}) || []; }catch(_e){ d = null; }
   pkBezi.delete(k);
   pkPamat[k] = d;                         /* null = nepodarilo sa, nič sa nezobrazí */
   spoluBoxy(sku);
@@ -1514,7 +1518,9 @@ document.addEventListener('click', e => {
 function spoluBoxy(sku){
   document.querySelectorAll('.spolu-box').forEach(b => {
     if(b.dataset.box !== sku) return;
-    b.innerHTML = (b.closest('#topProdukty') ? pkHtml(sku) : '') + spoluBoxHtml(sku);
+    const pk = b.closest('#topProdukty') ? pkHtml(sku)
+      : (b.closest('#s-hometextil') && htData) ? pkHtml(sku, htData.od, htData.do, true) : '';
+    b.innerHTML = pk + spoluBoxHtml(sku);
     b.parentElement.classList.toggle('otvoreny', spoluOtvorene.has(sku));
   });
 }
@@ -3176,7 +3182,7 @@ function htDeltaHtml(ks, pred){
 
 function htProdukt(r, i, sObj){
   const zas = r[5] != null ? ` · <span class="ht-zas${Number(r[5]) <= 5 ? ' malo' : ''}">skladom ${htF(r[5])} ks</span>` : '';
-  return `<div class="ht-obal${spoluOtvorene.has(r[0]) ? ' otvoreny' : ''}"><div class="ht-produkt" data-sku="${esc(r[0])}"><span class="por">${i+1}.</span><img src="${htImg(r[2])}" alt="" loading="lazy" onerror="${HT_BEZ_OBR}"><div><div class="nazov">${esc(r[1]||r[0])}</div><div class="meta">${esc(r[0])}${zas}${priemTxt(r[6])}</div></div><div class="hod">${htF(r[3])} ks${sObj ? `<small>${htData ? objBtn(r[0], htData.od, htData.do, 'ht', htF(r[4]) + ' obj.') : htF(r[4]) + ' obj.'}</small>` : ''}</div></div><div class="spolu-box" data-box="${esc(r[0])}">${spoluBoxHtml(r[0])}</div>${htData ? objBoxHtml(r[0], htData.od, htData.do, 'ht') : ''}</div>`;
+  return `<div class="ht-obal${spoluOtvorene.has(r[0]) ? ' otvoreny' : ''}"><div class="ht-produkt" data-sku="${esc(r[0])}"><span class="por">${i+1}.</span><img src="${htImg(r[2])}" alt="" loading="lazy" onerror="${HT_BEZ_OBR}"><div><div class="nazov">${esc(r[1]||r[0])}</div><div class="meta">${esc(r[0])}${zas}${priemTxt(r[6])}</div></div><div class="hod">${htF(r[3])} ks${sObj ? `<small>${htData ? objBtn(r[0], htData.od, htData.do, 'ht', htF(r[4]) + ' obj.') : htF(r[4]) + ' obj.'}</small>` : ''}</div></div><div class="spolu-box" data-box="${esc(r[0])}">${(htData ? pkHtml(r[0], htData.od, htData.do, true) : '') + spoluBoxHtml(r[0])}</div>${htData ? objBoxHtml(r[0], htData.od, htData.do, 'ht') : ''}</div>`;
 }
 
 /* ---- Vývoj v čase: vlastné obdobie a krok (dni / týždne / mesiace) ---- */
