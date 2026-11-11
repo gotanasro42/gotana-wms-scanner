@@ -858,6 +858,31 @@ h2{font-size:12px;letter-spacing:.12em}
 .pk-chip.pk-info{cursor:default}
 .pk-chip.pk-viac{background:transparent;border-style:dashed;color:var(--sedy)}
 #s-produkty .np-hl,#htNpHl{scroll-margin-top:64px}
+
+/* ---------- Rekordy a veľkosť objednávok kompaktne (11/2026) ---------- */
+.rk-mriezka{display:grid;grid-template-columns:1fr;gap:8px}
+@media (min-width:640px){.rk-mriezka{grid-template-columns:1fr 1fr}}
+.rk-box{background:#fff;border:1px solid var(--linka);border-radius:8px;padding:4px 10px 2px;border-left:3px solid var(--safran)}
+.rk-hl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--sedy);font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;padding:3px 0 2px}
+.rekord.rk-r{display:flex;align-items:baseline;gap:8px;background:none;border:0;border-top:1px solid var(--platno-tmavsi);border-radius:0;margin:0;padding:6px 0;font-size:12.5px}
+.rk-box .rk-hl + .rk-r{border-top:0}
+.rk-r .rk-p{color:var(--safran);font-weight:700;width:14px;flex:0 0 auto}
+.rk-r .rk-k{flex:0 0 auto;font-weight:600;min-width:42px;font-family:"Twemoji Country Flags","IBM Plex Sans",sans-serif}
+.rk-r .rk-c{flex:1 1 auto;color:var(--sedy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rk-r .rk-c b{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--atrament);font-size:13.5px}
+.rk-r .rk-o{flex:0 0 auto;color:var(--sedy);font-size:11px;font-family:'IBM Plex Mono',monospace}
+.rk-nic{font-size:12px;color:var(--sedy);padding:6px 0}
+.rk-priemer{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-top:8px;padding:7px 10px;border-radius:8px;background:var(--platno-tmavsi);border-left:3px solid var(--atrament-svetly);font-size:12.5px;color:var(--sedy)}
+.rk-priemer span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;font-family:'IBM Plex Sans Condensed',sans-serif;margin-right:auto}
+.rk-priemer b{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--atrament);font-size:14px}
+.vl-pasy{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.vl-pas{background:#fff;border:1px solid var(--linka);border-radius:8px;padding:6px 8px 7px;display:flex;flex-direction:column;gap:1px;position:relative}
+.vl-pas .t{font-size:11.5px;color:var(--sedy);font-weight:600}
+.vl-pas .t small{font-weight:400}
+.vl-pas b{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:var(--atrament);line-height:1.2}
+.vl-pas i{display:block;height:4px;border-radius:2px;background:var(--platno-tmavsi);position:relative;overflow:hidden;margin-top:3px}
+.vl-pas i::after{content:'';position:absolute;inset:0 auto 0 0;width:var(--p);background:var(--safran);border-radius:2px}
+.vl-pas .pc{font-size:10.5px;color:var(--sedy)}
 </style>
 <script>
 /* ---- Prihlásenie do aplikácie Gotana ---- */
@@ -1384,6 +1409,18 @@ function nastavProdKr(k){
   prodKr = k || ''; zobrazPocet = 30; krObd = null;
   vykresliKrVyber(); nacitajPodlaZobrazenia(); if(data) vykresliProdukty();
 }
+/* Veľkosť objednávok: pásma vedľa seba v jednom riadku (počet + podiel), nie zoznam pod sebou */
+function vykresliVelkosti(){
+  const ciel = $('#velkosti'); if(!ciel) return;
+  const pole = (data && data.velkosti) || [];
+  if(!pole.length){ ciel.innerHTML = '<div class="prazdne">Za toto obdobie zatiaľ nič.</div>'; return; }
+  const sum = pole.reduce((a, x) => a + (Number(x.obj) || 0), 0) || 1;
+  const kratko = t => String(t || '').replace(/\s*polož(ka|ky|iek)\s*/i, '').replace('-', '–');
+  ciel.innerHTML = `<div class="vl-pasy">${pole.map(x => {
+    const pct = (Number(x.obj) || 0) / sum * 100;
+    return `<div class="vl-pas" title="${esc(x.pasmo)}: ${cis(x.obj)} obj. (${cis(pct,0)} %)"><span class="t">${esc(kratko(x.pasmo))} <small>pol.</small></span><b>${cis(x.obj)}</b><i style="--p:${pct.toFixed(1)}%"></i><small class="pc">${cis(pct,0)} %</small></div>`;
+  }).join('')}</div>`;
+}
 function riadky(pole, cielSel, kluc, hodnota, popis){
   const ciel = $(cielSel);
   if(!ciel) return;
@@ -1872,36 +1909,22 @@ function zavriObjednavku(){
 
 let top3 = { poloziek: [], metre: [] };
 
-function kartaRekordu(o, poradie){
-  const d = new Date(o.den + 'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric',year:'2-digit'});
+/* kompaktný riadok rekordu: poradie, krajina, položky · m · ks, číslo objednávky; klik = detail objednávky */
+function riadokRekordu(o, poradie){
+  const d = new Date(o.den + 'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric'});
   const kr = KRAJINY[o.krajina] || o.krajina || '—';
-  return `<div class="rekord klik" data-cislo="${esc(o.cislo)}" role="button" tabindex="0">
-    <div class="stitok"><span class="poradie">${poradie}.</span> ${vlajka(o.krajina)} ${esc(kr)}</div>
-    <div class="cifry">
-      <div><b class="cislo">${cis(o.poloziek)}</b> <span>položiek</span></div>
-      <div><b class="cislo">${cis(o.metre,1)}</b> <span>m</span></div>
-      <div><b class="cislo">${cis(o.kusy)}</b> <span>ks</span></div>
-    </div>
-    <div class="spodok">č. ${esc(o.cislo)} · ${esc(d)} <span class="sipka">›</span></div>
-  </div>`;
+  return `<div class="rk-r rekord klik" data-cislo="${esc(o.cislo)}" role="button" tabindex="0" title="${esc(kr)} · č. ${esc(o.cislo)} · ${esc(d)}">
+    <span class="rk-p">${poradie}.</span><span class="rk-k">${vlajka(o.krajina)} ${esc(o.krajina || '—')}</span>
+    <span class="rk-c"><b>${cis(o.poloziek)}</b> pol. · <b>${cis(o.metre,1)}</b> m · <b>${cis(o.kusy)}</b> ks</span>
+    <span class="rk-o">${esc(d)} ›</span></div>`;
 }
 
 function vykresliRekordy(){
   const e = data.extremy || {};
   const p = top3.poloziek || [], m = top3.metre || [];
-  $('#extremy').innerHTML =
-    '<div class="podnadpis">Najviac položiek</div>' +
-    (p.length ? p.map((o,i)=>kartaRekordu(o,i+1)).join('') : '<div class="prazdne">Nič.</div>') +
-    '<div class="podnadpis">Najviac metrov</div>' +
-    (m.length ? m.map((o,i)=>kartaRekordu(o,i+1)).join('') : '<div class="prazdne">Nič.</div>') +
-    `<div class="rekord stred">
-      <div class="stitok">Priemerná objednávka</div>
-      <div class="cifry">
-        <div><b class="cislo">${cis(e.priemPoloziek,1)}</b> <span>položiek</span></div>
-        <div><b class="cislo">${cis(e.priemMetrov,1)}</b> <span>m</span></div>
-      </div>
-      <div class="spodok">priemer za vybrané obdobie</div>
-    </div>`;
+  const skup = (nadpis, pole) => `<div class="rk-box"><div class="rk-hl">${nadpis}</div>${pole.length ? pole.map((o,i)=>riadokRekordu(o,i+1)).join('') : '<div class="rk-nic">Nič.</div>'}</div>`;
+  $('#extremy').innerHTML = `<div class="rk-mriezka">${skup('Najviac položiek', p)}${skup('Najviac metrov', m)}</div>
+    <div class="rk-priemer"><span>Priemerná objednávka</span><b>${cis(e.priemPoloziek,1)}</b> pol. · <b>${cis(e.priemMetrov,1)}</b> m</div>`;
 }
 
 async function nacitajTop3(){
@@ -1955,7 +1978,7 @@ function vykresli(){
   vykresliRekordy();
   vykresliPracoviska();
 
-  riadky(data.velkosti, '#velkosti', x => x.pasmo, x => x.obj);
+  vykresliVelkosti();
   vykresliKrajiny();
 }
 

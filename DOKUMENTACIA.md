@@ -162,3 +162,10 @@ Ovladanie nad zoznamom zabera na mobile ~145 px namiesto ~275 px:
 - Funkcia `dash_hometextil_top_kr(p_od, p_do, p_t, p_krajina)` (cache), vypocet ako `dash_hometextil_top_raw` + filter krajiny.
 - Krajiny v rozpise "Predaj podla krajin" pri HT produkte su klikatelne a nastavia tento vyber.
 
+## Rekordy obdobia a Velkost objednavok kompaktne (od 11. 11. 2026)
+Prehlad: na mobile ~445 px namiesto ~940 px (na PC ~310 px).
+- Rekordy: "Najviac poloziek" a "Najviac metrov" su dve karty (na PC vedla seba), kazdy rekord je jeden riadok
+  (poradie, vlajka + kod krajiny, polozky · m · ks, datum ›). Klik stale otvori detail objednavky, cislo objednavky je v title.
+- Priemerna objednavka je jeden riadok.
+- Velkost objednavok: 4 pasma vedla seba (pocet, prúžok a podiel v %), funkcia `vykresliVelkosti()`.
+
