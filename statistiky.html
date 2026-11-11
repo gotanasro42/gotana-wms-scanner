@@ -883,6 +883,16 @@ h2{font-size:12px;letter-spacing:.12em}
 .vl-pas i{display:block;height:4px;border-radius:2px;background:var(--platno-tmavsi);position:relative;overflow:hidden;margin-top:3px}
 .vl-pas i::after{content:'';position:absolute;inset:0 auto 0 0;width:var(--p);background:var(--safran);border-radius:2px}
 .vl-pas .pc{font-size:10.5px;color:var(--sedy)}
+
+/* ---------- Tržby predvolene zbalené (11/2026) ---------- */
+.tr-prepni{display:flex;align-items:center;gap:8px;width:100%;margin:14px 0 8px;padding:9px 12px;background:#fff;border:1px solid var(--linka);border-left:3px solid var(--safran);border-radius:8px;cursor:pointer;font:inherit;color:var(--atrament);text-align:left}
+.tr-prepni .tr-pr-t{font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.tr-prepni .h2-pozn{font-size:11px;color:var(--sedy);white-space:nowrap}
+.tr-prepni .tr-pr-s{margin-left:auto;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.tr-prepni .tr-pr-s b{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600}
+.tr-prepni .tr-pr-ik{color:var(--safran);font-weight:700;transition:transform .15s}
+.tr-prepni[aria-expanded="true"] .tr-pr-ik{transform:rotate(180deg)}
+@media (max-width:420px){.tr-prepni .h2-pozn{display:none}}
 </style>
 <script>
 /* ---- Prihlásenie do aplikácie Gotana ---- */
@@ -1089,8 +1099,11 @@ h2{font-size:12px;letter-spacing:.12em}
   <!-- PREHĽAD -->
   <section class="sekcia aktivna" id="s-prehlad">
     <div id="trzbyBlok" hidden>
-      <h2>Tržby <span class="h2-pozn">· bez DPH, v €, vidí len správca</span></h2>
-      <div id="trzby"><div class="kostra"></div></div>
+      <button type="button" class="tr-prepni" id="trPrepni" aria-expanded="false" aria-controls="trzby">
+        <span class="tr-pr-t">Tržby</span><span class="h2-pozn">bez DPH · len správca</span>
+        <span class="tr-pr-s" id="trSum"><span class="spolu-pozn">načítavam…</span></span><span class="tr-pr-ik" aria-hidden="true">▾</span>
+      </button>
+      <div id="trzby" hidden><div class="kostra"></div></div>
     </div>
     <h2>Súhrn obdobia</h2>
     <div class="spolu">
@@ -2484,7 +2497,7 @@ async function nacitajTrzby(){
   if(!jeSpravca()){ $('#trzbyBlok').hidden = true; $('#heroTrzba').hidden = true; return; }
   const od = obdobie.od, dd = obdobie.do;
   $('#trzbyBlok').hidden = false;
-  if(!trzby || trzby.od !== od || trzby.do !== dd) $('#trzby').innerHTML = '<div class="kostra"></div>';
+  if(!trzby || trzby.od !== od || trzby.do !== dd){ $('#trzby').innerHTML = '<div class="kostra"></div>'; $('#trSum').innerHTML = '<span class="spolu-pozn">načítavam…</span>'; }
   let d;
   try{ d = await rpc('dash_trzby', {p_kod: localStorage.getItem('trh_kod') || '', p_od: od, p_do: dd}); }
   catch(e){ if(obdobie.od === od && obdobie.do === dd) $('#trzby').innerHTML = `<div class="prazdne">Tržby sa nenačítali (${esc(e.message)}).</div>`; return; }
@@ -2554,6 +2567,9 @@ function vykresliTrzby(){
   $('#heroTrzba').hidden = false;
   $('#heroTrzbaH').textContent = cis(s.trzba);
   $('#heroTrzbaZ').innerHTML = hlavneZ ? trZnacka(s.trzba, hlavneZ.trzba, trPorTxt('Tržba', s.trzba, hlavneZ.trzba, '€')) : '';
+  /* zbalené: v tlačidle len suma; obsah (aj graf) sa vykreslí až po rozbalení, dáta sú už načítané */
+  $('#trSum').innerHTML = `<b>${eur(s.trzba)}</b>${hlavneZ ? ' ' + trZnacka(s.trzba, hlavneZ.trzba) : ''}`;
+  if($('#trzby').hidden){ if(data) vykresliKrajiny(); return; }
   /* porovnania */
   let por = '';
   const riadok = (nazov, x) => x ? `<span class="h">${nazov}</span><span class="c">${eur(x.trzba)}</span><span class="z">${trZnacka(s.trzba, x.trzba)}</span>` : '';
@@ -2588,6 +2604,12 @@ function vykresliTrzby(){
   vykresliTrGraf();
   if(data) vykresliKrajiny();
 }
+$('#trPrepni').addEventListener('click', () => {
+  const box = $('#trzby'), otv = box.hidden;
+  box.hidden = !otv;
+  $('#trPrepni').setAttribute('aria-expanded', String(otv));
+  if(otv && trzby && trzby.od === obdobie.od && trzby.do === obdobie.do) vykresliTrzby();
+});
 function trMarzaHtml(d){
   const m = d.marza;
   if(!m || !(+m.trzba > 0)) return '';

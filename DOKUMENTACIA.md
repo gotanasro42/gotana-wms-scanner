@@ -169,3 +169,8 @@ Prehlad: na mobile ~445 px namiesto ~940 px (na PC ~310 px).
 - Priemerna objednavka je jeden riadok.
 - Velkost objednavok: 4 pasma vedla seba (pocet, prúžok a podiel v %), funkcia `vykresliVelkosti()`.
 
+## Trzby predvolene zbalene (od 11. 11. 2026)
+Prehlad -> Trzby (len spravca): namiesto celej karty je tlacidlo "Trzby ... 4 650 € ↓ -12 % ▾".
+Data sa nacitaju na pozadi hned (aj trzby pri krajinach a suma v hornom pase), karta s grafom sa vykresli az po rozbaleni
+(`vykresliTrzby()` pri skrytom `#trzby` aktualizuje len sumu v tlacidle). Po obnoveni stranky su trzby znova zbalene.
+
