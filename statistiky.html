@@ -857,7 +857,7 @@ h2{font-size:12px;letter-spacing:.12em}
 .pk-chip:disabled{cursor:default;opacity:.7}
 .pk-chip.pk-info{cursor:default}
 .pk-chip.pk-viac{background:transparent;border-style:dashed;color:var(--sedy)}
-#s-produkty .np-hl{scroll-margin-top:64px}
+#s-produkty .np-hl,#htNpHl{scroll-margin-top:64px}
 </style>
 <script>
 /* ---- Prihlásenie do aplikácie Gotana ---- */
@@ -1480,12 +1480,11 @@ function pkHtml(sku, od = obdobie.od, dd = obdobie.do, ht = false){
   if(d === undefined){ pkNacitaj(sku, k); return '<div class="pk-box"><div class="pk-hl">Predaj podľa krajín</div><span class="spolu-pozn">načítavam…</span></div>'; }
   if(!d || !d.length) return '';
   const MAX = 6, vsetky = pkVsetky.has(k), ukaz = vsetky ? d : d.slice(0, MAX);
-  return `<div class="pk-box"><div class="pk-hl">Predaj podľa krajín${ht ? '' : ' <span>· klik = top produkty v krajine</span>'}</div><div class="pk-chips">`
+  return `<div class="pk-box"><div class="pk-hl">Predaj podľa krajín <span>· klik = top produkty v krajine</span></div><div class="pk-chips">`
     + ukaz.map(x => {
         const meno = x.krajina === '??' ? 'Neuvedená krajina' : (KRAJINY[x.krajina] || x.krajina);
         const obsah = `${esc((vlajka(x.krajina) + ' ' + x.krajina).trim())} <b>${cis(x.mnozstvo, x.je_meter ? 1 : 0)} ${x.je_meter ? 'm' : 'ks'}</b> <small>· ${cis(x.obj)} obj.</small>`;
-        if(ht) return `<span class="pk-chip pk-info" title="${esc(meno)}">${obsah}</span>`;
-        return `<button type="button" class="pk-chip"${x.krajina === '??' ? ' disabled' : ` data-pkkr="${esc(x.krajina)}"`} title="${esc(meno)}">${obsah}</button>`;
+        return `<button type="button" class="pk-chip"${x.krajina === '??' ? ' disabled' : ` ${ht ? 'data-htkr' : 'data-pkkr'}="${esc(x.krajina)}"`} title="${esc(meno)}">${obsah}</button>`;
       }).join('')
     + (d.length > MAX ? `<button type="button" class="pk-chip pk-viac" data-pkviac="${esc(k)}" data-pksku="${esc(sku)}">${vsetky ? 'menej ▴' : `+${d.length - MAX} ďalších ▾`}</button>` : '')
     + '</div></div>';
@@ -1514,6 +1513,10 @@ document.addEventListener('click', e => {
   if(v){ e.stopPropagation(); const k = v.dataset.pkviac; if(pkVsetky.has(k)) pkVsetky.delete(k); else pkVsetky.add(k); spoluBoxy(v.dataset.pksku); return; }
   const c = e.target.closest('[data-pkkr]');
   if(c){ e.stopPropagation(); chodNaProdKr(c.dataset.pkkr); return; }
+  const h = e.target.closest('[data-htkr]');
+  if(h){ e.stopPropagation(); htNastavKr(h.dataset.htkr);
+    requestAnimationFrame(() => { const x = $('#htNpHl'); if(x) x.scrollIntoView({block: 'start', behavior: 'smooth'}); }); return; }
+  if(e.target.closest('#htKrZrus')){ e.stopPropagation(); htNastavKr(''); return; }
 }, true);
 function spoluBoxy(sku){
   document.querySelectorAll('.spolu-box').forEach(b => {
@@ -3141,7 +3144,7 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape') zavriObjednav
 
 
 /* ====== HOMETEXTIL (HT + HF) ====== */
-let htData = null, htKluc = '', htTop = 'HT', htNacitava = false;
+let htData = null, htKluc = '', htTop = 'HT', htNacitava = false, htKr = '';
 const htF = n => Number(n||0).toLocaleString('sk-SK',{maximumFractionDigits:0});
 const htImg = u => u ? esc(u) : '';
 const htDatum = d => { if(!d) return ''; const [y,m,dd] = String(d).split('-'); return `${+dd}. ${+m}.`; };
@@ -3363,10 +3366,40 @@ function htPripojRozbal(sel, pole, obsah){
   });
 }
 
+/* výber krajiny pri Najpredávanejších HT / HF (krajiny podľa toho, kam sa v období predávalo) */
+function htKrMoznosti(d){
+  const kr = ((d && d.krajiny) || []).filter(x => x.k && x.k !== '??');
+  let h = '<option value="">Všetky krajiny</option>' + kr.map(x => `<option value="${esc(x.k)}">${esc(KRAJINY[x.k] || x.k)} · ${htF(+x.ht + +x.hf)} ks</option>`).join('');
+  if(htKr && !kr.some(x => x.k === htKr)) h += `<option value="${esc(htKr)}">${esc(KRAJINY[htKr] || htKr)} · 0 ks</option>`;
+  return h;
+}
+function htNastavKr(k){
+  htKr = k || '';
+  const sel = $('#htKrajina');
+  if(sel){ if(htKr && ![...sel.options].some(o => o.value === htKr)) sel.innerHTML = htKrMoznosti(htData); sel.value = htKr; }
+  const ob = $('#htKrObal'); if(ob) ob.classList.toggle('aktivny', !!htKr);
+  htKresliTop();
+}
+function htTopKrKluc(t){ return 'topkr|' + htData.od + '|' + htData.do + '|' + t + '|' + htKr; }
 function htKresliTop(){
-  const pole = (htData.top || {})[htTop] || [];
-  $('#htTop').innerHTML = pole.length ? `<div class="ht-typ-zoz">${pole.map((r, i) => htProdukt(r, i, true)).join('')}</div>` +
-    (pole.length >= 8 ? `<button type="button" class="viac-btn ht-top-viac" data-t="${htTop}">Zobraziť ďalšie ▾</button>` : '') : '<div class="prazdne">Za toto obdobie zatiaľ nič.</div>';
+  const ob = $('#htKrObal'); if(ob) ob.classList.toggle('aktivny', !!htKr);
+  let pole;
+  if(htKr){
+    const kluc = htTopKrKluc(htTop), cele = htTypCache[kluc];
+    if(!cele){
+      $('#htTop').innerHTML = '<div class="kostra"></div>';
+      const t = htTop, kr = htKr;
+      rpc('dash_hometextil_top_kr', {p_od: htData.od, p_do: htData.do, p_t: t, p_krajina: kr})
+        .then(d => { htTypCache[kluc] = d || []; })
+        .catch(() => { htTypCache[kluc] = []; })
+        .then(() => { if(htKr === kr && htTop === t && htTopKrKluc(t) === kluc) htKresliTop(); });
+      return;
+    }
+    pole = cele.slice(0, 8);
+  } else pole = (htData.top || {})[htTop] || [];
+  const krPas = htKr ? `<div class="kr-pas"><span>Len <b>${esc(((vlajka(htKr) + ' ').replace(/^ /, '')) + (KRAJINY[htKr] || htKr))}</b></span><button type="button" id="htKrZrus">Všetky krajiny ✕</button></div>` : '';
+  $('#htTop').innerHTML = krPas + (pole.length ? `<div class="ht-typ-zoz">${pole.map((r, i) => htProdukt(r, i, true)).join('')}</div>` +
+    (pole.length >= 8 ? `<button type="button" class="viac-btn ht-top-viac" data-t="${htTop}">Zobraziť ďalšie ▾</button>` : '') : '<div class="prazdne">Za toto obdobie zatiaľ nič.</div>');
   $('#htTopPozn').textContent = (htTop === 'HT' ? 'Pri HT aj aktuálna zásoba. Červenou: 5 ks a menej.' : 'HF sa neskladuje — zásoba sa nezobrazuje.') + ' Klikni na produkt a rozbalí sa 10 najčastejších kombinácií (čo sa kupovalo spolu, posledných 12 mesiacov).';
   document.querySelectorAll('#htPrepinac button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === htTop)));
 }
@@ -3420,7 +3453,9 @@ function vykresliHT(){
     <h2>Vývoj v čase <span class="h2-pozn">· vlastné obdobie</span></h2>
     ${htVyvojHtml()}
 
-    <h2>Najpredávanejšie</h2>
+    <div class="np-hl" id="htNpHl"><h2>Najpredávanejšie</h2>
+      <label class="kr-vyber" id="htKrObal"><select id="htKrajina" aria-label="Krajina, za ktorú sa zobrazia najpredávanejšie HT / HF">${htKrMoznosti(d)}</select></label>
+    </div>
     <div class="ht-prepinac" id="htPrepinac"><button data-t="HT" aria-pressed="true">HT</button><button data-t="HF" aria-pressed="false">HF</button></div>
     <div class="ht-zoznam" id="htTop"></div>
     <div class="ht-pozn" id="htTopPozn"></div>
@@ -3433,6 +3468,7 @@ function vykresliHT(){
     <div class="ht-zoznam" id="htKrajiny">${htRozbalovacie(d.krajiny, r => (r.k === '??' ? 'Neuvedená krajina' : (vlajka(r.k) + ' ' + esc(KRAJINY[r.k] || r.k)).trim()))}</div>`;
 
   htKresliTop();
+  $('#htKrajina').addEventListener('change', e => htNastavKr(e.target.value));
   $('#htPrepinac').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; htTop = b.dataset.t; htKresliTop(); });
   $('#htTop').addEventListener('click', e => { const b = e.target.closest('.ht-top-viac'); if(b){ e.stopPropagation(); htTopViac(b); } });
   htPripojVyvoj();
@@ -3497,6 +3533,7 @@ function htTypViac(b){
 /* Najpredávanejšie HT / HF: rovnako – prvých 8 hneď, ďalšie po 20 */
 function htTopViac(b){
   const t = b.dataset.t;
+  if(htKr){ const kr = htKr; return htViac(b, htTopKrKluc(t), () => rpc('dash_hometextil_top_kr', {p_od: htData.od, p_do: htData.do, p_t: t, p_krajina: kr})); }
   return htViac(b, 'top|' + htData.od + '|' + htData.do + '|' + t, () => rpc('dash_hometextil_top', {p_od: htData.od, p_do: htData.do, p_t: t}));
 }
 async function htViac(b, kluc, nacitaj){

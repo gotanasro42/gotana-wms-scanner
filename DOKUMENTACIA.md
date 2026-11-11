@@ -156,3 +156,9 @@ Ovladanie nad zoznamom zabera na mobile ~145 px namiesto ~275 px:
   Rata ako Hometextil - len stav predaj a mnozstvo bez storna (`dash_produkt_krajiny(..., p_len_predaj => true)`),
   takze sucet sedi s cislami v zozname (overene na top 8 HT za 30 dni: kusy aj objednavky zhodne). Krajiny tu nie su klikatelne.
 
+## Hometextil: vyber krajiny pri Najpredavanejsich (od 11. 11. 2026)
+- Pri nadpise Najpredavanejsie je vyber krajiny (krajiny, kam sa v obdobi predavalo HT/HF, s poctom ks).
+  Po vybere sa zoznam HT aj HF zobrazi len pre danu krajinu (prvych 8, dalsie po 20), "Vsetky krajiny x" filter zrusi.
+- Funkcia `dash_hometextil_top_kr(p_od, p_do, p_t, p_krajina)` (cache), vypocet ako `dash_hometextil_top_raw` + filter krajiny.
+- Krajiny v rozpise "Predaj podla krajin" pri HT produkte su klikatelne a nastavia tento vyber.
+
