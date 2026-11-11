@@ -174,3 +174,10 @@ Prehlad -> Trzby (len spravca): namiesto celej karty je tlacidlo "Trzby ... 4 65
 Data sa nacitaju na pozadi hned (aj trzby pri krajinach a suma v hornom pase), karta s grafom sa vykresli az po rozbaleni
 (`vykresliTrzby()` pri skrytom `#trzby` aktualizuje len sumu v tlacidle). Po obnoveni stranky su trzby znova zbalene.
 
+## Kompaktna horna cast Statistik (od 11. 11. 2026)
+Na mobile ~148 px namiesto ~267 px:
+- Hladanie objednavky je schovane za ikonou lupy v hlavicke (vedla Obnovit); klik ho zobrazi a da kurzor do pola, Esc ho skryje.
+- Datum obdobia (`#rozsah`) je v popise pod velkym cislom: "11. novembra 2026 · predane m a ks · € bez DPH".
+- Trzba (len spravca) je v rovnakom riadku ako metre a kusy, vpravo s porovnanim.
+- Poradie v hlavicke: nazov + lupa + Obnovit -> (hladanie, ak je otvorene) -> obdobia; pri skrolovani zostanu len obdobia.
+
