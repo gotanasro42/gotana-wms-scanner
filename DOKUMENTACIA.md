@@ -181,3 +181,15 @@ Na mobile ~148 px namiesto ~267 px:
 - Trzba (len spravca) je v rovnakom riadku ako metre a kusy, vpravo s porovnanim.
 - Poradie v hlavicke: nazov + lupa + Obnovit -> (hladanie, ak je otvorene) -> obdobia; pri skrolovani zostanu len obdobia.
 
+## Pocitadlo roliek (od 12. 11. 2026)
+Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa nezapisuje do skladu.
+- ODFOTIT (alebo fotka z galerie) -> fotka sa zmensi na max 1600 px a posle do edge funkcie `pocitaj-rolky`.
+- Funkcia overi firemny kod (`trh_over_kod`, ako prihlasenie) a posle fotku do Claude (model `claude-opus-5-5`, da sa zmenit
+  secretom ROLKY_MODEL). Vrati stred kazdej rolky [x, y, isty] v rozsahu 0..1000.
+- Na fotke su ocislovane bodky: zelena = rolka, oranzova = neista (skontrolovat), modra = pridana rucne.
+  Tuk na fotku prida bodku, tuk na bodku ju odoberie. Pocet = pocet bodiek.
+- Ulozit: pocet + poznamka (regal) + maly nahlad fotky sa ulozia len v tomto telefone (localStorage `gotana_rolky_hist`, max 40),
+  hore je sucet za dnes (napr. cely regal z viacerych fotiek).
+- Test (umela fotka 61 roliek): Opus aj Sonnet 61/61, polohy do 1 px; Opus ~9 s, Sonnet ~5 s. Presnost na skutocnych fotkach treba overit.
+- Na skusky: kod zacinajuci "test-" plati len ak je rovnaky v `nastavenia.kluc = 'rolky_test'` (riadok po teste zmazat).
+

@@ -45,6 +45,9 @@
       /* Badge count animation */
       @keyframes pop { 50% { transform: scale(1.2); } }
       .animate-pop { animation: pop 0.2s ease-in-out; }
+      /* Počítadlo roliek */
+      .rlk-leg{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:-1px;margin-right:2px;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+      .rlk-bod{position:absolute;transform:translate(-50%,-50%);min-width:20px;height:20px;padding:0 3px;border-radius:10px;border:2px solid #fff;color:#fff;font:700 10px/16px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.45);pointer-events:none}
     </style>
   <script>
 /* ---- Prihlásenie do aplikácie Gotana ---- */
@@ -278,6 +281,13 @@
                          <span class="material-icons">qr_code_scanner</span> SKENER KOBERCOV
                      </button>
                  </div>
+
+                 <!-- POČÍTADLO ROLIEK (spočíta rolky na fotke, nič sa nezapisuje do skladu) -->
+                 <div class="space-y-2">
+                     <button onclick="rlkOtvor()" style="background:#7c3aed;border-color:#8b5cf6;color:#fff" class="w-full h-16 text-white rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-1 shadow-md active:scale-[0.98] transition-transform tap-feedback border-2 border-dashed leading-tight px-1">
+                         <span class="material-icons">photo_camera</span> POČÍTADLO ROLIEK
+                     </button>
+                 </div>
              </div>
           </div>
 
@@ -407,6 +417,57 @@
           <div id="kobZoznam" class="space-y-1.5 pb-24">
               <div class="text-center text-slate-400 py-4 font-medium italic">Načítavam...</div>
           </div>
+      </div>
+
+      <!-- POČÍTADLO ROLIEK -->
+      <div id="view-rolky" class="hidden animate-scale-in">
+          <div class="sticky top-20 z-40 bg-slate-100 pb-2 -mt-2">
+              <div style="background:#7c3aed;color:#fff" class="p-3 rounded-2xl shadow-lg flex justify-between items-center mb-2">
+                  <div class="flex items-center gap-2">
+                      <button onclick="rlkZavri()" style="background:#6d28d9" class="p-2 rounded-full"><span class="material-icons text-sm">arrow_back</span></button>
+                      <div>
+                          <h2 class="font-black text-lg leading-tight">POČÍTADLO ROLIEK</h2>
+                          <div class="text-[11px] font-bold opacity-80" id="rlkStav">Odfoť regál alebo kopu roliek</div>
+                      </div>
+                  </div>
+                  <div style="color:#6d28d9" class="bg-white min-w-[2.5rem] h-10 px-2 rounded-full flex items-center justify-center font-black text-lg shadow-inner" id="rlkPocet">–</div>
+              </div>
+              <div class="flex gap-2">
+                  <label style="background:#7c3aed" class="flex-1 text-white py-4 rounded-xl font-bold shadow-md flex items-center justify-center gap-2 tap-feedback cursor-pointer">
+                      <span class="material-icons">photo_camera</span> ODFOTIŤ
+                      <input type="file" accept="image/*" capture="environment" class="hidden" onchange="rlkSubor(this)">
+                  </label>
+                  <label class="bg-white border-2 border-slate-200 text-slate-700 px-4 py-4 rounded-xl font-bold shadow-sm flex items-center justify-center gap-1 tap-feedback cursor-pointer" title="Vybrať fotku z galérie">
+                      <span class="material-icons">photo_library</span>
+                      <input type="file" accept="image/*" class="hidden" onchange="rlkSubor(this)">
+                  </label>
+              </div>
+          </div>
+
+          <div id="rlkFotoBox" class="hidden bg-white p-2 rounded-2xl shadow-md border border-slate-200 mb-3">
+              <div id="rlkFoto" style="position:relative;touch-action:manipulation;user-select:none;-webkit-user-select:none;line-height:0">
+                  <img id="rlkImg" alt="Fotka roliek" style="width:100%;height:auto;display:block;border-radius:10px">
+                  <div id="rlkBody" style="position:absolute;inset:0"></div>
+              </div>
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-slate-500 mt-2 px-1">
+                  <span><span class="rlk-leg" style="background:#16a34a"></span> rolka</span>
+                  <span><span class="rlk-leg" style="background:#f59e0b"></span> neistá – skontroluj</span>
+                  <span><span class="rlk-leg" style="background:#2563eb"></span> pridaná ručne</span>
+                  <span class="ml-auto text-slate-400 font-medium">ťuk = pridať / odobrať</span>
+              </div>
+              <div id="rlkPozn" class="hidden text-xs text-slate-600 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2"></div>
+              <div class="flex gap-2 mt-2">
+                  <input id="rlkNazov" type="text" autocomplete="off" placeholder="Regál / poznámka (nepovinné)" class="flex-1 min-w-0 p-3 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none" onkeydown="if(event.key==='Enter'){rlkUloz();}">
+                  <button onclick="rlkUloz()" style="background:#7c3aed" class="text-white px-4 rounded-xl font-bold shadow-md tap-feedback flex items-center gap-1"><span class="material-icons text-base">save</span> Uložiť</button>
+              </div>
+          </div>
+
+          <div class="flex items-center gap-2 mb-2 px-1">
+              <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Uložené počty</div>
+              <div class="ml-auto text-xs font-bold text-slate-600" id="rlkSucet"></div>
+              <button onclick="rlkZmazVsetko()" class="bg-white text-red-600 border-2 border-red-200 px-2 py-1 rounded-lg text-xs font-bold tap-feedback flex items-center gap-1"><span class="material-icons text-sm">delete_sweep</span></button>
+          </div>
+          <div id="rlkHist" class="space-y-1.5 pb-24"></div>
       </div>
 
       <!-- INVENTORY VIEW (PRIEBEŽNÁ INVENTÚRA) -->
@@ -1538,7 +1599,7 @@
       }
 
       function switchView(v) {
-         ['scan','db', 'vzor', 'bulk', 'inventory', 'panely', 'stitky', 'koberce'].forEach(t => {
+         ['scan','db', 'vzor', 'bulk', 'inventory', 'panely', 'stitky', 'koberce', 'rolky'].forEach(t => {
              const el = document.getElementById('view-'+t); if(el) el.classList.add('hidden'); 
              const tab = document.getElementById('tab-'+t); if(tab) tab.classList.remove('active'); 
          });
@@ -3364,6 +3425,124 @@
 })();
 </script>
 <script>
+/* ====== POČÍTADLO ROLIEK ======
+   Fotka → funkcia pocitaj-rolky (Claude) → bodky na každej rolke. Ťuk na fotku pridá bodku, ťuk na bodku ju odoberie.
+   Uložené počty sú len v tomto telefóne (localStorage, max 40 so zmenšenou fotkou). Nič sa nezapisuje do skladu. */
+(function(){
+  var HIST = 'gotana_rolky_hist', body = [], aiPocet = null, nahlad = '', poznamka = '';
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function hist(){ try{ return JSON.parse(localStorage.getItem(HIST) || '[]'); }catch(e){ return []; } }
+  function ulozHist(h){ try{ localStorage.setItem(HIST, JSON.stringify(h.slice(0, 40))); }catch(e){ try{ localStorage.setItem(HIST, JSON.stringify(h.slice(0, 15))); }catch(e2){} } }
+
+  function kresliBody(){
+    var box = $('rlkBody'); if(!box) return;
+    /* pri veľa rolkách menšie bodky, aby nezakrývali fotku */
+    var sir = box.getBoundingClientRect().width || 340, hust = body.length / (sir / 100);
+    var vel = hust > 14 ? 13 : (hust > 9 ? 16 : 20), pis = vel <= 13 ? 8 : (vel <= 16 ? 9 : 10);
+    box.innerHTML = body.map(function(b, i){
+      var f = b[2] === 2 ? '#2563eb' : (b[2] === 0 ? '#f59e0b' : '#16a34a');
+      return '<span class="rlk-bod" style="left:' + (b[0] / 10) + '%;top:' + (b[1] / 10) + '%;background:' + f + ';min-width:' + vel + 'px;height:' + vel + 'px;font-size:' + pis + 'px;line-height:' + (vel - 4) + 'px">' + (vel <= 13 ? '' : (i + 1)) + '</span>';
+    }).join('');
+    $('rlkPocet').textContent = body.length;
+    var neiste = body.filter(function(b){ return b[2] === 0; }).length;
+    var rucne = body.filter(function(b){ return b[2] === 2; }).length;
+    var od = aiPocet != null ? body.length - aiPocet : 0;
+    $('rlkStav').textContent = 'Spolu ' + body.length + ' roliek' + (neiste ? ' · ' + neiste + ' neistých' : '') + (aiPocet != null && (rucne || od) ? ' · AI ' + aiPocet + ', upravené ' + (od > 0 ? '+' : '') + od : '');
+  }
+
+  function zmensi(img, max, kvalita){
+    var w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, max / Math.max(w, h));
+    var c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return { data: c.toDataURL('image/jpeg', kvalita), w: c.width, h: c.height };
+  }
+
+  window.rlkSubor = function(inp){
+    var f = inp.files && inp.files[0]; inp.value = '';
+    if(!f) return;
+    var url = URL.createObjectURL(f), img = new Image();
+    img.onload = async function(){
+      var velka = zmensi(img, 1600, 0.85), mala = zmensi(img, 360, 0.6);
+      URL.revokeObjectURL(url);
+      nahlad = mala.data; body = []; aiPocet = null; poznamka = '';
+      $('rlkImg').src = velka.data; $('rlkFotoBox').classList.remove('hidden'); $('rlkPozn').classList.add('hidden');
+      $('rlkNazov').value = ''; kresliBody(); $('rlkPocet').textContent = '…';
+      setLoading(true, 'Počítam rolky na fotke…');
+      try{
+        var r = await fetch(SB_URL + '/functions/v1/pocitaj-rolky', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY },
+          body: JSON.stringify({ kod: localStorage.getItem('trh_kod') || '', obrazok: velka.data.split(',')[1], typ: 'image/jpeg', w: velka.w, h: velka.h })
+        });
+        var d = await r.json().catch(function(){ return {}; });
+        if(!r.ok || d.chyba) throw new Error(d.chyba === 'nepovolene' ? 'Nemáš oprávnenie – prihlás sa do appky firemným kódom.' : (d.chyba || ('Server odpovedal ' + r.status)));
+        body = (d.body || []).map(function(b){ return [b[0], b[1], b[2] === 0 ? 0 : 1]; });
+        aiPocet = body.length; poznamka = d.poznamka || '';
+        if(poznamka){ $('rlkPozn').textContent = poznamka; $('rlkPozn').classList.remove('hidden'); }
+        kresliBody();
+      }catch(e){
+        $('rlkStav').textContent = 'Nepodarilo sa spočítať – ťukaním môžeš rolky označiť ručne';
+        $('rlkPocet').textContent = '0';
+        alert('Počítanie zlyhalo: ' + (e.message || e));
+      }finally{ setLoading(false); }
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); alert('Fotku sa nepodarilo načítať.'); };
+    img.src = url;
+  };
+
+  /* ťuk na fotku: blízko bodky = odobrať, inde = pridať */
+  document.addEventListener('click', function(e){
+    var foto = e.target.closest && e.target.closest('#rlkFoto'); if(!foto || !$('rlkImg').src) return;
+    var r = foto.getBoundingClientRect();
+    var x = (e.clientX - r.left) / r.width * 1000, y = (e.clientY - r.top) / r.height * 1000;
+    var prah = 14 / r.width * 1000, najb = -1, min = 1e9;
+    body.forEach(function(b, i){ var dx = b[0] - x, dy = (b[1] - y) * r.height / r.width, dd = Math.sqrt(dx * dx + dy * dy); if(dd < min){ min = dd; najb = i; } });
+    if(najb >= 0 && min <= prah) body.splice(najb, 1);
+    else body.push([Math.round(x), Math.round(y), 2]);
+    kresliBody();
+  });
+
+  window.rlkUloz = function(){
+    if(!$('rlkImg').src){ alert('Najprv odfoť rolky.'); return; }
+    var h = hist();
+    h.unshift({ cas: new Date().toISOString(), pocet: body.length, ai: aiPocet, nazov: ($('rlkNazov').value || '').trim(), nahlad: nahlad });
+    ulozHist(h); vykresliHist();
+    $('rlkFotoBox').classList.add('hidden'); $('rlkImg').removeAttribute('src'); body = []; aiPocet = null;
+    $('rlkPocet').textContent = '–'; $('rlkStav').textContent = 'Uložené. Odfoť ďalšiu časť regálu.';
+  };
+  window.rlkZmaz = function(i){
+    var h = hist(); if(!h[i]) return;
+    if(!confirm('Zmazať tento počet (' + h[i].pocet + ' roliek)?')) return;
+    h.splice(i, 1); ulozHist(h); vykresliHist();
+  };
+  window.rlkZmazVsetko = function(){
+    if(!hist().length) return;
+    if(!confirm('Zmazať všetky uložené počty v tomto telefóne?')) return;
+    ulozHist([]); vykresliHist();
+  };
+  function vykresliHist(){
+    var h = hist(), box = $('rlkHist'); if(!box) return;
+    var dnes = new Date().toDateString(), sucDnes = 0, nDnes = 0;
+    h.forEach(function(x){ if(new Date(x.cas).toDateString() === dnes){ sucDnes += x.pocet; nDnes++; } });
+    $('rlkSucet').textContent = nDnes ? 'Dnes spolu ' + sucDnes + ' roliek (' + nDnes + ' fotiek)' : '';
+    box.innerHTML = h.length ? h.map(function(x, i){
+      var d = new Date(x.cas);
+      var kedy = d.toLocaleDateString('sk-SK', { day: 'numeric', month: 'numeric' }) + ' ' + d.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+      var upr = x.ai != null && x.ai !== x.pocet ? ' · AI ' + x.ai : '';
+      return '<div class="bg-white rounded-xl border border-slate-200 p-2 flex items-center gap-2 shadow-sm">'
+        + (x.nahlad ? '<img src="' + x.nahlad + '" alt="" style="width:56px;height:42px;object-fit:cover;border-radius:6px;flex:0 0 auto">' : '')
+        + '<div class="min-w-0 flex-1"><div class="font-bold text-sm text-slate-800 truncate">' + esc(x.nazov || 'Bez názvu') + '</div>'
+        + '<div class="text-[11px] text-slate-400 font-medium">' + esc(kedy) + esc(upr) + '</div></div>'
+        + '<div class="font-black text-lg" style="color:#6d28d9">' + x.pocet + '</div>'
+        + '<button onclick="rlkZmaz(' + i + ')" class="text-slate-300 px-1 tap-feedback"><span class="material-icons text-base">close</span></button></div>';
+    }).join('') : '<div class="text-center text-slate-400 py-4 font-medium italic text-sm">Zatiaľ nič uložené.</div>';
+  }
+
+  window.rlkOtvor = function(){ if(typeof stopCamera === 'function') stopCamera(); switchView('rolky'); vykresliHist(); };
+  window.rlkZavri = function(){ switchView('scan'); };
+})();
+
 /* ====== SKENER KOBERCOV ======
    Dočasná evidencia naskenovaných kusov (tabuľka koberce_sken v Supabase). Nič sa nezapisuje do skladu.
    Číta: štítok z výroby 9628-100004_HT-01605_1_0, náš skladový štítok NS-21890_1032,
