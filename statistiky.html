@@ -370,34 +370,44 @@ h2:first-child{margin-top:2px}
   .ch-okno{max-width:680px;height:min(88vh,760px);height:min(88dvh,760px);border-radius:16px 16px 0 0}
 }
 .ch-okno>*{min-width:0}
-.ch-hl{background:var(--atrament);color:var(--platno);padding:calc(12px + env(safe-area-inset-top)) 14px 12px;display:flex;align-items:center;gap:10px;flex:0 0 auto}
+.ch-hl{background:var(--atrament);color:var(--platno);padding:calc(7px + env(safe-area-inset-top)) 10px 7px 12px;display:flex;align-items:center;gap:8px;flex:0 0 auto}
 .ch-hl>div{min-width:0}
-.ch-hl b{font-size:14px;letter-spacing:.06em;text-transform:uppercase}
-.ch-hl small{display:block;font-size:10.5px;color:#9FB0CE;font-weight:400;letter-spacing:0;text-transform:none}
-.ch-hl button{flex:0 0 auto;margin-left:auto;background:rgba(250,247,242,.12);border:0;color:var(--platno);width:34px;height:34px;border-radius:8px;font-size:18px;cursor:pointer}
-.ch-spravy{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:14px 12px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch}
-.ch-msg{max-width:92%;padding:9px 12px;border-radius:12px;font-size:13.5px;line-height:1.5;white-space:normal;word-wrap:break-word}
+.ch-hl b{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase}
+.ch-hl small{display:block;font-size:10px;color:#9FB0CE;font-weight:400;letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-hl button{flex:0 0 auto;margin-left:auto;background:rgba(250,247,242,.12);border:0;color:var(--platno);width:30px;height:30px;border-radius:7px;font-size:17px;line-height:1;cursor:pointer}
+.ch-spravy{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:10px 10px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
+.ch-msg{max-width:94%;padding:7px 10px;border-radius:11px;font-size:13px;line-height:1.45;white-space:normal;word-wrap:break-word}
 .ch-msg.ja{align-self:flex-end;background:var(--atrament);color:var(--platno);border-bottom-right-radius:4px}
 .ch-msg.bot{align-self:flex-start;background:#fff;border:1px solid var(--linka);border-bottom-left-radius:4px}
 .ch-msg.bot b{font-family:'IBM Plex Mono',monospace;font-weight:700}
-.ch-msg.bot ul{margin:4px 0;padding-left:18px}
+.ch-msg.bot ul{margin:3px 0;padding-left:16px}
 .ch-msg.chyba{border-color:var(--tehla);color:var(--tehla)}
 .ch-msg .ch-obj{color:var(--atrament);font-family:'IBM Plex Mono',monospace;font-weight:700;text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer}
-.ch-msg .ch-meta{font-size:10px;color:var(--sedy);margin-top:6px}
-.ch-tab{margin-top:8px;overflow-x:auto;border:1px solid var(--linka);border-radius:8px}
-.ch-tab table{border-collapse:collapse;font-size:11.5px;width:100%}
-.ch-tab th{background:var(--platno-tmavsi);text-align:left;padding:5px 7px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--sedy);white-space:nowrap}
-.ch-tab td{padding:5px 7px;border-top:1px solid var(--linka);font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+.ch-msg .ch-meta{font-size:10px;color:var(--sedy);margin-top:4px}
+.ch-tab{margin-top:6px;overflow-x:auto;border:1px solid var(--linka);border-radius:7px}
+.ch-tab table{border-collapse:collapse;font-size:11px;width:100%}
+.ch-tab th{background:var(--platno-tmavsi);text-align:left;padding:4px 6px;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--sedy);white-space:nowrap}
+.ch-tab td{padding:4px 6px;border-top:1px solid var(--linka);font-family:'IBM Plex Mono',monospace;white-space:nowrap}
 .ch-tab td.num{text-align:right}
-.ch-cakaj{align-self:flex-start;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--sedy);padding:6px 4px}
-.ch-cakaj .tocka{border-color:rgba(20,33,61,.15);border-top-color:var(--safran);width:16px;height:16px}
-.ch-priklady{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
-.ch-priklady button{max-width:100%;border:1px solid var(--linka);background:#fff;border-radius:14px;padding:7px 12px;font-size:12.5px;cursor:pointer;text-align:left;color:var(--atrament);font-family:inherit;white-space:normal;line-height:1.35}
-.ch-uvod{font-size:12.5px;color:var(--sedy);line-height:1.5}
-.ch-vstup{flex:0 0 auto;display:flex;align-items:flex-end;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--linka);background:#fff}
-.ch-vstup textarea{flex:1 1 auto;min-width:0;width:100%;resize:none;border:1px solid var(--linka);border-radius:10px;padding:9px 11px;font:inherit;font-size:14px;max-height:120px;min-height:42px;color:var(--atrament)}
-.ch-vstup button{flex:0 0 auto;height:42px;border:0;background:var(--safran);color:var(--atrament);font-weight:700;border-radius:10px;padding:0 16px;cursor:pointer;font-family:inherit;font-size:14px}
+.ch-cakaj{align-self:flex-start;display:flex;align-items:center;gap:7px;font-size:12px;color:var(--sedy);padding:4px 4px}
+.ch-cakaj .tocka{border-color:rgba(20,33,61,.15);border-top-color:var(--safran);width:14px;height:14px}
+.ch-priklady-obal{display:flex;flex-direction:column;gap:5px}
+.ch-priklady-obal .ch-nadpis{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--sedy);margin-left:2px}
+.ch-priklady{display:flex;flex-wrap:wrap;gap:5px;min-width:0}
+.ch-priklady button{max-width:100%;border:1px solid var(--linka);background:#fff;border-radius:12px;padding:5px 9px;font-size:11.5px;cursor:pointer;text-align:left;color:var(--atrament);font-family:inherit;white-space:normal;line-height:1.3}
+.ch-uvod{font-size:11.5px;color:var(--sedy);line-height:1.45}
+.ch-msg.bot.uvodna{background:transparent;border:0;padding:2px 2px 0}
+.ch-vstup{flex:0 0 auto;display:flex;align-items:flex-end;gap:6px;padding:7px 8px calc(7px + env(safe-area-inset-bottom));border-top:1px solid var(--linka);background:#fff}
+.ch-vstup textarea{flex:1 1 auto;min-width:0;width:100%;resize:none;border:1px solid var(--linka);border-radius:10px;padding:8px 10px;font:inherit;font-size:16px;line-height:1.3;max-height:110px;min-height:38px;color:var(--atrament)}
+.ch-vstup button{flex:0 0 auto;width:38px;height:38px;border:0;background:var(--safran);color:var(--atrament);border-radius:10px;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.ch-vstup button svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .ch-vstup button:disabled{opacity:.5;cursor:default}
+.ch-vstup .ch-mik{background:var(--platno-tmavsi);color:var(--atrament)}
+.ch-vstup .ch-mik[hidden]{display:none}
+.ch-vstup .ch-mik.pocuva{background:var(--tehla);color:#fff;animation:chPulz 1.2s ease-in-out infinite}
+@keyframes chPulz{0%,100%{box-shadow:0 0 0 0 rgba(180,60,40,.45)}50%{box-shadow:0 0 0 7px rgba(180,60,40,0)}}
+.ch-hlas-stav{font-size:11px;color:var(--tehla);padding:0 10px 4px;background:#fff;flex:0 0 auto}
+.ch-hlas-stav[hidden]{display:none}
 
 /* ---------- Kupované spolu ---------- */
 .spolu-hlad{display:flex;gap:6px;margin:2px 0 8px}
@@ -690,6 +700,10 @@ nav button[aria-pressed="true"] svg{stroke:var(--safran);stroke-width:2.2}
 }
 .stav-syn{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .znacka h1{white-space:nowrap}
+html,body{overflow-x:clip}
+.znacka{gap:6px}
+.znacka h1{min-width:0;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:420px){ #nacText{display:none} }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (min-width:640px){
   body{max-width:720px;margin:0 auto;box-shadow:0 0 0 1px var(--linka)}
@@ -1269,12 +1283,14 @@ header{padding-top:calc(6px + env(safe-area-inset-top))}
 <button type="button" class="ch-tl" id="chTl" hidden aria-label="Opýtaj sa – chatbot"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"/><path d="M8.5 10.5h7M8.5 13.5h4.5"/></svg></button>
 <div class="ch-panel" id="chPanel" role="dialog" aria-modal="true" aria-label="Opýtaj sa">
   <div class="ch-okno">
-    <div class="ch-hl"><div><b>Opýtaj sa</b><small>Odpovede z dát appky · len na čítanie · vidí len správca</small></div><button type="button" id="chZavri" aria-label="Zavrieť">×</button></div>
+    <div class="ch-hl"><div><b>Opýtaj sa</b><small id="chPodnadpis">Odpovede z dát appky · len na čítanie</small></div><button type="button" id="chZavri" aria-label="Zavrieť">×</button></div>
     <div class="ch-spravy" id="chSpravy"></div>
     <form class="ch-vstup" id="chForm" autocomplete="off">
-      <textarea id="chText" rows="1" placeholder="Napíš otázku…"></textarea>
-      <button type="submit" id="chPosli">Poslať</button>
+      <textarea id="chText" rows="1" placeholder="Napíš alebo povedz otázku…"></textarea>
+      <button type="button" class="ch-mik" id="chMik" hidden aria-label="Hlasové zadávanie" title="Hlasové zadávanie (slovensky)"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button>
+      <button type="submit" id="chPosli" aria-label="Poslať" title="Poslať"><svg viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button>
     </form>
+    <div class="ch-hlas-stav" id="chHlasStav" hidden></div>
   </div>
 </div>
 
@@ -2788,14 +2804,15 @@ document.addEventListener('click', e => {
   }
   function uvod(){
     if(el('chSpravy').children.length) return;
-    pridaj(`<div class="ch-uvod">${jeSpravca() ? 'Opýtaj sa na objednávky, tržby, marže, produkty alebo krajiny. Odpovedám len z dát appky (objednávky od 1. 1. 2025, položky a marže od 1. 1. 2026), sumy sú bez DPH v €.' : 'Opýtaj sa na objednávky, predané metre a kusy, produkty, zásoby alebo krajiny. Odpovedám len z dát appky (objednávky od 1. 1. 2025, položky od 1. 1. 2026). Tržby a marže vidí len správca.'} Na číslo objednávky môžeš ťuknúť.</div>`, 'ch-msg bot');
-    const p = pridaj(`<div class="ch-priklady">${PRIKLADY().map(x => `<button type="button">${esc(x)}</button>`).join('')}</div>`, 'ch-priklady-obal');
+    pridaj(`<div class="ch-uvod">${jeSpravca() ? 'Tržby, marže, objednávky, produkty, krajiny. Sumy bez DPH v €, položky a marže od 1. 1. 2026.' : 'Objednávky, metre a kusy, produkty, zásoby, krajiny. Položky od 1. 1. 2026. Tržby a marže vidí len správca.'} Na číslo objednávky môžeš ťuknúť.</div>`, 'ch-msg bot uvodna');
+    const p = pridaj(`<div class="ch-nadpis">Napríklad</div><div class="ch-priklady">${PRIKLADY().map(x => `<button type="button">${esc(x)}</button>`).join('')}</div>`, 'ch-priklady-obal');
     p.addEventListener('click', e => { const b = e.target.closest('button'); if(b){ el('chText').value = b.textContent; posli(); } });
   }
   async function posli(){
     const t = el('chText').value.trim();
     if(!t || bezi) return;
-    bezi = true; el('chPosli').disabled = true; el('chText').value = '';
+    hlasStop(); hlasStav('');
+    bezi = true; el('chPosli').disabled = true; el('chMik').disabled = true; el('chText').value = ''; el('chText').style.height = '';
     const pr = el('chSpravy').querySelector('.ch-priklady-obal'); if(pr) pr.remove();
     pridaj(esc(t), 'ch-msg ja');
     const c = pridaj('<span class="tocka"></span> Premýšľam a počítam z dát…', 'ch-cakaj');
@@ -2813,15 +2830,46 @@ document.addEventListener('click', e => {
         hist.push({rola:'user', text: t}, {rola:'assistant', text: d.odpoved || ''});
       }
     }catch(e){ c.remove(); pridaj('Spojenie zlyhalo, skús to znova.', 'ch-msg bot chyba'); }
-    bezi = false; el('chPosli').disabled = false; el('chText').focus();
+    bezi = false; el('chPosli').disabled = false; el('chMik').disabled = false; el('chText').focus();
   }
-  el('chTl').addEventListener('click', () => { el('chPanel').classList.add('zobraz'); document.body.style.overflow = 'hidden'; uvod(); setTimeout(() => el('chText').focus(), 50); });
-  const zavri = () => { el('chPanel').classList.remove('zobraz'); document.body.style.overflow = ''; };
+  /* Hlasové zadávanie – rozpoznávanie reči priamo v prehliadači (Chrome/Android, Safari/iPhone), slovenčina, bez tokenov */
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rozp = null, pocuva = false, zaklad = '';
+  const hlasStav = t => { const h = el('chHlasStav'); h.textContent = t || ''; h.hidden = !t; };
+  function hlasStop(){ if(rozp && pocuva){ try{ rozp.stop(); }catch(_e){} } }
+  function hlasStart(){
+    if(!SR || bezi) return;
+    if(pocuva){ hlasStop(); return; }
+    rozp = new SR();
+    rozp.lang = 'sk-SK'; rozp.interimResults = true; rozp.continuous = false; rozp.maxAlternatives = 1;
+    zaklad = el('chText').value.trim(); if(zaklad) zaklad += ' ';
+    rozp.onstart = () => { pocuva = true; el('chMik').classList.add('pocuva'); hlasStav('Počúvam… hovor po slovensky, ťuknutím na mikrofón skončíš.'); };
+    rozp.onresult = e => {
+      let t = '';
+      for(let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+      const ta = el('chText'); ta.value = zaklad + t.trim();
+      ta.style.height = 'auto'; ta.style.height = Math.min(110, ta.scrollHeight) + 'px';
+    };
+    rozp.onerror = e => {
+      const m = {'not-allowed':'Prístup k mikrofónu je zakázaný – povoľ ho v nastaveniach prehliadača.','service-not-allowed':'Prístup k mikrofónu je zakázaný – povoľ ho v nastaveniach prehliadača.','no-speech':'Nič som nepočul, skús znova.','audio-capture':'Mikrofón sa nenašiel.','network':'Rozpoznávanie reči potrebuje internet.'}[e.error];
+      if(m) setTimeout(() => hlasStav(m), 0);
+    };
+    rozp.onend = () => {
+      pocuva = false; el('chMik').classList.remove('pocuva');
+      if(!el('chHlasStav').textContent.startsWith('Počúvam')) return;
+      hlasStav(el('chText').value.trim() ? '' : 'Nič som nepočul, skús znova.');
+      if(el('chText').value.trim()) el('chText').focus();
+    };
+    hlasStav(''); try{ rozp.start(); }catch(_e){ hlasStav('Hlasové zadávanie sa nepodarilo spustiť.'); }
+  }
+  if(SR){ el('chMik').hidden = false; el('chMik').addEventListener('click', hlasStart); }
+  el('chTl').addEventListener('click', () => { el('chPodnadpis').textContent = jeSpravca() ? 'Odpovede z dát appky · len na čítanie' : 'Odpovede z dát appky · bez tržieb a marží'; el('chPanel').classList.add('zobraz'); document.body.style.overflow = 'hidden'; uvod(); setTimeout(() => el('chText').focus(), 50); });
+  const zavri = () => { hlasStop(); hlasStav(''); el('chPanel').classList.remove('zobraz'); document.body.style.overflow = ''; };
   el('chZavri').addEventListener('click', zavri);
   el('chPanel').addEventListener('click', e => { if(e.target.id === 'chPanel') zavri(); const o = e.target.closest('.ch-obj'); if(o) otvorObjednavku(o.dataset.cislo); });
   el('chForm').addEventListener('submit', e => { e.preventDefault(); posli(); });
   el('chText').addEventListener('keydown', e => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); posli(); } });
-  el('chText').addEventListener('input', e => { e.target.style.height = 'auto'; e.target.style.height = Math.min(120, e.target.scrollHeight) + 'px'; });
+  el('chText').addEventListener('input', e => { e.target.style.height = 'auto'; e.target.style.height = Math.min(110, e.target.scrollHeight) + 'px'; });
   ukazTlacidlo();
 })();
 

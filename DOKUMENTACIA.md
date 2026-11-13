@@ -227,3 +227,8 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
 - `chat_zak.spusti` (cez `public.chat_spusti_zak`, len service_role): len jeden SELECT, len pohlady chat_zak, blokuje odkazy na ine schemy
   (aj cez uvodzovky/komentare), read-only, limit 10 s.
 - V appke: tlacidlo chatbota vidi kazdy prihlaseny; priklady otazok a uvodny text su pre spravcu a zamestnanca rozne.
+- 13. 11. 2026: chat kompaktnejsi (mensia hlavicka, priklady ako stitky, ikonove tlacidla) a **hlasove zadavanie** – tlacidlo mikrofonu,
+  Web Speech API v prehliadaci, jazyk sk-SK, bez tokenov (prevod reci robi telefon/prehliadac, potrebuje internet; Firefox nepodporuje -> tlacidlo sa skryje).
+  Nadiktovany text sa vlozi do policka, odosiela sa tlacidlom (da sa opravit).
+- Oprava: riadok hlavicky Statistik pretekal na uzkych telefonoch (tlacidlo uctu bolo mimo obrazovky a strana sa posuvala do boku,
+  preto bolo aj okno chatu orezane). Nadpis sa teraz skracuje, text "nacitavam" sa na mobile skryje, `overflow-x:clip`.
