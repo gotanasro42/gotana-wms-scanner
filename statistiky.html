@@ -2733,16 +2733,23 @@ document.addEventListener('click', e => {
 
 /* ====== Chatbot „Opýtaj sa“ (len správca) ====== */
 (function(){
-  const PRIKLADY = [
+  const PRIKLADY_SPRAVCA = [
     'Ktorá objednávka mala najvyššiu maržu za posledný týždeň?',
     'Aká bola tržba a marža podľa krajín za tento mesiac?',
     'Ktoré produkty mali najnižšiu maržu za posledných 30 dní?',
     'Porovnaj tržby tohto týždňa s minulým týždňom.',
   ];
+  const PRIKLADY_ZAK = [
+    'Koľko objednávok a metrov sme predali tento týždeň?',
+    'Ktoré látky sa za posledných 30 dní predávali najviac?',
+    'Ktoré produkty majú zásobu menej ako na 7 dní predaja?',
+    'Koľko objednávok išlo dnes do jednotlivých krajín?',
+  ];
+  const PRIKLADY = () => jeSpravca() ? PRIKLADY_SPRAVCA : PRIKLADY_ZAK;
   const hist = [];
   let bezi = false;
   const el = id => document.getElementById(id);
-  function ukazTlacidlo(){ el('chTl').hidden = !jeSpravca(); }
+  function ukazTlacidlo(){ el('chTl').hidden = !(window.GotanaUcet && window.GotanaUcet.prihlaseny()); }
   function md(t){
     let h = esc(t);
     h = h.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
@@ -2781,8 +2788,8 @@ document.addEventListener('click', e => {
   }
   function uvod(){
     if(el('chSpravy').children.length) return;
-    pridaj(`<div class="ch-uvod">Opýtaj sa na objednávky, tržby, marže, produkty alebo krajiny. Odpovedám len z dát appky (objednávky od 1. 1. 2025, položky a marže od 1. 1. 2026), sumy sú bez DPH v €. Na číslo objednávky môžeš ťuknúť.</div>`, 'ch-msg bot');
-    const p = pridaj(`<div class="ch-priklady">${PRIKLADY.map(x => `<button type="button">${esc(x)}</button>`).join('')}</div>`, 'ch-priklady-obal');
+    pridaj(`<div class="ch-uvod">${jeSpravca() ? 'Opýtaj sa na objednávky, tržby, marže, produkty alebo krajiny. Odpovedám len z dát appky (objednávky od 1. 1. 2025, položky a marže od 1. 1. 2026), sumy sú bez DPH v €.' : 'Opýtaj sa na objednávky, predané metre a kusy, produkty, zásoby alebo krajiny. Odpovedám len z dát appky (objednávky od 1. 1. 2025, položky od 1. 1. 2026). Tržby a marže vidí len správca.'} Na číslo objednávky môžeš ťuknúť.</div>`, 'ch-msg bot');
+    const p = pridaj(`<div class="ch-priklady">${PRIKLADY().map(x => `<button type="button">${esc(x)}</button>`).join('')}</div>`, 'ch-priklady-obal');
     p.addEventListener('click', e => { const b = e.target.closest('button'); if(b){ el('chText').value = b.textContent; posli(); } });
   }
   async function posli(){
@@ -2800,7 +2807,7 @@ document.addEventListener('click', e => {
       const d = await r.json().catch(() => ({}));
       c.remove();
       if(!r.ok || d.chyba){
-        pridaj(esc(d.chyba === 'nepovolene' ? 'Chatbot je len pre správcu.' : (d.chyba || ('Chyba ' + r.status))), 'ch-msg bot chyba');
+        pridaj(esc(d.chyba === 'nepovolene' ? 'Chatbot je len pre prihlásených – prihlás sa firemným kódom.' : (d.chyba || ('Chyba ' + r.status))), 'ch-msg bot chyba');
       } else {
         pridaj(md(d.odpoved || '') + tabulka(d.tabulka) + `<div class="ch-meta">${d.dopyty ? `${d.dopyty}× dopyt do databázy · ` : ''}${cis((d.ms || 0) / 1000, 1)} s</div>`, 'ch-msg bot');
         hist.push({rola:'user', text: t}, {rola:'assistant', text: d.odpoved || ''});

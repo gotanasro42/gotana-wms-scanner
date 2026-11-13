@@ -220,3 +220,10 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
 - Nove produkty bez ceny v Magente sa automaticky NEdopĺňajú. Tyzdenna naplanovana uloha "Import nákupných cien z ABRY" (pondelok 8:36)
   skontroluje chybajuce ceny a pripomenie import; samotny import sa robi v chate (konektor ABRA bezi na pocitaci).
 
+
+## Chatbot v Statistikach (od 13. 11. 2026 pre vsetkych prihlasenych)
+- Edge funkcia `chatbot` v4: overi firemny kod cez `trh_over_kod`. Spravca -> pohlady `chat.*` (vsetko vratane trzieb, marzi, nakupnych cien),
+  ostatni -> pohlady `chat_zak.*` bez financnych stlpcov (objednavky: pocty, metre, kusy, krajiny, doprava, platba; polozky bez cien; produkty bez nakupnej ceny).
+- `chat_zak.spusti` (cez `public.chat_spusti_zak`, len service_role): len jeden SELECT, len pohlady chat_zak, blokuje odkazy na ine schemy
+  (aj cez uvodzovky/komentare), read-only, limit 10 s.
+- V appke: tlacidlo chatbota vidi kazdy prihlaseny; priklady otazok a uvodny text su pre spravcu a zamestnanca rozne.
