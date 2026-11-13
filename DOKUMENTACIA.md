@@ -202,3 +202,13 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
 - Novy nastroj = pridat dlazdicu `.nastroj` s `style="--f:#farba"` a vlastnou `.info-i`.
 - Blok s tlacidlami: ~435 px namiesto ~630 px (mobil 360 px).
 
+## Nakupne ceny z ABRA Flexi ako zaloha (od 13. 11. 2026)
+- Tabulka `nakupne_ceny_abra` (sku velkymi pismenami, cena = ABRA cenik.nakupCena, EUR bez DPH). Nacitane jednorazovo
+  cez konektor ABRA pre produkty predane od 1. 1. 2026 bez ceny v Magente: 846 hladanych, 586 s cenou (ceny 0,01 € vyradene).
+- `dopln_naklady()`: nakupna cena = Magento (`nakupne_ceny_hist` k datumu predaja), ked chyba -> ABRA. Spustene za 2025-01-01..dnes:
+  doplnenych 6 736 riadkov objednavok (aj starsie riadky, kde Magento cenu malo, ale nebola dopocitana); `predaj_den` sa prepocital cez `predaj_zmeny`.
+- Vysledok za 90 dni (trzba bez nakupnej ceny): HF 2 534 € -> 51 €, Oilana (OL) 4 228 € -> 0, HT 400 € -> 0, NS 9 983 € -> 8 280 €
+  (zvysok NS su hlavne darcekove poukazy a Mystery box).
+- Bez ceny ostava: PDF strihy (ST), zbytky (ZB), 2. trieda (TR), MAT materialy, poukazy, Mystery box - caka sa na rozhodnutie, ako ich ratat.
+- Nove produkty bez ceny v Magente sa automaticky NEdopĺňajú - import z ABRY treba zopakovat (alebo nastavit automaticku synchronizaciu cez ABRA API).
+
