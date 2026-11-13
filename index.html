@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8">
     <base target="_top">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- PWA -->
@@ -52,6 +53,26 @@
       .rucne-pole{display:block;width:100%;height:2.6rem;padding:0 2.4rem;text-align:center;border:2px solid #e2e8f0;border-radius:.75rem;font-weight:700;font-size:.875rem;text-transform:uppercase;outline:none;box-shadow:inset 0 2px 4px rgba(0,0,0,.05);background:#fff}
       .rucne-pole::placeholder{color:#94a3b8;font-size:.75rem;letter-spacing:.03em}
       .rucne-ikona{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:20px;pointer-events:none}
+      .rucne-ikona.vlavo{right:auto;left:.75rem}
+      .rucne-mik{position:absolute;right:.3rem;top:50%;transform:translateY(-50%);width:2.1rem;height:2.1rem;border-radius:.6rem;border:0;background:#eef2ff;color:#4338ca;display:flex;align-items:center;justify-content:center}
+      .rucne-mik .material-icons{font-size:20px}
+      .rucne-mik:active{background:#c7d2fe}
+      .hlas-mik-pole{flex:0 0 auto;width:3rem;border-radius:.75rem;border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;display:flex;align-items:center;justify-content:center}
+      .hlas-mik-pole:active{background:#c7d2fe}
+      .hlas-panel{position:fixed;inset:0;z-index:9500;background:rgba(15,23,42,.55);display:none;align-items:flex-end;justify-content:center}
+      .hlas-panel.zobraz{display:flex}
+      .hlas-okno{background:#fff;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:18px 16px calc(14px + env(safe-area-inset-bottom));text-align:center;box-shadow:0 -10px 30px rgba(0,0,0,.25)}
+      .hlas-kruh{width:64px;height:64px;margin:0 auto 8px;border-radius:50%;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;animation:hlasPulz 1.2s ease-in-out infinite}
+      .hlas-kruh .material-icons{font-size:32px}
+      @keyframes hlasPulz{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.45)}50%{box-shadow:0 0 0 14px rgba(220,38,38,0)}}
+      .hlas-nadpis{font-weight:900;font-size:17px;color:#0f172a}
+      .hlas-tip{font-size:12px;color:#64748b;margin-top:2px;line-height:1.35}
+      .hlas-text{min-height:2.6em;margin:10px 0 12px;font-size:20px;font-weight:800;color:#1e293b;line-height:1.3}
+      .hlas-tl{display:flex;gap:8px}
+      .hlas-tl button{flex:1;padding:12px;border-radius:12px;font-weight:800;font-size:15px;border:2px solid #e2e8f0;background:#fff;color:#475569}
+      .hlas-tl button#hlasHotovo{background:#4338ca;border-color:#4338ca;color:#fff}
+      .hlas-toast{position:fixed;left:12px;right:12px;bottom:calc(90px + env(safe-area-inset-bottom));z-index:9400;max-width:520px;margin:0 auto;background:#0f172a;color:#f8fafc;border-radius:12px;padding:10px 14px;font-size:13.5px;font-weight:600;line-height:1.4;box-shadow:0 10px 30px rgba(0,0,0,.3);opacity:0;transform:translateY(10px);transition:all .2s;pointer-events:none}
+      .hlas-toast.zobraz{opacity:1;transform:none}
       .nastroj{position:relative;height:4.25rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:.75rem;background:#fff;border:2px solid color-mix(in srgb,var(--f) 35%,#fff);color:var(--f);font-weight:800;font-size:11px;line-height:1.15;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.06)}
       .nastroj .material-icons{font-size:22px}
       .nastroj:active{background:color-mix(in srgb,var(--f) 10%,#fff)}
@@ -252,11 +273,12 @@
              <div class="space-y-2">
                  <button onclick="initCamera()" class="hl-akcia w-full h-14 bg-blue-600 active:bg-blue-800 text-white rounded-xl font-black text-base sm:text-lg flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform tap-feedback">
                       <span class="material-icons">qr_code_scanner</span> SKENOVAŤ NS
-                      <span class="info-i" role="button" tabindex="0" aria-label="Čo robí Skenovať NS" data-info="Skenovať NS" data-text="Naskenuj štítok kusu alebo NS kód látky. Ukáže, či je kus na sklade, na ktorej pozícii leží a koľko ho je – a môžeš ho uložiť alebo presunúť na inú pozíciu. Kód sa dá aj napísať do poľa pod tlačidlom (Enter = hľadať).">i</span>
+                      <span class="info-i" role="button" tabindex="0" aria-label="Čo robí Skenovať NS" data-info="Skenovať NS" data-text="Naskenuj štítok kusu alebo NS kód látky. Ukáže, či je kus na sklade, na ktorej pozícii leží a koľko ho je – a môžeš ho uložiť alebo presunúť na inú pozíciu. Kód sa dá aj napísať do poľa pod tlačidlom (Enter = hľadať) alebo povedať cez 🎤 – napr. „NS 12491“, „presuň NS 12491 na 26 A“, „príjem NS 12491 na 3 KF, 2 kusy“. Pred každým zápisom do skladu sa appka opýta na potvrdenie.">i</span>
                  </button>
                  <div class="relative">
                     <input id="scanInput" type="text" autocapitalize="characters" class="rucne-pole focus:border-blue-500" placeholder="ZADAJ NS RUČNE" oninput="handleInputChange(this)" onkeydown="if(event.key === 'Enter') handleScan()">
-                    <span class="material-icons rucne-ikona">keyboard</span>
+                    <span class="material-icons rucne-ikona vlavo">keyboard</span>
+                    <button type="button" class="rucne-mik hlas-len-podpora hidden tap-feedback" onclick="hlasHlavny()" aria-label="Hlasom: kód alebo príkaz" title="Hlasom: kód alebo príkaz"><span class="material-icons">mic</span></button>
                  </div>
              </div>
 
@@ -264,18 +286,19 @@
              <div class="space-y-2 pt-1">
                  <button onclick="startLocationVerification()" class="hl-akcia w-full h-14 bg-teal-600 active:bg-teal-800 text-white rounded-xl font-black text-base sm:text-lg flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-transform tap-feedback">
                      <span class="material-icons">fact_check</span> SKENOVAŤ POZÍCIU
-                     <span class="info-i" role="button" tabindex="0" aria-label="Čo robí Skenovať pozíciu" data-info="Skenovať pozíciu" data-text="Naskenuj štítok pozície v regáli (napr. 15 alebo 1000A). Ukáže všetko, čo na tej pozícii podľa appky leží – hodí sa na kontrolu regálu. Kód pozície sa dá aj napísať do poľa pod tlačidlom.">i</span>
+                     <span class="info-i" role="button" tabindex="0" aria-label="Čo robí Skenovať pozíciu" data-info="Skenovať pozíciu" data-text="Naskenuj štítok pozície v regáli (napr. 15 alebo 1000A). Ukáže všetko, čo na tej pozícii podľa appky leží – hodí sa na kontrolu regálu. Kód pozície sa dá aj napísať do poľa pod tlačidlom alebo povedať cez 🎤 (napr. „26 A“).">i</span>
                  </button>
                  <div class="relative">
                     <input id="locInput" type="text" autocapitalize="characters" class="rucne-pole focus:border-teal-500" placeholder="ZADAJ POZÍCIU RUČNE" onkeydown="if(event.key === 'Enter') handleLocScan(this)">
-                    <span class="material-icons rucne-ikona">keyboard</span>
+                    <span class="material-icons rucne-ikona vlavo">keyboard</span>
+                    <button type="button" class="rucne-mik hlas-len-podpora hidden tap-feedback" onclick="hlasPoziciaHlavna()" aria-label="Povedať pozíciu" title="Povedať pozíciu"><span class="material-icons">mic</span></button>
                  </div>
              </div>
 
              <!-- HROMADNÝ PRÍJEM -->
              <button onclick="startBulkMode()" class="hl-akcia w-full h-14 bg-indigo-600 active:bg-indigo-800 text-white rounded-xl font-black text-base sm:text-lg flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-transform tap-feedback">
                  <span class="material-icons">layers</span> HROMADNÝ PRÍJEM
-                 <span class="info-i" role="button" tabindex="0" aria-label="Čo robí Hromadný príjem" data-info="Hromadný príjem" data-text="Naskenuj za sebou viac kusov (napr. celú paletu alebo vozík) a na konci ich všetky naraz ulož na jednu pozíciu.">i</span>
+                 <span class="info-i" role="button" tabindex="0" aria-label="Čo robí Hromadný príjem" data-info="Hromadný príjem" data-text="Naskenuj za sebou viac kusov (napr. celú paletu alebo vozík) a na konci ich všetky naraz ulož na jednu pozíciu. Kódy sa dajú aj napísať ručne alebo povedať cez 🎤 (aj viac naraz).">i</span>
              </button>
 
              <!-- ĎALŠIE NÁSTROJE (menšie dlaždice) -->
@@ -322,6 +345,11 @@
                   <div class="bg-white text-indigo-700 w-10 h-10 rounded-full flex items-center justify-center font-black text-lg shadow-inner" id="bulkCount">0</div>
               </div>
               
+              <div class="relative mb-2">
+                 <input id="bulkInput" type="text" autocapitalize="characters" class="rucne-pole focus:border-indigo-500" placeholder="ZADAJ NS RUČNE" oninput="this.value = this.value.toUpperCase()" onkeydown="if(event.key === 'Enter') hromadnyRucne(this)">
+                 <span class="material-icons rucne-ikona vlavo">keyboard</span>
+                 <button type="button" class="rucne-mik hlas-len-podpora hidden tap-feedback" onclick="hlasHromadny()" aria-label="Povedať kódy" title="Povedať kódy"><span class="material-icons">mic</span></button>
+              </div>
               <button id="btnResumeCamera" onclick="toggleBulkCamera(true)" class="hidden w-full bg-blue-600 active:bg-blue-800 text-white py-4 rounded-xl font-bold mb-2 shadow-md animate-scale-in flex items-center justify-center gap-2 tap-feedback">
                   <span class="material-icons">videocam</span> OTVORIŤ SKENER
               </button>
@@ -3790,6 +3818,253 @@
   };
 
   window.kobRozpoznaj = rozpoznaj; /* na test */
+})();
+</script>
+
+<script>
+/* ==== HLASOVÉ OVLÁDANIE SKLADU (13. 11. 2026) ====
+   Rozpoznávanie reči priamo v prehliadači (Web Speech API, sk-SK) – bez tokenov, potrebuje internet.
+   Každý zápis do skladu ide cez potvrdenie (modal / formulár), hlasom sa nič neuloží naslepo. */
+(function(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  window.hlasPodpora = !!SR;
+
+  /* ---------- rozbor textu ---------- */
+  const bezDiakritiky = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const PREDPONY = [
+    [/\b(?:en|n)\.?\s*-?\s*(?:es|s)\.?\s*-?\s*(?:te|t)\b\.?/g, ' nst '],
+    [/\b(?:en+e?s+|(?:en|n)\.?\s*-?\s*(?:es|s))\b\.?/g, ' ns '],
+    [/\b(?:ente|(?:en|n)\.?\s*-?\s*(?:te|t))\b\.?/g, ' nt '],
+    [/\b(?:hate|(?:ha|h)\.?\s*-?\s*(?:te|t))\b\.?/g, ' ht '],
+    [/\b(?:haef|(?:ha|h)\.?\s*-?\s*(?:ef|f))\b\.?/g, ' hf '],
+    [/\b(?:em|m)\.?\s*(?:a)\.?\s*(?:te|t)\b\.?/g, ' mat '],
+    [/\b(?:zet|z)\.?\s*-?\s*(?:be|b)\b\.?/g, ' zb '],
+  ];
+  function normKody(t){
+    let s = ' ' + bezDiakritiky(t).replace(/[,;]/g, ' , ') + ' ';
+    PREDPONY.forEach(([re, n]) => { s = s.replace(re, n); });
+    return s;
+  }
+  function doplnKod(pref, cis){
+    pref = pref.toUpperCase(); cis = cis.replace(/\s/g, '');
+    if(pref === 'MAT' && cis.length < 4) cis = cis.padStart(4, '0');
+    if(pref === 'NST' && cis.length < 5) cis = cis.padStart(5, '0');
+    if(pref === 'HT' && cis.length < 5) cis = cis.padStart(5, '0');
+    return pref + '-' + cis;
+  }
+  /* Vráti zoznam kódov (NS-12491, …). predvolena = predpona pre holé číslo (napr. 'NS'). */
+  window.hlasKody = function(text, predvolena){
+    const s = normKody(text), out = [];
+    const re = /\b(nst|ns|nt|ht|hf|mat|zb|st|tr|ol)\s*-?\s*(\d{1,3} \d{3}(?!\d)|\d+)(?:\s*(?:_|podciark\w*|lomeno)\s*(\d+))?/g;
+    let m;
+    while((m = re.exec(s))){ out.push(doplnKod(m[1], m[2]) + (m[3] ? '_' + m[3] : '')); }
+    if(!out.length && predvolena){
+      const c = s.match(/\b(\d{1,3} \d{3}(?!\d)|\d{3,6})\b/);
+      if(c) out.push(doplnKod(predvolena, c[1]));
+    }
+    return out;
+  };
+  const PISMENA = {a:'A',b:'B',be:'B',c:'C',ce:'C',d:'D',de:'D',e:'E',ef:'F',f:'F',g:'G',ge:'G',h:'H',ha:'H',k:'K',ka:'K'};
+  function zname(){ try{ return new Set(dbData.map(i => String(i.location || '').toUpperCase()).filter(Boolean)); }catch(_e){ return new Set(); } }
+  /* Pozícia z textu (26A, 3KF, 1064A). Vráti {poz, znama} alebo null. */
+  window.hlasPozicia = function(text){
+    let s = bezDiakritiky(text).replace(/(\d)\s*-\s*/g, '$1 ').replace(/[.,]/g, ' ').replace(/\b(\d{1,2}) (\d{3})\b/g, '$1$2');
+    const tok = s.split(/\s+/).filter(Boolean);
+    for(let i = 0; i < tok.length; i++){
+      const m = tok[i].match(/^(\d+)([a-z]{0,2})$/);
+      if(!m) continue;
+      let p = m[1] + m[2].toUpperCase(), j = i + 1;
+      if(!m[2]){
+        while(j < tok.length && p.replace(/\d/g,'').length < 2){
+          if(PISMENA[tok[j]]){ p += PISMENA[tok[j]]; j++; }
+          else if(/^[a-hk]{2}$/.test(tok[j]) && p.replace(/\d/g,'').length === 0){ p += tok[j].toUpperCase(); j++; }
+          else break;
+        }
+      }
+      const z = zname();
+      if(z.has(p)) return {poz: p, znama: true};
+      if(z.has(m[1] + m[2].toUpperCase())) return {poz: m[1] + m[2].toUpperCase(), znama: true};
+      return {poz: p, znama: false};
+    }
+    return null;
+  };
+  const SLOVA = {jeden:1,jednu:1,jedna:1,dva:2,dve:2,tri:3,styri:4,pat:5,sest:6,sedem:7,osem:8,devat:9,desat:10};
+  function pocetKusov(text){
+    const s = bezDiakritiky(text);
+    let m = s.match(/(\d+)\s*(?:kus|ks|kusy|kusov|rol|roliek|rolky)/); if(m) return parseInt(m[1]);
+    m = s.match(/\b(jeden|jednu|jedna|dva|dve|tri|styri|pat|sest|sedem|osem|devat|desat)\s*(?:kus|ks|kusy|kusov|rol)/); if(m) return SLOVA[m[1]];
+    return null;
+  }
+  const nazovKodu = k => { try{ return dbCatalog[k] || ''; }catch(_e){ return ''; } };
+  const naSklade = k => { try{ return dbData.filter(i => i.id === k || i.id.startsWith(k + '_')); }catch(_e){ return []; } };
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  /* ---------- panel „Počúvam…“ ---------- */
+  let rozp = null, ziva = false;
+  function panel(){
+    let p = document.getElementById('hlasPanel');
+    if(p) return p;
+    p = document.createElement('div'); p.id = 'hlasPanel'; p.className = 'hlas-panel';
+    p.innerHTML = '<div class="hlas-okno"><div class="hlas-kruh"><span class="material-icons">mic</span></div>' +
+      '<div class="hlas-nadpis" id="hlasNadpis">Počúvam…</div><div class="hlas-tip" id="hlasTip"></div>' +
+      '<div class="hlas-text" id="hlasText"></div>' +
+      '<div class="hlas-tl"><button type="button" id="hlasZrus">Zrušiť</button><button type="button" id="hlasHotovo">Hotovo</button></div></div>';
+    document.body.appendChild(p);
+    p.querySelector('#hlasZrus').onclick = () => zastav(true);
+    p.querySelector('#hlasHotovo').onclick = () => { try{ rozp && rozp.stop(); }catch(_e){} };
+    return p;
+  }
+  function zastav(zrus){
+    if(rozp){ rozp._zrus = !!zrus; try{ zrus ? rozp.abort() : rozp.stop(); }catch(_e){} }
+    const p = document.getElementById('hlasPanel'); if(p) p.classList.remove('zobraz');
+  }
+  /* Spustí počúvanie; po skončení zavolá hotovo(text). tip = nápoveda v paneli. */
+  window.hlasPocuvaj = function(tip, hotovo){
+    if(!SR){ showCustomAlert('Hlas nie je k dispozícii', 'Tento prehliadač nevie rozpoznávať reč. Použi Chrome (Android) alebo Safari (iPhone).'); return; }
+    if(ziva) zastav(true);
+    const p = panel();
+    p.querySelector('#hlasNadpis').textContent = 'Počúvam…';
+    p.querySelector('#hlasTip').textContent = tip || '';
+    p.querySelector('#hlasText').textContent = '';
+    p.classList.add('zobraz');
+    let text = '';
+    rozp = new SR(); const r = rozp;
+    r.lang = 'sk-SK'; r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
+    r.onstart = () => { ziva = true; };
+    r.onresult = e => { text = ''; for(let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript; p.querySelector('#hlasText').textContent = text; };
+    r.onerror = e => {
+      const m = {'not-allowed':'Prístup k mikrofónu je zakázaný – povoľ ho v nastaveniach prehliadača.','service-not-allowed':'Prístup k mikrofónu je zakázaný – povoľ ho v nastaveniach prehliadača.','audio-capture':'Mikrofón sa nenašiel.','network':'Rozpoznávanie reči potrebuje internet.'}[e.error];
+      if(m){ r._zrus = true; zastav(true); showCustomAlert('Hlasové zadávanie', m); }
+    };
+    r.onend = () => {
+      ziva = false; zastav(false);
+      if(r._zrus) return;
+      text = text.trim();
+      if(!text){ beep('error'); hlasToast('Nič som nepočul, skús znova.'); return; }
+      hotovo(text);
+    };
+    try{ r.start(); }catch(_e){ zastav(true); }
+  };
+  function hlasToast(t){
+    let d = document.getElementById('hlasToast');
+    if(!d){ d = document.createElement('div'); d.id = 'hlasToast'; d.className = 'hlas-toast'; document.body.appendChild(d); }
+    d.textContent = t; d.classList.add('zobraz'); clearTimeout(d._t); d._t = setTimeout(() => d.classList.remove('zobraz'), 3500);
+  }
+  window.hlasToast = hlasToast;
+
+  /* ---------- jednotlivé polia ---------- */
+  /* Pozícia do poľa (Presun, Naskladniť, Dokončiť hromadný príjem) */
+  window.hlasDoPola = function(id){
+    hlasPocuvaj('Povedz pozíciu, napr. „26 A“ alebo „3 KF“.', text => {
+      const inp = document.getElementById(id); if(!inp) return;
+      const p = hlasPozicia(text);
+      if(!p){ beep('error'); hlasToast(`Nerozumel som pozícii: „${text}“`); return; }
+      inp.value = p.poz; inp.dispatchEvent(new Event('input'));
+      inp.classList.add('bg-green-100'); setTimeout(() => inp.classList.remove('bg-green-100'), 600);
+      beep(p.znama ? 'success' : 'error');
+      hlasToast(p.znama ? `Pozícia ${p.poz} – skontroluj a potvrď.` : `Pozícia ${p.poz} zatiaľ v sklade nie je – skontroluj, či je správna.`);
+    });
+  };
+  /* Pozícia na úvodnej obrazovke */
+  window.hlasPoziciaHlavna = function(){
+    hlasPocuvaj('Povedz pozíciu, napr. „26 A“.', text => {
+      const p = hlasPozicia(text);
+      if(!p){ beep('error'); hlasToast(`Nerozumel som pozícii: „${text}“`); return; }
+      const inp = document.getElementById('locInput'); inp.value = p.poz; handleLocScan(inp);
+      if(!p.znama) hlasToast(`Na pozícii ${p.poz} podľa appky nič neleží.`);
+    });
+  };
+  /* Hromadný príjem – pridanie kódov (aj viac naraz: „NS 12491, NS 10047“) */
+  window.hlasHromadny = function(){
+    hlasPocuvaj('Povedz jeden alebo viac kódov, napr. „NS 12491, NS 10047“.', text => {
+      const kody = hlasKody(text, 'NS');
+      if(!kody.length){ beep('error'); hlasToast(`Nerozumel som kódu: „${text}“`); return; }
+      kody.forEach(k => handleBulkItemScan(k));
+      const nezname = kody.filter(k => !nazovKodu(k.split('_')[0]));
+      hlasToast(`Pridané: ${kody.join(', ')}` + (nezname.length ? ` · v katalógu nie je: ${nezname.join(', ')}` : ''));
+    });
+  };
+  window.hromadnyRucne = function(inp){
+    const v = inp.value.trim(); if(!v) return;
+    const kody = hlasKody(v, 'NS');
+    (kody.length ? kody : [v.toUpperCase()]).forEach(k => handleBulkItemScan(k));
+    inp.value = ''; inp.focus();
+  };
+
+  /* ---------- hlavný mikrofón pri NS: vyhľadanie aj príkazy ---------- */
+  async function presun(kod, ciel, zdroj){
+    const kusy = naSklade(kod);
+    if(!kusy.length){ beep('error'); showCustomAlert('Presun', `${esc(kod)} na sklade nemáme.`); return; }
+    let kandidati = kusy;
+    const pozicie = [...new Set(kusy.map(i => String(i.location || '').toUpperCase()))];
+    if(zdroj) kandidati = kusy.filter(i => String(i.location || '').toUpperCase() === zdroj);
+    else if(pozicie.length > 1){ processResult(kod); hlasToast(`${kod} je na viacerých pozíciách (${pozicie.join(', ')}) – povedz aj „z …“ alebo vyber kus ručne.`); return; }
+    if(!kandidati.length){ processResult(kod); hlasToast(`${kod} na pozícii ${zdroj} nie je.`); return; }
+    const kus = kandidati[0], odkial = String(kus.location || '–').toUpperCase();
+    if(!ciel.znama && !(await showCustomConfirm('Neznáma pozícia', `Pozícia <b>${esc(ciel.poz)}</b> zatiaľ v sklade nie je. Je správna?`, 'Áno, je', 'Nie'))) return;
+    const ok = await showCustomConfirm('Presunúť 1 ks?',
+      `<div class="text-2xl font-black font-mono">${esc(kod)}</div><div class="text-sm text-slate-500 mb-3">${esc(nazovKodu(kod))}</div>` +
+      `<div class="text-xl font-bold">${esc(odkial)} <span class="material-icons align-middle">arrow_forward</span> ${esc(ciel.poz)}</div>`, 'Presunúť', 'Zrušiť');
+    if(!ok) return;
+    setLoading(true);
+    apiCall('updateItem', { id: kus.id, len: null, loc: ciel.poz, act: 'PRESUN', note: null, user: currentUser }).then(() => {
+      const ix = dbData.findIndex(i => i.id === kus.id); if(ix > -1) dbData[ix].location = ciel.poz;
+      setLoading(false); loadDb(false); beep('success'); processResult(kod); updateLastAction(`PRESUN ${kus.id} -> ${ciel.poz} (hlas)`);
+    }).catch(e => { setLoading(false); showCustomAlert('Chyba', e.message); beep('error'); });
+  }
+  function prijem(kod, ciel, ks){
+    const area = document.getElementById('resultArea'); area.classList.remove('hidden');
+    const q = document.getElementById('dailyQuoteBox'); if(q) q.style.display = 'none';
+    document.getElementById('scanInput').value = kod;
+    prepareNew(kod, naSklade(kod).length > 0);
+    if(ciel){ const l = document.getElementById('nLoc'); if(l) l.value = ciel.poz; }
+    if(ks){ const n = document.getElementById('nQty'); if(n) n.value = ks; }
+    const f = document.getElementById('nLoc'); if(f) f.scrollIntoView({block:'center', behavior:'smooth'});
+    hlasToast('Skontroluj údaje a ťukni Uložiť.');
+  }
+  window.hlasHlavny = function(){
+    hlasPocuvaj('Napr. „NS 12491“, „presuň NS 12491 na 26 A“, „príjem NS 12491 na 3 KF, 2 kusy“, „pozícia 26 A“.', text => {
+      const s = bezDiakritiky(text);
+      const pozZa = slovo => { const i = s.lastIndexOf(slovo); return i < 0 ? null : hlasPozicia(s.slice(i + slovo.length)); };
+      const kody = hlasKody(text, /\b(pozici|regal|polic)/.test(s) ? null : 'NS');
+      if(!kody.length){
+        if(/\b(pozici|regal|polic)/.test(s)){ const p = hlasPozicia(s); if(p){ const inp = document.getElementById('locInput'); inp.value = p.poz; handleLocScan(inp); return; } }
+        beep('error'); hlasToast(`Nerozumel som: „${text}“`); return;
+      }
+      const kod = kody[0].split('_')[0];
+      if(/\b(presun|presunut|daj|prelozit|preloz)\w*/.test(s)){
+        const ciel = pozZa(' na ');
+        if(!ciel){ processResult(kod); hlasToast('Nepočul som cieľovú pozícu („… na 26 A“).'); return; }
+        const zm = s.match(/\bz\s+(.+?)\s+na\s/); const zdroj = zm ? (hlasPozicia(zm[1]) || {}).poz : null;
+        presun(kod, ciel, zdroj); return;
+      }
+      if(/\b(prijem|prijat|naskladn|novy|nova|pridaj|pridat)\w*/.test(s)){
+        prijem(kod, pozZa(' na '), pocetKusov(s)); return;
+      }
+      if(/\b(vydaj|vydat|odpis|zmaz)\w*/.test(s)) hlasToast('Výdaj hlasom nerobím – ťukni „Vydať 1 ks“ pri správnej pozícii.');
+      document.getElementById('scanInput').value = kod; processResult(kod);
+    });
+  };
+
+  /* ---------- mikrofón vedľa každého tlačidla skenera pozície (dynamické formuláre) ---------- */
+  function doplnMikrofony(root){
+    if(!SR) return;
+    (root || document).querySelectorAll('button[onclick^="startScanInput("]').forEach(b => {
+      if(b.nextElementSibling && b.nextElementSibling.classList.contains('hlas-mik-pole')) return;
+      const m = b.getAttribute('onclick').match(/startScanInput\('([^']+)'\)/); if(!m) return;
+      const t = document.createElement('button'); t.type = 'button';
+      t.className = 'hlas-mik-pole tap-feedback'; t.title = 'Povedať pozíciu'; t.setAttribute('aria-label', 'Povedať pozíciu');
+      t.innerHTML = '<span class="material-icons">mic</span>';
+      t.onclick = () => hlasDoPola(m[1]);
+      b.after(t);
+    });
+  }
+  function start(){
+    if(SR){ document.querySelectorAll('.hlas-len-podpora').forEach(e => e.classList.remove('hidden')); }
+    doplnMikrofony();
+    new MutationObserver(z => z.forEach(x => x.addedNodes.forEach(n => { if(n.nodeType === 1) doplnMikrofony(n.parentNode || n); }))).observe(document.body, {childList: true, subtree: true});
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
 

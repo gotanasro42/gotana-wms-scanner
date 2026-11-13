@@ -232,3 +232,14 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
   Nadiktovany text sa vlozi do policka, odosiela sa tlacidlom (da sa opravit).
 - Oprava: riadok hlavicky Statistik pretekal na uzkych telefonoch (tlacidlo uctu bolo mimo obrazovky a strana sa posuvala do boku,
   preto bolo aj okno chatu orezane). Nadpis sa teraz skracuje, text "nacitavam" sa na mobile skryje, `overflow-x:clip`.
+
+## Hlasové ovládanie skladu (index.html, od 13. 11. 2026)
+- Web Speech API v prehliadači (sk-SK), bez tokenov, potrebuje internet. Ak prehliadač nevie (Firefox), mikrofóny sa nezobrazia.
+- 🎤 v poli „Zadaj NS ručne“ (`hlasHlavny`): kód („NS 12491“, „en es 12491“) -> vyhľadanie; „presuň NS 12491 na 26 A“ (+ voliteľne „z 3 KF“)
+  -> potvrdzovacie okno, potom zápis PRESUN; „príjem NS 12491 na 3 KF, 2 kusy“ -> otvorí formulár Naskladniť s vyplnenou pozíciou a počtom (Uložiť ťuká človek);
+  „pozícia 26 A“ -> obsah pozície. Výdaj hlasom zámerne nie je.
+- 🎤 v poli „Zadaj pozíciu ručne“ (`hlasPoziciaHlavna`), v Hromadnom príjme (`hlasHromadny`, aj viac kódov naraz) a vedľa každého tlačidla skenera pozície
+  (Presun, Naskladniť, Dokončiť na pozíciu – doplní `doplnMikrofony` automaticky) -> pozícia sa len vyplní, potvrdzuje človek.
+- Hromadný príjem má nové pole „Zadaj NS ručne“ (`hromadnyRucne`, Enter).
+- Rozbor: `hlasKody(text, predvolenaPredpona)` (NS/NT/HT/HF/NST/MAT/ZB, hláskované „en es“, „há té“; MAT dopĺňa na 4, NST a HT na 5 číslic),
+  `hlasPozicia(text)` (26A, 3KF, 1064A; porovnáva so známymi pozíciami v dbData, neznámu pozíciu hlási).
