@@ -209,6 +209,14 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
   doplnenych 6 736 riadkov objednavok (aj starsie riadky, kde Magento cenu malo, ale nebola dopocitana); `predaj_den` sa prepocital cez `predaj_zmeny`.
 - Vysledok za 90 dni (trzba bez nakupnej ceny): HF 2 534 € -> 51 €, Oilana (OL) 4 228 € -> 0, HT 400 € -> 0, NS 9 983 € -> 8 280 €
   (zvysok NS su hlavne darcekove poukazy a Mystery box).
-- Bez ceny ostava: PDF strihy (ST), zbytky (ZB), 2. trieda (TR), MAT materialy, poukazy, Mystery box - caka sa na rozhodnutie, ako ich ratat.
-- Nove produkty bez ceny v Magente sa automaticky NEdopĺňajú - import z ABRY treba zopakovat (alebo nastavit automaticku synchronizaciu cez ABRA API).
+- Pravidla (funkcia `nakup_cena(sku, den)`, migracia `naklady_pravidla_st_tr_zb_mat_poukazy`, rozhodol Andrej 13. 11. 2026):
+  - PDF strihy `ST-*` = 0 €; Darcekove poukazy (nazov "Darčekový poukaz…") = 0 €; Mystery box `NS-14230` (+ NS-9955..9960) = 0 €.
+  - 2. trieda `TR-*` = cena povodnej latky (NS/NT/HT kod v SKU).
+  - Zbytky `ZB-*` = 0,5 × cena povodnej latky (zbytok ~0,5 m).
+  - MAT = cena za meter z ABRY (zakladny kod `MAT-xxxx-`, ked chyba -> priemer variantov). MAT-0064 a MAT-0069 v ABRE cenu nemaju.
+  - Inak: Magento k datumu -> ABRA (`nakup_cena_zaklad`).
+- Poukazy: pri predaji poukazu je marza 100 %, pri uplatneni je zlava rozpustena do cien poloziek, takze objednavka moze mat zapornu marzu
+  (napr. 205162259). Za obdobie sa to vyrovna.
+- Nove produkty bez ceny v Magente sa automaticky NEdopĺňajú. Tyzdenna naplanovana uloha "Import nákupných cien z ABRY" (pondelok 8:36)
+  skontroluje chybajuce ceny a pripomenie import; samotny import sa robi v chate (konektor ABRA bezi na pocitaci).
 
