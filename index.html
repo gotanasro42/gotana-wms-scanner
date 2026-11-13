@@ -3830,7 +3830,31 @@
   window.hlasPodpora = !!SR;
 
   /* ---------- rozbor textu ---------- */
-  const bezDiakritiky = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const bezDiakritiky = t => String(t || '').normalize('NFD').replace(/\p{Mn}/gu, '').toLowerCase().replace(/\s/g, ' ');
+  /* Slovenské číslovky slovom -> číslice ("dvanásťtisíc štyristo deväťdesiatjeden" -> 12491, "jedna dva štyri" -> 124) */
+  const JEDN = {nula:0,jeden:1,jedna:1,jedno:1,dva:2,dve:2,tri:3,styri:4,pat:5,sest:6,sedem:7,osem:8,devat:9};
+  const CISLOVKY = Object.assign({}, JEDN, {desat:10,jedenast:11,dvanast:12,trinast:13,strnast:14,patnast:15,sestnast:16,sedemnast:17,osemnast:18,devatnast:19,
+    dvadsat:20,tridsat:30,styridsat:40,patdesiat:50,sestdesiat:60,sedemdesiat:70,osemdesiat:80,devatdesiat:90,sto:'S',stoviek:'S',tisic:'T',tisice:'T',tisicov:'T'});
+  const SLOVNIK = Object.keys(CISLOVKY).sort((a, b) => b.length - a.length);
+  function rozloz(w){ const out = []; let i = 0; while(i < w.length){ const k = SLOVNIK.find(x => w.startsWith(x, i)); if(!k) return null; out.push(k); i += k.length; } return out; }
+  function hodnota(casti){
+    let spolu = 0, cur = 0;
+    casti.forEach(k => { const v = CISLOVKY[k]; if(v === 'S') cur = (cur || 1) * 100; else if(v === 'T'){ spolu += (cur || 1) * 1000; cur = 0; } else cur += v; });
+    return spolu + cur;
+  }
+  function slovaNaCisla(s){
+    const out = []; let beh = [];
+    const vyprazdni = () => {
+      if(!beh.length) return;
+      if(beh.length > 1 && beh.every(w => JEDN[w] !== undefined)) out.push(beh.map(w => JEDN[w]).join(''));   // hláskované cifry
+      else out.push(String(hodnota([].concat(...beh.map(rozloz)))));
+      beh = [];
+    };
+    s.split(/\s+/).filter(Boolean).forEach(t => { if(rozloz(t)) beh.push(t); else { vyprazdni(); out.push(t); } });
+    vyprazdni();
+    return out.join(' ');
+  }
+  const priprav = t => slovaNaCisla(bezDiakritiky(t));
   const PREDPONY = [
     [/\b(?:en|n)\.?\s*-?\s*(?:es|s)\.?\s*-?\s*(?:te|t)\b\.?/g, ' nst '],
     [/\b(?:en+e?s+|(?:en|n)\.?\s*-?\s*(?:es|s))\b\.?/g, ' ns '],
@@ -3841,7 +3865,7 @@
     [/\b(?:zet|z)\.?\s*-?\s*(?:be|b)\b\.?/g, ' zb '],
   ];
   function normKody(t){
-    let s = ' ' + bezDiakritiky(t).replace(/[,;]/g, ' , ') + ' ';
+    let s = ' ' + priprav(String(t).replace(/[,;]/g, ' , ')) + ' ';
     PREDPONY.forEach(([re, n]) => { s = s.replace(re, n); });
     return s;
   }
@@ -3852,15 +3876,25 @@
     if(pref === 'HT' && cis.length < 5) cis = cis.padStart(5, '0');
     return pref + '-' + cis;
   }
+  const existuje = k => { try{ return !!dbCatalog[k] || dbData.some(i => i.id === k || i.id.startsWith(k + '_')); }catch(_e){ return false; } };
+  /* Z čísla rozdeleného na kúsky ("12 491", "1 2 4 9 1", "12.491") vyberie kód: najprv taký, ktorý v sklade/katalógu existuje. */
+  function vyberKod(pref, skupiny){
+    const kand = []; let c = '';
+    for(let i = 0; i < skupiny.length && i < 6; i++){ c += skupiny[i]; if(c.length > 6) break; kand.push(c); }
+    for(let i = kand.length - 1; i >= 0; i--){ const k = doplnKod(pref, kand[i]); if(existuje(k)) return k; }
+    let x = skupiny[0];   // heuristika: lepíme krátke kúsky, kým to dáva najviac 5 číslic
+    for(let i = 1; i < skupiny.length && x.length <= 3 && (x + skupiny[i]).length <= 5; i++) x += skupiny[i];
+    return doplnKod(pref, x);
+  }
   /* Vráti zoznam kódov (NS-12491, …). predvolena = predpona pre holé číslo (napr. 'NS'). */
   window.hlasKody = function(text, predvolena){
     const s = normKody(text), out = [];
-    const re = /\b(nst|ns|nt|ht|hf|mat|zb|st|tr|ol)\s*-?\s*(\d{1,3} \d{3}(?!\d)|\d+)(?:\s*(?:_|podciark\w*|lomeno)\s*(\d+))?/g;
+    const re = /\b(nst|ns|nt|ht|hf|mat|zb|st|tr|ol)\s*-?\s*(\d+(?:[ .\-]+\d+)*)(?:\s*(?:_|podciark\w*|lomeno)\s*(\d+))?/g;
     let m;
-    while((m = re.exec(s))){ out.push(doplnKod(m[1], m[2]) + (m[3] ? '_' + m[3] : '')); }
+    while((m = re.exec(s))){ out.push(vyberKod(m[1], m[2].split(/[ .\-]+/)) + (m[3] ? '_' + m[3] : '')); }
     if(!out.length && predvolena){
-      const c = s.match(/\b(\d{1,3} \d{3}(?!\d)|\d{3,6})\b/);
-      if(c) out.push(doplnKod(predvolena, c[1]));
+      const c = s.match(/\d+(?:[ .\-]+\d+)*/);
+      if(c){ const sk = c[0].split(/[ .\-]+/); if(sk.join('').length >= 3) out.push(vyberKod(predvolena, sk)); }
     }
     return out;
   };
@@ -3868,7 +3902,7 @@
   function zname(){ try{ return new Set(dbData.map(i => String(i.location || '').toUpperCase()).filter(Boolean)); }catch(_e){ return new Set(); } }
   /* Pozícia z textu (26A, 3KF, 1064A). Vráti {poz, znama} alebo null. */
   window.hlasPozicia = function(text){
-    let s = bezDiakritiky(text).replace(/(\d)\s*-\s*/g, '$1 ').replace(/[.,]/g, ' ').replace(/\b(\d{1,2}) (\d{3})\b/g, '$1$2');
+    let s = priprav(text).replace(/(\d)\s*-\s*/g, '$1 ').replace(/[.,]/g, ' ').replace(/\b(\d{1,2}) (\d{3})\b/g, '$1$2');
     const tok = s.split(/\s+/).filter(Boolean);
     for(let i = 0; i < tok.length; i++){
       const m = tok[i].match(/^(\d+)([a-z]{0,2})$/);
@@ -3890,7 +3924,7 @@
   };
   const SLOVA = {jeden:1,jednu:1,jedna:1,dva:2,dve:2,tri:3,styri:4,pat:5,sest:6,sedem:7,osem:8,devat:9,desat:10};
   function pocetKusov(text){
-    const s = bezDiakritiky(text);
+    const s = priprav(text);
     let m = s.match(/(\d+)\s*(?:kus|ks|kusy|kusov|rol|roliek|rolky)/); if(m) return parseInt(m[1]);
     m = s.match(/\b(jeden|jednu|jedna|dva|dve|tri|styri|pat|sest|sedem|osem|devat|desat)\s*(?:kus|ks|kusy|kusov|rol)/); if(m) return SLOVA[m[1]];
     return null;
@@ -3945,6 +3979,10 @@
     };
     try{ r.start(); }catch(_e){ zastav(true); }
   };
+  function hlasLog(kontext, text, vysledok){
+    try{ sbFetch('hlas_log', {method: 'POST', headers: {Prefer: 'return=minimal'}, body: JSON.stringify([{kontext, text: String(text).slice(0, 400), vysledok: String(vysledok || '').slice(0, 400), kto: (typeof currentUser !== 'undefined' ? currentUser : '')}])}).catch(() => {}); }catch(_e){}
+  }
+  window.hlasLog = hlasLog;
   function hlasToast(t){
     let d = document.getElementById('hlasToast');
     if(!d){ d = document.createElement('div'); d.id = 'hlasToast'; d.className = 'hlas-toast'; document.body.appendChild(d); }
@@ -3958,7 +3996,8 @@
     hlasPocuvaj('Povedz pozíciu, napr. „26 A“ alebo „3 KF“.', text => {
       const inp = document.getElementById(id); if(!inp) return;
       const p = hlasPozicia(text);
-      if(!p){ beep('error'); hlasToast(`Nerozumel som pozícii: „${text}“`); return; }
+      if(!p){ beep('error'); inp.value = text.toUpperCase(); hlasLog('pole-pozicia', text, 'nerozumel'); hlasToast(`Nerozumel som pozícii – text som vložil do poľa, oprav ho.`); return; }
+      hlasLog('pole-pozicia', text, p.poz);
       inp.value = p.poz; inp.dispatchEvent(new Event('input'));
       inp.classList.add('bg-green-100'); setTimeout(() => inp.classList.remove('bg-green-100'), 600);
       beep(p.znama ? 'success' : 'error');
@@ -3969,7 +4008,8 @@
   window.hlasPoziciaHlavna = function(){
     hlasPocuvaj('Povedz pozíciu, napr. „26 A“.', text => {
       const p = hlasPozicia(text);
-      if(!p){ beep('error'); hlasToast(`Nerozumel som pozícii: „${text}“`); return; }
+      if(!p){ beep('error'); document.getElementById('locInput').value = text.toUpperCase(); hlasLog('pozicia', text, 'nerozumel'); hlasToast('Nerozumel som pozícii – text som vložil do poľa, oprav ho a daj Enter.'); return; }
+      hlasLog('pozicia', text, p.poz);
       const inp = document.getElementById('locInput'); inp.value = p.poz; handleLocScan(inp);
       if(!p.znama) hlasToast(`Na pozícii ${p.poz} podľa appky nič neleží.`);
     });
@@ -3978,7 +4018,8 @@
   window.hlasHromadny = function(){
     hlasPocuvaj('Povedz jeden alebo viac kódov, napr. „NS 12491, NS 10047“.', text => {
       const kody = hlasKody(text, 'NS');
-      if(!kody.length){ beep('error'); hlasToast(`Nerozumel som kódu: „${text}“`); return; }
+      hlasLog('hromadny', text, kody.join(' ') || 'nerozumel');
+      if(!kody.length){ beep('error'); const bi = document.getElementById('bulkInput'); if(bi) bi.value = text.toUpperCase(); hlasToast('Nerozumel som kódu – text som vložil do poľa, oprav ho a daj Enter.'); return; }
       kody.forEach(k => handleBulkItemScan(k));
       const nezname = kody.filter(k => !nazovKodu(k.split('_')[0]));
       hlasToast(`Pridané: ${kody.join(', ')}` + (nezname.length ? ` · v katalógu nie je: ${nezname.join(', ')}` : ''));
@@ -4024,13 +4065,15 @@
   }
   window.hlasHlavny = function(){
     hlasPocuvaj('Napr. „NS 12491“, „presuň NS 12491 na 26 A“, „príjem NS 12491 na 3 KF, 2 kusy“, „pozícia 26 A“.', text => {
-      const s = bezDiakritiky(text);
+      const s = priprav(text);
       const pozZa = slovo => { const i = s.lastIndexOf(slovo); return i < 0 ? null : hlasPozicia(s.slice(i + slovo.length)); };
       const kody = hlasKody(text, /\b(pozici|regal|polic)/.test(s) ? null : 'NS');
       if(!kody.length){
         if(/\b(pozici|regal|polic)/.test(s)){ const p = hlasPozicia(s); if(p){ const inp = document.getElementById('locInput'); inp.value = p.poz; handleLocScan(inp); return; } }
-        beep('error'); hlasToast(`Nerozumel som: „${text}“`); return;
+        hlasLog('hlavny', text, 'nerozumel');
+        beep('error'); document.getElementById('scanInput').value = text.toUpperCase(); hlasToast('Nerozumel som – text som vložil do poľa, oprav ho a daj Enter.'); return;
       }
+      hlasLog('hlavny', text, kody.join(' '));
       const kod = kody[0].split('_')[0];
       if(/\b(presun|presunut|daj|prelozit|preloz)\w*/.test(s)){
         const ciel = pozZa(' na ');

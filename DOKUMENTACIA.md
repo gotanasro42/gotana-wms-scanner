@@ -243,3 +243,7 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
 - Hromadný príjem má nové pole „Zadaj NS ručne“ (`hromadnyRucne`, Enter).
 - Rozbor: `hlasKody(text, predvolenaPredpona)` (NS/NT/HT/HF/NST/MAT/ZB, hláskované „en es“, „há té“; MAT dopĺňa na 4, NST a HT na 5 číslic),
   `hlasPozicia(text)` (26A, 3KF, 1064A; porovnáva so známymi pozíciami v dbData, neznámu pozíciu hlási).
+- 13. 11. 2026 oprava „nerozumel som“: číslo z rozpoznávania prichádza rozdelené ("12 491", nezlomiteľná medzera, "1 2 4 9 1", "12.491")
+  alebo slovom ("dvanásťtisíc štyristo..."). Teraz sa číslovky prevedú na číslice, kúsky čísla sa spoja (prednostne na kód, ktorý v sklade/katalógu existuje).
+  Keď appka nerozumie, vloží rozpoznaný text do poľa na ručnú opravu. Každé hlasové zadanie sa zapisuje do tabuľky `hlas_log`
+  (kontext, text, výsledok, kto) – podľa nej sa dá rozpoznávanie dolaďovať.
