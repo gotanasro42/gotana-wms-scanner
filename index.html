@@ -4111,6 +4111,66 @@
 })();
 </script>
 
+<script>
+/* ==== Záznam aktivity (kto čo robí) – šetrne: dávky raz za minútu / pri zatvorení, bez opakovaní do 30 s. Tabuľka aktivita, mazanie po 90 dňoch. ==== */
+(function(){
+  const APPKA = /statistiky/.test(location.pathname) ? 'statistiky' : 'sklad';
+  const URL_SB = 'https://gduarwvhxlffrasuuxqw.supabase.co/rest/v1/aktivita';
+  const KL = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkdWFyd3ZoeGxmZnJhc3V1eHF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDUxMTMsImV4cCI6MjEwMTQ4MTExM30.xGnlwd5XPVSIkd9X1PlsxlTldiwuul410B8EX-VftLQ';
+  const KLUC_FR = 'gotana_aktivita_fronta';
+  let fronta = []; try{ fronta = JSON.parse(localStorage.getItem(KLUC_FR) || '[]'); }catch(_e){ fronta = []; }
+  const posledne = {};
+  const kto = () => { try{ return (localStorage.getItem('gotana_user') || localStorage.getItem('trh_meno') || '').slice(0, 60); }catch(_e){ return ''; } };
+  const uloz = () => { try{ localStorage.setItem(KLUC_FR, JSON.stringify(fronta.slice(-300))); }catch(_e){} };
+  window.gtAkt = function(akcia, detail){
+    try{
+      detail = detail == null ? '' : String(detail).slice(0, 200);
+      const k = akcia + '|' + detail, t = Date.now();
+      if(posledne[k] && t - posledne[k] < 30000) return;
+      posledne[k] = t;
+      fronta.push({cas: new Date().toISOString(), kto: kto(), appka: APPKA, akcia: String(akcia).slice(0, 60), detail});
+      uloz();
+    }catch(_e){}
+  };
+  let posiela = false;
+  function odosli(keepalive){
+    if(posiela || !fronta.length || !navigator.onLine) return;
+    const davka = fronta.slice(0, 100);
+    posiela = true;
+    fetch(URL_SB, {method: 'POST', keepalive: !!keepalive,
+      headers: {apikey: KL, Authorization: 'Bearer ' + KL, 'Content-Type': 'application/json', Prefer: 'return=minimal'},
+      body: JSON.stringify(davka)})
+      .then(r => { if(r.ok){ fronta = fronta.slice(davka.length); uloz(); } })
+      .catch(() => {}).finally(() => { posiela = false; });
+  }
+  setInterval(() => odosli(false), 60000);
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'hidden') odosli(true); });
+  /* obal existujúcej funkcie: zapíše akciu a potom ju normálne spustí */
+  window.gtSleduj = function(meno, akcia, detailFn){
+    const f = window[meno]; if(typeof f !== 'function' || f._gt) return;
+    const obal = function(){ try{ gtAkt(akcia, detailFn ? detailFn.apply(null, arguments) : ''); }catch(_e){} return f.apply(this, arguments); };
+    obal._gt = true; window[meno] = obal;
+  };
+  gtAkt('otvorenie', '');
+})();
+</script>
+<script>
+(function(){
+  const kod = v => String(v || '').replace(/[\n\r]+/g, ' ').trim().slice(0, 80);
+  const start = () => {
+    gtSleduj('processResult', 'hladanie', kod);
+    gtSleduj('renderLocationView', 'pozicia', kod);
+    gtSleduj('startBulkMode', 'hromadny-prijem');
+    gtSleduj('finishBulkToLoc', 'hromadny-dokoncit', () => (typeof bulkItems !== 'undefined' ? bulkItems.length + ' ks' : ''));
+    gtSleduj('switchView', 'obrazovka', kod);
+    gtSleduj('prepareNew', 'prijem-formular', kod);
+    gtSleduj('startInventory', 'inventura', kod);
+    gtSleduj('stkOtvor', 'stitky-roliek'); gtSleduj('kobOtvor', 'skener-kobercov'); gtSleduj('rlkOtvor', 'pocitadlo-roliek');
+    if(window.hlasLog && !window.hlasLog._gt){ const h = window.hlasLog; window.hlasLog = function(k, t, v){ gtAkt('hlas-' + k, String(t).slice(0, 90) + ' -> ' + String(v || '').slice(0, 90)); return h.apply(this, arguments); }; window.hlasLog._gt = true; }
+  };
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>
 </body>
 </html>
 

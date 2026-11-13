@@ -247,3 +247,12 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
   alebo slovom ("dvanásťtisíc štyristo..."). Teraz sa číslovky prevedú na číslice, kúsky čísla sa spoja (prednostne na kód, ktorý v sklade/katalógu existuje).
   Keď appka nerozumie, vloží rozpoznaný text do poľa na ručnú opravu. Každé hlasové zadanie sa zapisuje do tabuľky `hlas_log`
   (kontext, text, výsledok, kto) – podľa nej sa dá rozpoznávanie dolaďovať.
+
+## Záznam aktivity a otázok chatbotu (od 13. 11. 2026)
+- `chat_log` má nové stĺpce `kto` (meno z prihlásenia v Štatistikách) a `spravca`. Edge funkcia `chatbot` v5 ich ukladá.
+- Tabuľka `aktivita` (cas, kto, appka 'sklad'/'statistiky', akcia, detail): appka zbiera udalosti do fronty v telefóne (localStorage)
+  a posiela ich dávkou raz za minútu a pri zatvorení/prepnutí appky. Rovnaká akcia s rovnakým detailom sa do 30 s nezapíše znova.
+  Anon smie len INSERT (RLS), čítať sa nedá z appky. Mazanie po 90 dňoch: cron `cistenie-aktivita` (3:17, aj hlas_log).
+- Sklad: otvorenie, hladanie (kód), pozicia, obrazovka, hromadny-prijem / hromadny-dokoncit, prijem-formular, inventura, stitky-roliek,
+  skener-kobercov, pocitadlo-roliek, hlas-* (čo povedal -> čo appka rozpoznala). Zápisy do skladu (presun, príjem, výdaj) sú naďalej v `historia`.
+- Štatistiky: otvorenie, sekcia, obdobie, objednavka, krajina, chatbot-otvoreny.
