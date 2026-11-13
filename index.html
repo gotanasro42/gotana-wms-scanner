@@ -45,6 +45,20 @@
       /* Badge count animation */
       @keyframes pop { 50% { transform: scale(1.2); } }
       .animate-pop { animation: pop 0.2s ease-in-out; }
+      /* Úvodná obrazovka: tlačidlá s ⓘ, jednotné ručné polia, dlaždice ďalších nástrojov */
+      .hl-akcia{position:relative;padding-left:2.5rem;padding-right:2.5rem}
+      .info-i{position:absolute;right:.6rem;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.22);color:#fff;font:italic 700 13px/22px Georgia,serif;text-align:center;cursor:pointer}
+      .info-i:active{background:rgba(255,255,255,.45)}
+      .rucne-pole{display:block;width:100%;height:2.6rem;padding:0 2.4rem;text-align:center;border:2px solid #e2e8f0;border-radius:.75rem;font-weight:700;font-size:.875rem;text-transform:uppercase;outline:none;box-shadow:inset 0 2px 4px rgba(0,0,0,.05);background:#fff}
+      .rucne-pole::placeholder{color:#94a3b8;font-size:.75rem;letter-spacing:.03em}
+      .rucne-ikona{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:20px;pointer-events:none}
+      .nastroj{position:relative;height:4.25rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:.75rem;background:#fff;border:2px solid color-mix(in srgb,var(--f) 35%,#fff);color:var(--f);font-weight:800;font-size:11px;line-height:1.15;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+      .nastroj .material-icons{font-size:22px}
+      .nastroj:active{background:color-mix(in srgb,var(--f) 10%,#fff)}
+      .nastroj .info-i{top:4px;right:4px;transform:none;width:18px;height:18px;font-size:11px;line-height:18px;background:color-mix(in srgb,var(--f) 14%,#fff);color:var(--f)}
+      #infoBublina{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:9000;background:#0f172a;color:#f8fafc;border-radius:14px;padding:12px 40px 12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:13.5px;line-height:1.45;max-width:520px;margin:0 auto}
+      #infoBublina b{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#93c5fd;margin-bottom:3px}
+      #infoBublina .zavri{position:absolute;top:6px;right:8px;width:28px;height:28px;border:0;background:transparent;color:#94a3b8;font-size:20px;cursor:pointer}
       /* Počítadlo roliek */
       .rlk-leg{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:-1px;margin-right:2px;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
       .rlk-bod{position:absolute;transform:translate(-50%,-50%);min-width:20px;height:20px;padding:0 3px;border-radius:10px;border:2px solid #fff;color:#fff;font:700 10px/16px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.45);pointer-events:none}
@@ -231,61 +245,54 @@
 
       <!-- SKENER VIEW -->
       <div id="view-scan">
-          <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200 mb-6 space-y-6">
-             
-             <!-- BLOK 1: PRODUKT (HLAVNÝ) -->
-             <div class="space-y-3">
-                 <button onclick="initCamera()" class="w-full h-16 bg-blue-600 active:bg-blue-800 text-white rounded-xl font-black text-base sm:text-lg flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform tap-feedback">
+          <div class="bg-white p-4 rounded-2xl shadow-md border border-slate-200 mb-4 space-y-3">
+
+             <!-- HLAVNÉ AKCIE: ku každej tlačidlo ⓘ s popisom (data-info) -->
+             <!-- PRODUKT -->
+             <div class="space-y-2">
+                 <button onclick="initCamera()" class="hl-akcia w-full h-14 bg-blue-600 active:bg-blue-800 text-white rounded-xl font-black text-base sm:text-lg flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform tap-feedback">
                       <span class="material-icons">qr_code_scanner</span> SKENOVAŤ NS
+                      <span class="info-i" role="button" tabindex="0" aria-label="Čo robí Skenovať NS" data-info="Skenovať NS" data-text="Naskenuj štítok kusu alebo NS kód látky. Ukáže, či je kus na sklade, na ktorej pozícii leží a koľko ho je – a môžeš ho uložiť alebo presunúť na inú pozíciu. Kód sa dá aj napísať do poľa pod tlačidlom (Enter = hľadať).">i</span>
                  </button>
-                 <div class="flex justify-center">
-                    <div class="relative w-3/4 sm:w-2/3">
-                        <input id="scanInput" type="text" autocapitalize="characters" class="w-full p-3 pl-4 pr-10 text-center border-2 border-slate-200 rounded-xl font-bold uppercase focus:border-blue-500 outline-none shadow-inner text-sm sm:text-base" placeholder="ZADAJ RUČNE" oninput="handleInputChange(this)" onkeydown="if(event.key === 'Enter') handleScan()">
-                        <span class="material-icons absolute right-3 top-3.5 text-slate-400">keyboard</span>
-                    </div>
+                 <div class="relative">
+                    <input id="scanInput" type="text" autocapitalize="characters" class="rucne-pole focus:border-blue-500" placeholder="ZADAJ NS RUČNE" oninput="handleInputChange(this)" onkeydown="if(event.key === 'Enter') handleScan()">
+                    <span class="material-icons rucne-ikona">keyboard</span>
                  </div>
              </div>
 
-             <hr class="border-slate-100">
-
-             <!-- BLOK 2: VEDĽAJŠIE AKCIE (VEDĽA SEBA) -->
-             <div class="grid grid-cols-1 gap-3">
-                 <!-- POZÍCIA -->
-                 <div class="space-y-2">
-                     <button onclick="startLocationVerification()" class="w-full h-16 bg-teal-600 active:bg-teal-800 text-white rounded-xl font-black text-base sm:text-lg flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-transform tap-feedback border-2 border-teal-500 border-dashed leading-tight px-1">
-                         <span class="material-icons">fact_check</span> SKENOVAŤ POZÍCIU
-                     </button>
-                     <div class="relative">
-                        <input id="locInput" type="text" autocapitalize="characters" class="w-full p-2 pl-2 pr-8 text-center border-2 border-slate-200 rounded-xl font-bold uppercase focus:border-teal-500 outline-none shadow-inner text-xs sm:text-sm" placeholder="ZADAJ RUČNE" onkeydown="if(event.key === 'Enter') handleLocScan(this)">
-                        <span class="material-icons absolute right-2 top-2 text-slate-400 text-sm sm:text-base">keyboard</span>
-                     </div>
+             <!-- POZÍCIA -->
+             <div class="space-y-2 pt-1">
+                 <button onclick="startLocationVerification()" class="hl-akcia w-full h-14 bg-teal-600 active:bg-teal-800 text-white rounded-xl font-black text-base sm:text-lg flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-transform tap-feedback">
+                     <span class="material-icons">fact_check</span> SKENOVAŤ POZÍCIU
+                     <span class="info-i" role="button" tabindex="0" aria-label="Čo robí Skenovať pozíciu" data-info="Skenovať pozíciu" data-text="Naskenuj štítok pozície v regáli (napr. 15 alebo 1000A). Ukáže všetko, čo na tej pozícii podľa appky leží – hodí sa na kontrolu regálu. Kód pozície sa dá aj napísať do poľa pod tlačidlom.">i</span>
+                 </button>
+                 <div class="relative">
+                    <input id="locInput" type="text" autocapitalize="characters" class="rucne-pole focus:border-teal-500" placeholder="ZADAJ POZÍCIU RUČNE" onkeydown="if(event.key === 'Enter') handleLocScan(this)">
+                    <span class="material-icons rucne-ikona">keyboard</span>
                  </div>
+             </div>
 
-                 <!-- HROMADNÝ PRÍJEM -->
-                 <div class="space-y-2">
-                     <button onclick="startBulkMode()" class="w-full h-16 bg-indigo-600 active:bg-indigo-800 text-white rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-1 shadow-md active:scale-[0.98] transition-transform tap-feedback border-2 border-indigo-500 border-dashed leading-tight px-1">
-                         <span class="material-icons">layers</span> HROMADNÝ PRÍJEM
+             <!-- HROMADNÝ PRÍJEM -->
+             <button onclick="startBulkMode()" class="hl-akcia w-full h-14 bg-indigo-600 active:bg-indigo-800 text-white rounded-xl font-black text-base sm:text-lg flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-transform tap-feedback">
+                 <span class="material-icons">layers</span> HROMADNÝ PRÍJEM
+                 <span class="info-i" role="button" tabindex="0" aria-label="Čo robí Hromadný príjem" data-info="Hromadný príjem" data-text="Naskenuj za sebou viac kusov (napr. celú paletu alebo vozík) a na konci ich všetky naraz ulož na jednu pozíciu.">i</span>
+             </button>
+
+             <!-- ĎALŠIE NÁSTROJE (menšie dlaždice) -->
+             <div class="pt-1">
+                 <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1.5 px-0.5">Ďalšie nástroje</div>
+                 <div class="grid grid-cols-3 gap-2">
+                     <button onclick="stkOtvor()" class="nastroj tap-feedback" style="--f:#059669">
+                         <span class="material-icons">sell</span><span>Štítky<br>roliek</span>
+                         <span class="info-i" role="button" tabindex="0" aria-label="Čo robia Štítky roliek" data-info="Štítky roliek" data-text="Skenovanie papierových štítkov zvyškov roliek (NS kód a metráž). Slúži len na evidenciu mimo systému – zo skladu sa nič neodpisuje. Zoznam sa dá doplniť ručne a vyexportovať do Excelu.">i</span>
                      </button>
-                 </div>
-
-                 <!-- ŠTÍTKY ROLIEK (evidencia mimo skladu) -->
-                 <div class="space-y-2">
-                     <button onclick="stkOtvor()" class="w-full h-16 bg-emerald-600 active:bg-emerald-800 text-white rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-1 shadow-md active:scale-[0.98] transition-transform tap-feedback border-2 border-emerald-500 border-dashed leading-tight px-1">
-                         <span class="material-icons">sell</span> ŠTÍTKY ROLIEK
+                     <button onclick="kobOtvor()" class="nastroj tap-feedback" style="--f:#ea580c">
+                         <span class="material-icons">qr_code_scanner</span><span>Skener<br>kobercov</span>
+                         <span class="info-i" role="button" tabindex="0" aria-label="Čo robí Skener kobercov" data-info="Skener kobercov" data-text="Rýchle dočasné skenovanie kusov kobercov (štítky z výroby aj naše skladové). Každý sken sa započíta, aj keď sa číslo kusu opakuje. Na konci sa zoznam vyexportuje – zo skladu sa nič neodpisuje.">i</span>
                      </button>
-                 </div>
-
-                 <!-- SKENER KOBERCOV (dočasná evidencia kusov, nič sa neodpisuje zo skladu) -->
-                 <div class="space-y-2">
-                     <button onclick="kobOtvor()" style="background:#ea580c;border-color:#f97316;color:#fff" class="w-full h-16 bg-orange-600 active:bg-orange-800 text-white rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-1 shadow-md active:scale-[0.98] transition-transform tap-feedback border-2 border-orange-500 border-dashed leading-tight px-1">
-                         <span class="material-icons">qr_code_scanner</span> SKENER KOBERCOV
-                     </button>
-                 </div>
-
-                 <!-- POČÍTADLO ROLIEK (spočíta rolky na fotke, nič sa nezapisuje do skladu) -->
-                 <div class="space-y-2">
-                     <button onclick="rlkOtvor()" style="background:#7c3aed;border-color:#8b5cf6;color:#fff" class="w-full h-16 text-white rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-1 shadow-md active:scale-[0.98] transition-transform tap-feedback border-2 border-dashed leading-tight px-1">
-                         <span class="material-icons">photo_camera</span> POČÍTADLO ROLIEK
+                     <button onclick="rlkOtvor()" class="nastroj tap-feedback" style="--f:#7c3aed">
+                         <span class="material-icons">photo_camera</span><span>Počítadlo<br>roliek</span>
+                         <span class="info-i" role="button" tabindex="0" aria-label="Čo robí Počítadlo roliek" data-info="Počítadlo roliek" data-text="Odfoť regál alebo kopu roliek a umelá inteligencia ich spočíta – na každej rolke ukáže bodku. Ťuknutím bodku pridáš alebo odoberieš. Počty sa ukladajú len v tomto telefóne, do skladu sa nič nezapisuje.">i</span>
                      </button>
                  </div>
              </div>
@@ -3425,6 +3432,29 @@
 })();
 </script>
 <script>
+/* ====== ⓘ popis tlačidiel na úvodnej obrazovke (klik na ⓘ nespustí samotné tlačidlo) ====== */
+(function(){
+  function zavri(){ var b = document.getElementById('infoBublina'); if(b) b.remove(); }
+  function ukaz(el){
+    zavri();
+    var b = document.createElement('div'); b.id = 'infoBublina'; b.setAttribute('role', 'dialog');
+    var t = document.createElement('b'); t.textContent = el.getAttribute('data-info') || '';
+    var p = document.createElement('div'); p.textContent = el.getAttribute('data-text') || '';
+    var x = document.createElement('button'); x.className = 'zavri'; x.type = 'button'; x.setAttribute('aria-label', 'Zavrieť'); x.textContent = '×';
+    b.appendChild(t); b.appendChild(p); b.appendChild(x); document.body.appendChild(b);
+  }
+  document.addEventListener('click', function(e){
+    var i = e.target.closest && e.target.closest('.info-i');
+    if(i){ e.preventDefault(); e.stopPropagation(); ukaz(i); return; }
+    if(document.getElementById('infoBublina')) zavri();
+  }, true);
+  document.addEventListener('keydown', function(e){
+    var i = e.target.closest && e.target.closest('.info-i');
+    if(i && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); e.stopPropagation(); ukaz(i); }
+    if(e.key === 'Escape') zavri();
+  }, true);
+})();
+
 /* ====== POČÍTADLO ROLIEK ======
    Fotka → funkcia pocitaj-rolky (Claude) → bodky na každej rolke. Ťuk na fotku pridá bodku, ťuk na bodku ju odoberie.
    Uložené počty sú len v tomto telefóne (localStorage, max 40 so zmenšenou fotkou). Nič sa nezapisuje do skladu. */

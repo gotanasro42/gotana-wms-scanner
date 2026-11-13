@@ -193,3 +193,12 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
 - Test (umela fotka 61 roliek): Opus aj Sonnet 61/61, polohy do 1 px; Opus ~9 s, Sonnet ~5 s. Presnost na skutocnych fotkach treba overit.
 - Na skusky: kod zacinajuci "test-" plati len ak je rovnaky v `nastavenia.kluc = 'rolky_test'` (riadok po teste zmazat).
 
+## Uvodna obrazovka skladovej appky (od 13. 11. 2026)
+- Hlavne akcie (vyska 14): SKENOVAT NS, SKENOVAT POZICIU, HROMADNY PRIJEM. Rucne polia pod NS aj pod poziciou su rovnake
+  (trieda `.rucne-pole`, cela sirka, "ZADAJ NS RUCNE" / "ZADAJ POZICIU RUCNE").
+- Dalsie nastroje su male dlazdice v jednom riadku: Stitky roliek, Skener kobercov, Pocitadlo roliek (trieda `.nastroj`).
+- Kazde tlacidlo ma ikonku (i) (`.info-i`, atributy data-info / data-text) - klik zobrazi bublinu s popisom funkcie dole
+  na obrazovke a NESPUSTI samotne tlacidlo; bublina sa zavrie klikom kamkolvek alebo Esc.
+- Novy nastroj = pridat dlazdicu `.nastroj` s `style="--f:#farba"` a vlastnou `.info-i`.
+- Blok s tlacidlami: ~435 px namiesto ~630 px (mobil 360 px).
+
