@@ -273,3 +273,11 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
   dotiahnu aj dni po vybranom dni až po dnešok. Vybraný deň je na začiatku vpravo (tučný), šípka › / tlačidlo „dni až po dnes“ ukážu novšie
   dni (sú stlmené, dnešok šrafovaný a nepočíta sa do priemerov). Porovnania pod grafom ostávajú voči vybranému dňu.
 - JS: `sedemNov` + `novsieDni()` (z `dash_dni(dnes)`), `trKrNov` (z `dash_trzby_krajiny_dni(dnes)`), `grafOkno(..., {novsie})`, v `graf7` `opt.vybrDen`.
+
+## Hometextil – denný graf tržieb HT + HF (16. 11. 2026)
+- V Hometextile pod „Tržby Hometextilu“ (len správca) je posúvateľný denný graf tržby HT + HF (rovnaký štýl ako graf Tržby,
+  klik na deň = rovnaké dni v týždni s priemerom, tooltip rozdelí HT / HF). Pri jednom dni riadok „<dni> (posl. 8): priemer · teraz“.
+  Pri staršom vybranom dni sú za ním aj novšie dni (šípka › / „dni až po dnes“). Dnešok sa berie z `dash_trzby_ht` (neúplný).
+- DB: `dash_trzby_ht_dni(p_kod)` → denné súčty `predaj_den` (sku HT%/HF%, stav predaj, ma_cenu) od 1. 1. 2026 do včera,
+  cache 6 h (kľúč `trhtdni|<včera>`), výpočet `dash_trzby_ht_dni_vypocet` nie je verejný. Overené: 11. 11. HT 2 477,66 € / HF 49,23 € = `dash_trzby_ht`.
+- JS: `nacitajHtDni`, `htTrDniHtml`, kľúč okna `__htTr`.

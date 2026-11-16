@@ -342,6 +342,7 @@ h2:first-child{margin-top:2px}
 .pr-leg{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--sedy);margin:4px 0 2px}
 .pr-leg i{display:inline-block;width:12px;height:9px;border-radius:2px}
 .tr-pozn-p{font-size:10.5px;color:var(--sedy);margin:2px 0 6px}
+.ht-tr-hl{margin:8px 0 2px}
 .ht-tr{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
 .ht-tr>div{background:#fff;border:1px solid var(--linka);border-radius:8px;padding:8px 10px;border-top:3px solid var(--safran)}
 .ht-tr>div.hf{border-top-color:var(--hf)}
@@ -2188,7 +2189,7 @@ function graf7(dni, jeDnes, cas, jeKoniec = true, opt = null){
     const tyz = Math.floor((Date.parse(x.den + 'T12:00Z') / 864e5 + 3) / 7); /* číslo týždňa po–ne */
     const tz = Number(x.objTeraz)||0, ukazTz = sTeraz && !posl && x.objTeraz != null;
     const vt = tz > 0 ? Math.max(1, tz / max * 100) : 0;
-    return `<div class="${tr}${dni.length > 7 && tyz % 2 ? ' tyz-b' : ''}${dni.length > 7 && dow === 1 ? ' pon' : ''}" data-dow="${dow}" data-obj="${Number(x.obj)||0}"${prG ? ` data-pr="${(Number(x.priem)||0).toFixed(2)}"` : ''}${sTeraz ? ` data-tz="${posl ? Number(x.obj)||0 : tz}"` : ''} data-dnes="${posl && jeDnes || dnesNov ? 1 : 0}" style="--fd:${fd}" title="${new Date(x.den + 'T12:00').toLocaleDateString('sk-SK',{weekday:'long', day:'numeric', month:'numeric'})}: ${pctG ? `marža ${cis(x.obj, 1)} %` : eurG ? `${cis(x.obj)} € · ${cis(x.pocet)} obj.${prG && x.pocet ? ` · Ø obj. ${cis(x.priem, 2)} €` : ''}${Number(x.rok) > 0 ? ` · pred rokom ${cis(x.rok)} €` : ''}` : `${cis(x.obj)} obj. · ${cis(x.metre,1)} m · ${cis(x.kusy)} ks`}${ukazTz ? ` · do ${esc(cas)}: ${cis(tz)} obj.` : ''}">
+    return `<div class="${tr}${dni.length > 7 && tyz % 2 ? ' tyz-b' : ''}${dni.length > 7 && dow === 1 ? ' pon' : ''}" data-dow="${dow}" data-obj="${Number(x.obj)||0}"${prG ? ` data-pr="${(Number(x.priem)||0).toFixed(2)}"` : ''}${sTeraz ? ` data-tz="${posl ? Number(x.obj)||0 : tz}"` : ''} data-dnes="${posl && jeDnes || dnesNov ? 1 : 0}" style="--fd:${fd}" title="${new Date(x.den + 'T12:00').toLocaleDateString('sk-SK',{weekday:'long', day:'numeric', month:'numeric'})}: ${pctG ? `marža ${cis(x.obj, 1)} %` : eurG ? `${cis(x.obj)} €${x.pozn ? ' · ' + esc(x.pozn) : ''}${x.pocet != null ? ` · ${cis(x.pocet)} obj.` : ''}${prG && x.pocet ? ` · Ø obj. ${cis(x.priem, 2)} €` : ''}${Number(x.rok) > 0 ? ` · pred rokom ${cis(x.rok)} €` : ''}` : `${cis(x.obj)} obj. · ${cis(x.metre,1)} m · ${cis(x.kusy)} ks`}${ukazTz ? ` · do ${esc(cas)}: ${cis(tz)} obj.` : ''}">
       <div class="plocha"><div class="vnutro">
         <div class="stlp" style="height:${v.toFixed(1)}%"></div>${eurG && Number(x.rok) > 0 ? `<div class="rok-ciara" style="bottom:${(Number(x.rok) / max * 100).toFixed(1)}%"></div>` : ''}${vert ? `${ukazTz ? `
         <div class="tz-ciara" style="bottom:${vt.toFixed(1)}%"></div>${v - vt >= 14 ? `<div class="vh tz" style="bottom:${vt.toFixed(1)}%">${cis(tz)}</div>` : (vt >= 14 ? `<div class="vh tz dnu" style="bottom:${vt.toFixed(1)}%">${cis(tz)}</div>` : '')}` : ''}
@@ -3781,6 +3782,7 @@ async function nacitajHtTrzby(){
   if(!el || !jeSpravca() || !htData) return;
   const od = htData.od, dd = htData.do;
   el.innerHTML = '<div class="kostra"></div>';
+  if(htTrKl !== od + '|' + dd){ delete okno['__htTr']; delete oknoVyber['__htTr']; htTrKl = od + '|' + dd; }
   let d;
   try{ d = await rpc('dash_trzby_ht', {p_kod: localStorage.getItem('trh_kod') || '', p_od: od, p_do: dd}); }catch(_e){ d = null; }
   if(!htData || htData.od !== od || htData.do !== dd || !$('#htTrzby')) return;
@@ -3794,7 +3796,51 @@ async function nacitajHtTrzby(){
       <div><div class="typ">HT · hotový tovar</div><div class="velke">${cis(ht.trzba)} €</div><div class="pod">${cis(ht.obj)} obj. · priem. ${eur(ht.obj ? ht.trzba / ht.obj : 0, 2)}</div>${por(ht)}</div>
       <div class="hf"><div class="typ">HF · od dodávateľa</div><div class="velke">${cis(hf.trzba)} €</div><div class="pod">${cis(hf.obj)} obj. · priem. ${eur(hf.obj ? hf.trzba / hf.obj : 0, 2)}</div>${por(hf)}</div>
     </div>
-    <div class="tr-pozn-p">Spolu ${eur(+ht.trzba + +hf.trzba)}${dnes ? ' · dnes zatiaľ, bez porovnania' : (d.predOk ? ' · porovnanie s rovnako dlhým obdobím predtým' : '')}. Priemer = tržba Hometextilu na objednávku, v ktorej bol.</div>`;
+    <div class="tr-pozn-p">Spolu ${eur(+ht.trzba + +hf.trzba)}${dnes ? ' · dnes zatiaľ, bez porovnania' : (d.predOk ? ' · porovnanie s rovnako dlhým obdobím predtým' : '')}. Priemer = tržba Hometextilu na objednávku, v ktorej bol.</div>
+    <div id="htTrDni">${htTrDniHtml(d)}</div>`;
+  htTrPosl = d;
+  obnovVyber();
+}
+/* ---- Hometextil: denný graf tržieb HT + HF (posúvateľný, ako graf Tržby) ---- */
+let htDni = null, htDniBezi = false, htTrPosl = null, htTrKl = null;
+async function nacitajHtDni(){
+  if(htDniBezi || (htDni && htDni.dnes === den(new Date()))) return;
+  htDniBezi = true;
+  try{
+    const r = await rpc('dash_trzby_ht_dni', {p_kod: localStorage.getItem('trh_kod') || ''});
+    if(r && !r.chyba){ const m = {}; (r.dni || []).forEach(x => { m[x.d] = x; }); htDni = {dnes: den(new Date()), do: r.do, mapa: m}; }
+    else htDni = {dnes: den(new Date()), chyba: 1};
+  }catch(_e){ htDni = {dnes: den(new Date()), chyba: 1}; }
+  htDniBezi = false;
+  const el = $('#htTrDni'); if(el && htTrPosl){ el.innerHTML = htTrDniHtml(htTrPosl); obnovVyber(); }
+}
+function htTrDniHtml(d){
+  if(!htData) return '';
+  if(!htDni || htDni.dnes !== den(new Date())){ nacitajHtDni(); if(!htDni) return '<div class="kostra" style="height:150px"></div>'; }
+  if(htDni.chyba) return '';
+  const od0 = htData.od, dd = htData.do, dnes = den(new Date());
+  const t = d.typy || {}, ht = t.HT || {trzba:0}, hf = t.HF || {trzba:0};
+  const bod = (x, a, b) => ({den: x, obj: Math.round(a + b), pozn: `HT ${cis(a)} € · HF ${cis(b)} €`, metre: 0, kusy: 0});
+  const dni = [], nov = [];
+  for(let x = '2026-01-01'; x <= htDni.do; x = isoPlus(x, 1)){
+    const r = htDni.mapa[x], p = bod(x, r ? +r.ht || 0 : 0, r ? +r.hf || 0 : 0);
+    if(x <= dd) dni.push(p); else nov.push(p);
+  }
+  const jeDnes = od0 === dd && dd === dnes;
+  if(jeDnes) dni.push(bod(dnes, +ht.trzba || 0, +hf.trzba || 0));
+  if(!dni.length) return '';
+  /* porovnanie posledného dňa s rovnakými dňami v týždni */
+  let hl = '';
+  if(od0 === dd){
+    const posl = dni[dni.length - 1], dow = new Date(posl.den + 'T12:00').getDay();
+    const rd = dni.slice(0, -1).filter(x => new Date(x.den + 'T12:00').getDay() === dow).slice(-8);
+    if(rd.length){
+      const pr = rd.reduce((a, x) => a + x.obj, 0) / rd.length;
+      hl = `<div class="mz-hl ht-tr-hl"><span>${DNI_KR[dow].charAt(0).toUpperCase() + DNI_KR[dow].slice(1)} (posl. ${rd.length}): priemer <b>${cis(pr)} €</b> · ${jeDnes ? 'dnes zatiaľ' : 'teraz'} <b>${cis(posl.obj)} €</b></span>${jeDnes ? '' : trZnacka(posl.obj, pr)}</div>`;
+    }
+  }
+  return `${hl}${grafOkno('__htTr', dni, jeDnes, null, {eur: true, novsie: nov})}
+    <div class="okno-pozn">Tržba HT + HF po dňoch (bez DPH, €). Ťukni na deň – zvýraznia sa rovnaké dni v týždni s priemerom.${jeDnes ? ' Dnešok je zatiaľ neúplný.' : ''}</div>`;
 }
 /* tržby k jednotlivým HT/HF produktom – doplní sa aj do zoznamov, ktoré sa rozbalia neskôr */
 function htTrSledovanie(){
