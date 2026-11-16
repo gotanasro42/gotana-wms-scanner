@@ -258,7 +258,9 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
 - Štatistiky: otvorenie, sekcia, obdobie, objednavka, krajina, chatbot-otvoreny.
 
 ## Marža – porovnanie so spätnými obdobiami (16. 11. 2026)
-- V bloku Tržby → Hrubá marža tovaru je pod výpočtom mini graf marže v % za aktuálne obdobie a 8 predošlých:
+- V bloku Tržby → Hrubá marža tovaru: riadok s priemerom marže 8 predošlých období a rozdielom (výpočet obdobia nižšie),
+  pod ním **denný posúvateľný graf marže v %** (`grafOkno('__marza', …, {pct:true})`, zelený, os nezačína od nuly, klik = rovnaké dni v týždni s priemerom).
+  Predošlé obdobia:
   1 deň → rovnaké dni v týždni (napr. posledných 8 stried), Tento mesiac → predošlé mesiace, inak posun o dĺžku obdobia.
 - Zobrazí priemer predošlých, rozdiel v percentuálnych bodoch (↑/↓ b.) a dlhodobý trend (posledné 3 obdobia vs. staršie, hranica 0,5 b.).
 - DB: `dash_marza_dni(p_kod)` (len správca) → denné súčty `predaj_den` (stav predaj, ma_cenu, nie ignoruj) od 1. 1. 2026 do včera,
