@@ -285,3 +285,6 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
   Pod grafom tržieb je **Hrubá marža Hometextilu** (HT + HF): suma, %, porovnanie s 8 predošlými obdobiami (`trMarzaOkna`) a denný zelený graf
   marže (`__htMz`). Počíta sa len z uzavretých dní (`dash_trzby_ht_dni` teraz vracia aj `tn` = tržba s nákupnou cenou a `n` = nákup; cache kľúč `trhtdni2`).
   Overené 11. 11.: HT + HF 2 526,89 € − nákup 1 141,78 € = marža 54,8 %.
+- (16. 11. 2026, doplnok 2) Marža Hometextilu zahŕňa aj **dnešok doteraz**: `dash_marza_ht_dnes(p_kod)` (len správca, živo z `objednavky_polozky`
+  × `nakupna_cena`, rovnaký spôsob ako marža v Tržbách pri „Dnes“), v appke sa obnoví najviac raz za 5 min. Dnešný stĺpec v grafe je šrafovaný.
+  Overené na 11. 11.: živý výpočet = `predaj_den` (2 526,89 € / 1 141,78 €).

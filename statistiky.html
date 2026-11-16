@@ -3845,7 +3845,25 @@ document.addEventListener('click', e => {
 function htMzSucet(od, dd){
   let tn = 0, n = 0, dni = 0;
   for(let x = od < '2026-01-01' ? '2026-01-01' : od; x <= dd && x <= htDni.do; x = isoPlus(x, 1)){ const r = htDni.mapa[x]; if(r){ tn += +r.tn || 0; n += +r.n || 0; dni++; } }
+  /* dnešok doteraz (živo) */
+  const dn = htMzDnesAkt();
+  if(dn && dn.den >= od && dn.den <= dd && dn.den > htDni.do){ tn += +dn.tn || 0; n += +dn.n || 0; dni++; }
   return {tn, n, dni, pct: tn > 0 ? (tn - n) / tn * 100 : null};
+}
+/* dnešná marža HT + HF doteraz – obnoví sa najviac raz za 5 min */
+let htMzDnes = null, htMzDnesBezi = false;
+function htMzDnesAkt(){
+  const d = den(new Date());
+  if(htMzDnes && htMzDnes.den === d) { if(Date.now() - htMzDnes.t > 3e5) nacitajHtMzDnes(); return htMzDnes; }
+  nacitajHtMzDnes(); return null;
+}
+async function nacitajHtMzDnes(){
+  if(htMzDnesBezi) return; htMzDnesBezi = true;
+  try{
+    const r = await rpc('dash_marza_ht_dnes', {p_kod: localStorage.getItem('trh_kod') || ''}, {cerstve: true});
+    if(r && !r.chyba){ const zmena = !htMzDnes || htMzDnes.n !== r.n || htMzDnes.tn !== r.tn; htMzDnes = Object.assign({}, r, {t: Date.now()}); if(zmena && htDni && !htDni.chyba) htPrekresliDni(); }
+  }catch(_e){}
+  htMzDnesBezi = false;
 }
 function htMzSumHtml(){
   if(!htData || !htDni || htDni.chyba || !htDni.mapa) return '';
@@ -3859,18 +3877,22 @@ function htMarzaHtml(){
   const m = htMzSucet(od, dd);
   /* denný graf marže v % */
   const dni = [], nov = [];
+  const pctB = (x, tn, n) => ({den: x, obj: tn > 0 ? Math.round((tn - n) / tn * 1000) / 10 : 0, metre: 0, kusy: 0});
   for(let x = '2026-01-01'; x <= htDni.do; x = isoPlus(x, 1)){
-    const r = htDni.mapa[x], tn = r ? +r.tn || 0 : 0;
-    const b = {den: x, obj: tn > 0 ? Math.round((tn - (+r.n || 0)) / tn * 1000) / 10 : 0, metre: 0, kusy: 0};
+    const r = htDni.mapa[x], b = pctB(x, r ? +r.tn || 0 : 0, r ? +r.n || 0 : 0);
     if(x <= dd) dni.push(b); else nov.push(b);
   }
+  const dn = htMzDnes && htMzDnes.den === den(new Date()) && htMzDnes.den > htDni.do ? htMzDnes : null;
+  if(dn){ const b = pctB(dn.den, +dn.tn || 0, +dn.n || 0); if(dn.den <= dd) dni.push(b); else nov.push(b); }
+  const jeDnesG = !!dn && dd === dn.den;
   if(!dni.length) return '';
   let hlava, hist = '';
+  const zahrnaDnes = dd >= den(new Date()) && dd > htDni.do;
   if(m.pct == null){
-    hlava = `<div class="tr-marza"><span class="t">Hrubá marža Hometextilu</span><span class="poz">Za dnešok sa marža spočíta po polnoci (z uzavretých dní). Graf končí včerajškom.</span>`;
+    hlava = `<div class="tr-marza"><span class="t">Hrubá marža Hometextilu</span><span class="poz">${zahrnaDnes && !dn ? 'Načítavam dnešnú maržu…' : 'Zatiaľ bez predaja s nákupnou cenou.'}</span>`;
   } else {
     hlava = `<div class="tr-marza"><span class="t">Hrubá marža Hometextilu</span><b>${cis(m.tn - m.n)} €</b><span class="pct">${cis(m.pct, 1)} %</span>
-      <span class="poz">Tržba HT + HF ${eur(m.tn)} − nákup ${eur(m.n)}${dd > htDni.do ? ' (bez dneška – ten sa spočíta po polnoci)' : ''}. Doprava nie je započítaná.</span>`;
+      <span class="poz">Tržba HT + HF ${eur(m.tn)} − nákup ${eur(m.n)}${zahrnaDnes ? ' (dnešok doteraz)' : ''}. Doprava nie je započítaná.</span>`;
     const {dl, jeMes, okna} = trMarzaOkna(od, dd);
     const h = okna.filter(w => w.od >= '2026-01-01' && w.do <= htDni.do).map(w => htMzSucet(w.od, w.do)).filter(x => x.pct != null);
     if(h.length){
@@ -3883,7 +3905,7 @@ function htMarzaHtml(){
       hist = `<div class="mz-hl"><span>${esc(nazov)}: priemer <b>${cis(priem, 1)} %</b> · teraz <b>${cis(m.pct, 1)} %</b></span>${zn}</div>`;
     }
   }
-  return `${hlava}<div class="mz-hist">${hist}${grafOkno('__htMz', dni, false, null, {pct: true, novsie: nov})}
+  return `${hlava}<div class="mz-hist">${hist}${grafOkno('__htMz', dni, jeDnesG, null, {pct: true, novsie: nov})}
     <div class="mz-pozn">Marža HT + HF v % po dňoch. Ťukni na deň – zvýraznia sa rovnaké dni v týždni s priemerom. „b.“ = percentuálne body.</div></div></div>`;
 }
 function htTrDniHtml(d){
