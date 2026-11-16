@@ -343,6 +343,9 @@ h2:first-child{margin-top:2px}
 .pr-leg i{display:inline-block;width:12px;height:9px;border-radius:2px}
 .tr-pozn-p{font-size:10.5px;color:var(--sedy);margin:2px 0 6px}
 .ht-tr-hl{margin:8px 0 2px}
+#htTrzby .tr-prepni{margin-top:16px}
+#htMz .tr-marza{margin-top:12px}
+.ht-mz-zn{font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:700;color:var(--mach);background:#EAF3EE;border-radius:5px;padding:1px 6px}
 .ht-tr{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
 .ht-tr>div{background:#fff;border:1px solid var(--linka);border-radius:8px;padding:8px 10px;border-top:3px solid var(--safran)}
 .ht-tr>div.hf{border-top-color:var(--hf)}
@@ -3782,7 +3785,7 @@ async function nacitajHtTrzby(){
   if(!el || !jeSpravca() || !htData) return;
   const od = htData.od, dd = htData.do;
   el.innerHTML = '<div class="kostra"></div>';
-  if(htTrKl !== od + '|' + dd){ delete okno['__htTr']; delete oknoVyber['__htTr']; htTrKl = od + '|' + dd; }
+  if(htTrKl !== od + '|' + dd){ ['__htTr','__htMz'].forEach(k => { delete okno[k]; delete oknoVyber[k]; }); htTrKl = od + '|' + dd; }
   let d;
   try{ d = await rpc('dash_trzby_ht', {p_kod: localStorage.getItem('trh_kod') || '', p_od: od, p_do: dd}); }catch(_e){ d = null; }
   if(!htData || htData.od !== od || htData.do !== dd || !$('#htTrzby')) return;
@@ -3790,15 +3793,23 @@ async function nacitajHtTrzby(){
   const t = d.typy || {}, ht = t.HT || {trzba:0, obj:0, pred:0}, hf = t.HF || {trzba:0, obj:0, pred:0};
   const dnes = od === dd && dd === den(new Date());
   const por = x => (!dnes && d.predOk) ? `<div class="pod">predtým ${cis(x.pred)} € ${trZnacka(x.trzba, x.pred)}</div>` : '';
+  const otv = htTrOtv();
   $('#htTrzby').innerHTML = `
-    <h2>Tržby Hometextilu <span class="h2-pozn">· bez DPH, v €${od < '2026-01-01' ? ', od 1. 1. 2026' : ''}</span></h2>
+    <button type="button" class="tr-prepni" id="htTrPrepni" aria-expanded="${otv}" aria-controls="htTrTelo">
+      <span class="tr-pr-t">Tržby Hometextilu</span><span class="h2-pozn">bez DPH${od < '2026-01-01' ? ' · od 1. 1. 2026' : ''}</span>
+      <span class="tr-pr-s" id="htTrSum"><b>${cis(+ht.trzba + +hf.trzba)} €</b>${htMzSumHtml()}</span><span class="tr-pr-ik" aria-hidden="true">▾</span>
+    </button>
+    <div id="htTrTelo"${otv ? '' : ' hidden'}>
     <div class="ht-tr">
       <div><div class="typ">HT · hotový tovar</div><div class="velke">${cis(ht.trzba)} €</div><div class="pod">${cis(ht.obj)} obj. · priem. ${eur(ht.obj ? ht.trzba / ht.obj : 0, 2)}</div>${por(ht)}</div>
       <div class="hf"><div class="typ">HF · od dodávateľa</div><div class="velke">${cis(hf.trzba)} €</div><div class="pod">${cis(hf.obj)} obj. · priem. ${eur(hf.obj ? hf.trzba / hf.obj : 0, 2)}</div>${por(hf)}</div>
     </div>
     <div class="tr-pozn-p">Spolu ${eur(+ht.trzba + +hf.trzba)}${dnes ? ' · dnes zatiaľ, bez porovnania' : (d.predOk ? ' · porovnanie s rovnako dlhým obdobím predtým' : '')}. Priemer = tržba Hometextilu na objednávku, v ktorej bol.</div>
-    <div id="htTrDni">${htTrDniHtml(d)}</div>`;
+    <div id="htTrDni">${otv ? htTrDniHtml(d) : ''}</div>
+    <div id="htMz">${otv ? htMarzaHtml() : ''}</div>
+    </div>`;
   htTrPosl = d;
+  if(!otv && (!htDni || htDni.dnes !== den(new Date()))) nacitajHtDni();
   obnovVyber();
 }
 /* ---- Hometextil: denný graf tržieb HT + HF (posúvateľný, ako graf Tržby) ---- */
@@ -3812,7 +3823,68 @@ async function nacitajHtDni(){
     else htDni = {dnes: den(new Date()), chyba: 1};
   }catch(_e){ htDni = {dnes: den(new Date()), chyba: 1}; }
   htDniBezi = false;
-  const el = $('#htTrDni'); if(el && htTrPosl){ el.innerHTML = htTrDniHtml(htTrPosl); obnovVyber(); }
+  htPrekresliDni();
+}
+function htTrOtv(){ try{ return localStorage.getItem('ht_tr_otv') !== '0'; }catch(_e){ return true; } }
+function htPrekresliDni(){
+  const s = $('#htTrSum'); if(s && htTrPosl){ const t = htTrPosl.typy || {}; s.innerHTML = `<b>${cis(+((t.HT||{}).trzba||0) + +((t.HF||{}).trzba||0))} €</b>${htMzSumHtml()}`; }
+  if(!htTrOtv()) return;
+  const el = $('#htTrDni'); if(el && htTrPosl) el.innerHTML = htTrDniHtml(htTrPosl);
+  const m = $('#htMz'); if(m) m.innerHTML = htMarzaHtml();
+  obnovVyber();
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('#htTrPrepni'); if(!b) return;
+  const otv = b.getAttribute('aria-expanded') !== 'true';
+  try{ localStorage.setItem('ht_tr_otv', otv ? '1' : '0'); }catch(_e){}
+  b.setAttribute('aria-expanded', String(otv));
+  $('#htTrTelo').hidden = !otv;
+  if(otv) htPrekresliDni();
+});
+/* hrubá marža HT + HF za obdobie a po dňoch (z uzavretých dní) */
+function htMzSucet(od, dd){
+  let tn = 0, n = 0, dni = 0;
+  for(let x = od < '2026-01-01' ? '2026-01-01' : od; x <= dd && x <= htDni.do; x = isoPlus(x, 1)){ const r = htDni.mapa[x]; if(r){ tn += +r.tn || 0; n += +r.n || 0; dni++; } }
+  return {tn, n, dni, pct: tn > 0 ? (tn - n) / tn * 100 : null};
+}
+function htMzSumHtml(){
+  if(!htData || !htDni || htDni.chyba || !htDni.mapa) return '';
+  const m = htMzSucet(htData.od, htData.do);
+  return m.pct == null ? '' : `<span class="ht-mz-zn">marža ${cis(m.pct, 1)} %</span>`;
+}
+function htMarzaHtml(){
+  if(!htData || !htDni) return '';
+  if(htDni.chyba) return '';
+  const od = htData.od, dd = htData.do;
+  const m = htMzSucet(od, dd);
+  /* denný graf marže v % */
+  const dni = [], nov = [];
+  for(let x = '2026-01-01'; x <= htDni.do; x = isoPlus(x, 1)){
+    const r = htDni.mapa[x], tn = r ? +r.tn || 0 : 0;
+    const b = {den: x, obj: tn > 0 ? Math.round((tn - (+r.n || 0)) / tn * 1000) / 10 : 0, metre: 0, kusy: 0};
+    if(x <= dd) dni.push(b); else nov.push(b);
+  }
+  if(!dni.length) return '';
+  let hlava, hist = '';
+  if(m.pct == null){
+    hlava = `<div class="tr-marza"><span class="t">Hrubá marža Hometextilu</span><span class="poz">Za dnešok sa marža spočíta po polnoci (z uzavretých dní). Graf končí včerajškom.</span>`;
+  } else {
+    hlava = `<div class="tr-marza"><span class="t">Hrubá marža Hometextilu</span><b>${cis(m.tn - m.n)} €</b><span class="pct">${cis(m.pct, 1)} %</span>
+      <span class="poz">Tržba HT + HF ${eur(m.tn)} − nákup ${eur(m.n)}${dd > htDni.do ? ' (bez dneška – ten sa spočíta po polnoci)' : ''}. Doprava nie je započítaná.</span>`;
+    const {dl, jeMes, okna} = trMarzaOkna(od, dd);
+    const h = okna.filter(w => w.od >= '2026-01-01' && w.do <= htDni.do).map(w => htMzSucet(w.od, w.do)).filter(x => x.pct != null);
+    if(h.length){
+      const priem = h.reduce((a, x) => a + x.pct, 0) / h.length, roz = m.pct - priem;
+      const dow = new Date(dd + 'T12:00').getDay();
+      const nazov = dl === 1 ? `${DNI_KR[dow].charAt(0).toUpperCase() + DNI_KR[dow].slice(1)} (posl. ${h.length})`
+        : jeMes ? `Predošlé mesiace (${h.length})` : dl === 7 ? `Predošlé týždne (${h.length})` : `Predošlé obdobia po ${dl} dní (${h.length})`;
+      const zn = Math.abs(roz) < 0.05 ? '<span class="mz-zn">= rovnako</span>'
+        : roz > 0 ? `<span class="odch hore">↑ +${cis(roz, 1)} b.</span>` : `<span class="odch dole">↓ −${cis(-roz, 1)} b.</span>`;
+      hist = `<div class="mz-hl"><span>${esc(nazov)}: priemer <b>${cis(priem, 1)} %</b> · teraz <b>${cis(m.pct, 1)} %</b></span>${zn}</div>`;
+    }
+  }
+  return `${hlava}<div class="mz-hist">${hist}${grafOkno('__htMz', dni, false, null, {pct: true, novsie: nov})}
+    <div class="mz-pozn">Marža HT + HF v % po dňoch. Ťukni na deň – zvýraznia sa rovnaké dni v týždni s priemerom. „b.“ = percentuálne body.</div></div></div>`;
 }
 function htTrDniHtml(d){
   if(!htData) return '';

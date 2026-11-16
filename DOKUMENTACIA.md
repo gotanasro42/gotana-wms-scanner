@@ -281,3 +281,7 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
 - DB: `dash_trzby_ht_dni(p_kod)` → denné súčty `predaj_den` (sku HT%/HF%, stav predaj, ma_cenu) od 1. 1. 2026 do včera,
   cache 6 h (kľúč `trhtdni|<včera>`), výpočet `dash_trzby_ht_dni_vypocet` nie je verejný. Overené: 11. 11. HT 2 477,66 € / HF 49,23 € = `dash_trzby_ht`.
 - JS: `nacitajHtDni`, `htTrDniHtml`, kľúč okna `__htTr`.
+- (16. 11. 2026, doplnok) Blok „Tržby Hometextilu“ je rozbaľovací (tlačidlo s tržbou a maržou %, stav v `localStorage` `ht_tr_otv`, predvolene otvorené).
+  Pod grafom tržieb je **Hrubá marža Hometextilu** (HT + HF): suma, %, porovnanie s 8 predošlými obdobiami (`trMarzaOkna`) a denný zelený graf
+  marže (`__htMz`). Počíta sa len z uzavretých dní (`dash_trzby_ht_dni` teraz vracia aj `tn` = tržba s nákupnou cenou a `n` = nákup; cache kľúč `trhtdni2`).
+  Overené 11. 11.: HT + HF 2 526,89 € − nákup 1 141,78 € = marža 54,8 %.
