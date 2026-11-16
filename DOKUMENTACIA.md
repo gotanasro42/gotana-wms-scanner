@@ -256,3 +256,18 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
 - Sklad: otvorenie, hladanie (kód), pozicia, obrazovka, hromadny-prijem / hromadny-dokoncit, prijem-formular, inventura, stitky-roliek,
   skener-kobercov, pocitadlo-roliek, hlas-* (čo povedal -> čo appka rozpoznala). Zápisy do skladu (presun, príjem, výdaj) sú naďalej v `historia`.
 - Štatistiky: otvorenie, sekcia, obdobie, objednavka, krajina, chatbot-otvoreny.
+
+## Marža – porovnanie so spätnými obdobiami (16. 11. 2026)
+- V bloku Tržby → Hrubá marža tovaru je pod výpočtom mini graf marže v % za aktuálne obdobie a 8 predošlých:
+  1 deň → rovnaké dni v týždni (napr. posledných 8 stried), Tento mesiac → predošlé mesiace, inak posun o dĺžku obdobia.
+- Zobrazí priemer predošlých, rozdiel v percentuálnych bodoch (↑/↓ b.) a dlhodobý trend (posledné 3 obdobia vs. staršie, hranica 0,5 b.).
+- DB: `dash_marza_dni(p_kod)` (len správca) → denné súčty `predaj_den` (stav predaj, ma_cenu, nie ignoruj) od 1. 1. 2026 do včera,
+  cache 6 h cez `dash_cache_volaj` (kľúč `marzadni|<včera>`); výpočet `dash_marza_dni_vypocet(p_do)` nie je verejný.
+  Čísla sedia s `dash_trzby` (overené 11. 11.: tržba s nákupom 18 426,17 €, nákup 5 872,90 €).
+- JS: `nacitajMarzaDni`, `trMarzaOkna`, `trMarzaHistHtml`.
+
+## Krajiny – novšie dni po vybranom dni (16. 11. 2026)
+- Keď je vybraný starší deň (Včera, Predvčerom, Vlastné…), grafy Krajiny (objednávky aj Tržba a priemerná objednávka) a graf 21 dní
+  dotiahnu aj dni po vybranom dni až po dnešok. Vybraný deň je na začiatku vpravo (tučný), šípka › / tlačidlo „dni až po dnes“ ukážu novšie
+  dni (sú stlmené, dnešok šrafovaný a nepočíta sa do priemerov). Porovnania pod grafom ostávajú voči vybranému dňu.
+- JS: `sedemNov` + `novsieDni()` (z `dash_dni(dnes)`), `trKrNov` (z `dash_trzby_krajiny_dni(dnes)`), `grafOkno(..., {novsie})`, v `graf7` `opt.vybrDen`.
