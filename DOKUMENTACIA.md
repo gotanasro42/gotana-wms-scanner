@@ -292,3 +292,13 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
 ## Tržby – priemerná objednávka pod stĺpcami denného grafu (17. 11. 2026)
 - Graf Tržby → Dni má pod každým stĺpcom priemernú objednávku v € (tržba / objednávky z `dash_trzby.graf`), zelená = nad priemerom
   zobrazených dní, oranžová = pod. Klik na deň ukáže aj Ø obj. rovnakých dní v týždni. Rovnaký mechanizmus ako graf tržieb krajiny (`opt.priem`).
+
+## Kontrola novej verzie – automatické obnovenie (17. 11. 2026)
+- Netlify build (`netlify.toml`) zapíše číslo commitu (`COMMIT_REF`) do `index.html`, `statistiky.html`, `trhovisko.html` (namiesto `__GOTANA_VERZIA__`)
+  a do `/verzia.json` (hlavička `no-store`). Skript „KONTROLA NOVEJ VERZIE“ na konci každej stránky pozrie `/verzia.json` každé 2 min,
+  pri návrate do okna a 15 s po otvorení.
+- Keď je novšia verzia: ak sa appka 3 min nepoužíva alebo je okno na pozadí a nič nie je rozpracované → obnoví sa sama;
+  inak dole pruh „Je nová verzia appky – Obnoviť“.
+- Rozpracované = písanie v poli s textom, alebo v skladovej appke otvorený Hromadný príjem s naskenovanými kusmi (`window.gotanaRozpracovane`).
+  Offline fronta zápisov je v `localStorage`, obnovenie ju nestratí.
+- Lokálne (bez buildu) ostane `__GOTANA_VERZIA__` a kontrola sa vypne.

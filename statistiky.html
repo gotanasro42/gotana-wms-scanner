@@ -4196,5 +4196,48 @@ stavPrenosu(); nacitajTlac();
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
+<!-- ====== KONTROLA NOVEJ VERZIE ====== -->
+<script>
+/* Pri každom nasadení Netlify zapíše číslo verzie (commit) do stránky aj do /verzia.json.
+   Appka každé 2 min (a pri návrate do okna) pozrie, či nie je novšia. Ak áno:
+   – keď sa appka nepoužíva (3 min bez dotyku) a nič nie je rozpracované, obnoví sa sama,
+   – inak ukáže pruh „Je nová verzia – Obnoviť“. */
+(function(){
+  var MOJA = '__GOTANA_VERZIA__';
+  if(MOJA.indexOf('GOTANA_VERZIA') >= 0) return;            /* lokálny test bez buildu */
+  var nova = null, posledne = Date.now(), pruh = null;
+  ['pointerdown','keydown','touchstart','scroll'].forEach(function(t){ addEventListener(t, function(){ posledne = Date.now(); }, {passive: true, capture: true}); });
+  function rozpracovane(){
+    try{ if(typeof window.gotanaRozpracovane === 'function' && window.gotanaRozpracovane()) return true; }catch(e){}
+    var a = document.activeElement;
+    return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.value);
+  }
+  function obnov(){ try{ sessionStorage.setItem('gotana_obnovene', '1'); }catch(e){} location.reload(); }
+  function ukazPruh(){
+    if(pruh) return;
+    pruh = document.createElement('div');
+    pruh.setAttribute('role', 'status');
+    pruh.style.cssText = 'position:fixed;left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 74px);z-index:2147483000;display:flex;align-items:center;gap:10px;padding:10px 12px;background:#14213D;color:#fff;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.25);font:600 13px/1.3 system-ui,sans-serif';
+    pruh.innerHTML = '<span style="flex:1">Je nová verzia appky.</span><button type="button" style="background:#F2A33A;color:#14213D;border:0;border-radius:8px;padding:8px 12px;font:700 13px system-ui,sans-serif;cursor:pointer">Obnoviť</button>';
+    pruh.querySelector('button').onclick = obnov;
+    document.body.appendChild(pruh);
+  }
+  function rozhodni(){
+    if(!nova) return;
+    if(!rozpracovane() && (document.hidden || Date.now() - posledne > 180000)) return obnov();
+    ukazPruh();
+  }
+  function over(){
+    if(nova){ rozhodni(); return; }
+    fetch('/verzia.json?t=' + Date.now(), {cache: 'no-store'}).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+      if(j && j.v && j.v !== MOJA){ nova = j.v; rozhodni(); }
+    }).catch(function(){});
+  }
+  setInterval(over, 120000);
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden){ over(); } else if(nova && !rozpracovane()) obnov(); });
+  addEventListener('focus', over);
+  setTimeout(over, 15000);
+})();
+</script>
 </body>
 </html>
