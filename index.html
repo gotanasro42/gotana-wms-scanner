@@ -24,6 +24,11 @@
       #reader { width: 100%; border-radius: 12px; margin-bottom: 16px; border: 3px solid #334155; min-height: 250px; background: #000; overflow: hidden; }
       .nav-item.active { border-bottom: 3px solid #60a5fa; color: white; background: rgba(255,255,255,0.1); }
       .nav-item { border-bottom: 3px solid transparent; color: #94a3b8; }
+      /* kompaktná hlavička: pri scrollovaní dole sa skryje riadok Gotana + meno a posledná akcia, pri scrollovaní hore sa vráti */
+      body.gt-zbal #hlavaHorna, body.gt-zbal #lastActionPanel { display: none !important; }
+      /* nízke obrazovky (malé PC na pracovisku): nižšie záložky */
+      @media (max-height: 860px) { .nav-item { padding-top: .45rem !important; padding-bottom: .45rem !important; } }
+      .gt-meta .gt-kto { max-width: 11rem; gap: 1px; }
       
       /* Animácie */
       @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -220,7 +225,7 @@
 
     <!-- HLAVIČKA S OFFLINE INDIKÁTOROM -->
     <div class="bg-slate-900 text-white sticky top-0 z-50 shadow-lg">
-      <div class="px-3 py-1 flex justify-between items-center max-w-lg xl:max-w-2xl mx-auto">
+      <div id="hlavaHorna" class="px-3 py-1 flex justify-between items-center max-w-lg xl:max-w-2xl mx-auto">
         <div class="font-bold text-base flex items-center gap-2 tracking-tight">
           <div id="networkStatus" class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] transition-colors duration-500"></div>
           <span class="material-icons text-blue-400 text-lg">qr_code_scanner</span> Gotana
@@ -602,7 +607,7 @@
                     <span class="material-icons absolute left-2 top-2.5 text-slate-400 text-lg">search</span>
                  </div>
              </div>
-             <div class="grid grid-cols-2 gap-1.5 mt-1.5">
+             <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mt-1.5">
                  <select id="dbFilterPodprac" onchange="filterDb()" class="gt-filter w-full px-2 py-1.5 text-xs font-bold text-slate-600 bg-white border-2 border-slate-200 rounded-lg focus:outline-none focus:border-blue-500">
                      <option value="">Všetky pracoviská</option>
                  </select>
@@ -611,8 +616,8 @@
                      <option value="skladom">Len skladom</option>
                      <option value="vypredane">Len vypredané</option>
                  </select>
+                 <div id="dbStats" class="col-span-2 sm:col-span-1 flex justify-center items-center px-2 py-1 text-xs font-bold text-slate-500 uppercase tracking-wide bg-slate-200/50 rounded-lg whitespace-nowrap"><span>Načítavam...</span></div>
              </div>
-             <div id="dbStats" class="flex justify-between items-center mt-1.5 px-2 py-1 text-xs font-bold text-slate-500 uppercase tracking-wide bg-slate-200/50 rounded-lg"><span>Načítavam...</span></div>
           </div>
           
           <div id="dbList" class="space-y-2 mt-2 pb-4"></div>
@@ -1885,7 +1890,7 @@
                 ${titleHtml}
                 ${subtitleHtml}
                 <div class="gt-meta text-[10px] text-slate-400 font-medium flex items-center gap-1.5 whitespace-nowrap overflow-hidden mt-0.5">
-                    <span>${datum}</span>${podprac ? `<span class="text-indigo-600 font-bold">\u{1F3ED} ${podprac}</span>` : ''}
+                    <span>${datum}</span>${i.kto ? `<span class="gt-kto text-slate-500 font-bold inline-flex items-center min-w-0" title="Prijal: ${bezUv(i.kto)}"><span class="material-icons" style="font-size:11px">person</span><span class="truncate">${String(i.kto).replace(/\s*\(INVENT[UÚ]RA\)/i, ' (inv.)').replace(/[<>&]/g, '')}</span></span>` : ''}${podprac ? `<span class="text-indigo-600 font-bold">\u{1F3ED} ${podprac}</span>` : ''}
                 </div>
             </div>
             <div style="${locStyle}" class="${locClasses}" onclick="openDetailModal('${i.id}')">
@@ -2478,6 +2483,23 @@
 </script>
   <script>
     (function(){
+      /* po prepnutí sa výška hlavičky zmení a prehliadač posunie stránku – ten posun ignorujeme (zámok 300 ms) */
+      var poslY = window.scrollY || 0, zamok = 0;
+      function zbal(ano){
+        if (document.body.classList.contains("gt-zbal") === ano) return;
+        document.body.classList.toggle("gt-zbal", ano);
+        zamok = Date.now() + 300;
+        setTimeout(function(){ poslY = window.scrollY || 0; nastavHlavicku(); }, 320);
+      }
+      window.addEventListener("scroll", function(){
+        var y = window.scrollY || 0;
+        if (y < 40) { zbal(false); poslY = y; return; }
+        if (Date.now() < zamok) return;
+        var d = y - poslY;
+        if (d > 8 && y > 90) zbal(true);
+        else if (d < -8) zbal(false);
+        if (Math.abs(d) > 8) poslY = y;
+      }, { passive: true });
       function nastavHlavicku(){
         var h = document.querySelector(".sticky.top-0");
         if (h) document.documentElement.style.setProperty("--hlavicka", h.offsetHeight + "px");
@@ -2523,7 +2545,7 @@
     }
 
     async function sbVsetkyPolozky() {
-        const VYBER = "id,name,sku,length,location,date,note";
+        const VYBER = "id,name,sku,length,location,date,note,kto";
         const prvy = await fetch(SB_URL + "/rest/v1/polozky?select=" + VYBER + "&order=date.asc,id", {
             headers: { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY, Prefer: "count=exact", Range: "0-999" },
         });
@@ -2601,7 +2623,7 @@
                 await sbFetch("polozky", {
                     method: "POST",
                     headers: { Prefer: "return=minimal" },
-                    body: JSON.stringify([{ id: id, name: P.name || "", sku: P.sku || "", length: Number(P.len) || 0, location: P.loc || "", date: teraz, note: P.note || "" }])
+                    body: JSON.stringify([{ id: id, name: P.name || "", sku: P.sku || "", length: Number(P.len) || 0, location: P.loc || "", date: teraz, note: P.note || "", kto: kto || null }])
                 });
             } catch (e) {
                 if (/23505|duplicate/i.test(e.message)) return { success: false, error: "ID uz existuje" };
@@ -2666,7 +2688,7 @@
                 const zaklad = String(it.baseCode || fin).trim().toUpperCase();
                 if (set[fin]) { let n = 1; while (set[zaklad + "_" + n]) n++; fin = zaklad + "_" + n; }
                 set[fin] = 1;
-                nove.push({ id: fin, name: "", sku: zaklad, length: 0, location: P.loc || "", date: teraz, note: "HROMADNY PRIJEM" });
+                nove.push({ id: fin, name: "", sku: zaklad, length: 0, location: P.loc || "", date: teraz, note: "HROMADNY PRIJEM", kto: kto || null });
                 zaznamy.push({ akcia: "PRIJEM", pouzivatel: kto, polozka_id: fin, nazov: fin, dlzka: 0, pozicia: P.loc || "", popis: "Hromadny prijem" });
             });
             if (nove.length) {
