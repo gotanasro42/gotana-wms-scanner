@@ -1877,7 +1877,10 @@
          const ktoHtml = i.kto ? `<span class="gt-kto text-[10px] text-slate-500 font-bold inline-flex items-center min-w-0 font-sans" title="Prijal: ${bezUv(i.kto)}"><span class="material-icons" style="font-size:12px">person</span><span class="truncate">${String(i.kto).replace(/\s*\(INVENT[UÚ]RA\)/i, ' (inv.)').replace(/[<>&]/g, '')}</span></span>` : '';
          let titleHtml = `<div class="flex items-center justify-between gap-2 min-w-0"><div class="font-black text-slate-900 text-[13px] font-mono leading-tight truncate tracking-tight">${i.id}</div>${ktoHtml}</div>`;
          let subtitleHtml = (displayTitle && displayTitle !== i.id) ? `<div class="font-bold text-slate-700 text-xs leading-tight truncate" title="${bezUv(displayTitle)}">${displayTitle}</div>` : '';
-         const datum = (function(){ const d = String(i.date || '').substring(0,10).split('-'); return d.length === 3 ? `${+d[2]}.${+d[1]}.${d[0].slice(2)}` : ''; })();
+         /* dátum naskladnenia (prijate); pri presune sa nemení. Bez neho = prijatá pred 5. 8. 2026 (začiatok histórie) */
+         const fDat = v => { const d = String(v || '').substring(0,10).split('-'); return d.length === 3 ? `${+d[2]}.${+d[1]}.${d[0].slice(2)}` : ''; };
+         const datum = i.prijate ? fDat(i.prijate) : (i.date ? 'pred 5.8.26' : '');
+         const datumTitul = 'Naskladnené: ' + (i.prijate ? fDat(i.prijate) : 'pred 5. 8. 2026 (presný dátum nevieme)') + (i.date && fDat(i.date) !== fDat(i.prijate) ? ' · posledná zmena (presun): ' + fDat(i.date) : '');
          const podprac = dbPodprac[String(i.sku||'').toUpperCase()] || dbPodprac[String(getBaseCode(i.id)||'').toUpperCase()] || '';
          const nahlad = dbNahlady[String(i.sku || getBaseCode(i.id) || '').toUpperCase()];
 
@@ -1891,7 +1894,7 @@
                 ${titleHtml}
                 ${subtitleHtml}
                 <div class="gt-meta text-[10px] text-slate-400 font-medium flex items-center gap-1.5 whitespace-nowrap overflow-hidden mt-0.5">
-                    <span>${datum}</span>${podprac ? `<span class="text-indigo-600 font-bold">\u{1F3ED} ${podprac}</span>` : ''}
+                    <span title="${bezUv(datumTitul)}">${datum}</span>${podprac ? `<span class="text-indigo-600 font-bold">\u{1F3ED} ${podprac}</span>` : ''}
                 </div>
             </div>
             <div style="${locStyle}" class="${locClasses}" onclick="openDetailModal('${i.id}')">
@@ -2529,8 +2532,8 @@
     }
 
     async function sbVsetkyPolozky() {
-        const VYBER = "id,name,sku,length,location,date,note,kto";
-        const prvy = await fetch(SB_URL + "/rest/v1/polozky?select=" + VYBER + "&order=date.asc,id", {
+        const VYBER = "id,name,sku,length,location,date,note,kto,prijate";
+        const prvy = await fetch(SB_URL + "/rest/v1/polozky?select=" + VYBER + "&order=prijate.asc.nullsfirst,date.asc,id", {
             headers: { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY, Prefer: "count=exact", Range: "0-999" },
         });
         if (!prvy.ok) throw new Error("DB " + prvy.status);
@@ -2541,7 +2544,7 @@
 
         const ulohy = [];
         for (let od = 1000; od < celkom; od += 1000) {
-            ulohy.push(sbFetch("polozky?select=" + VYBER + "&order=date.asc,id", { headers: { Range: od + "-" + (od + 999) } }));
+            ulohy.push(sbFetch("polozky?select=" + VYBER + "&order=prijate.asc.nullsfirst,date.asc,id", { headers: { Range: od + "-" + (od + 999) } }));
         }
         const casti = await Promise.all(ulohy);
         let vsetko = prvaCast;
@@ -2607,7 +2610,7 @@
                 await sbFetch("polozky", {
                     method: "POST",
                     headers: { Prefer: "return=minimal" },
-                    body: JSON.stringify([{ id: id, name: P.name || "", sku: P.sku || "", length: Number(P.len) || 0, location: P.loc || "", date: teraz, note: P.note || "", kto: kto || null }])
+                    body: JSON.stringify([{ id: id, name: P.name || "", sku: P.sku || "", length: Number(P.len) || 0, location: P.loc || "", date: teraz, prijate: teraz, note: P.note || "", kto: kto || null }])
                 });
             } catch (e) {
                 if (/23505|duplicate/i.test(e.message)) return { success: false, error: "ID uz existuje" };
@@ -2672,7 +2675,7 @@
                 const zaklad = String(it.baseCode || fin).trim().toUpperCase();
                 if (set[fin]) { let n = 1; while (set[zaklad + "_" + n]) n++; fin = zaklad + "_" + n; }
                 set[fin] = 1;
-                nove.push({ id: fin, name: "", sku: zaklad, length: 0, location: P.loc || "", date: teraz, note: "HROMADNY PRIJEM", kto: kto || null });
+                nove.push({ id: fin, name: "", sku: zaklad, length: 0, location: P.loc || "", date: teraz, prijate: teraz, note: "HROMADNY PRIJEM", kto: kto || null });
                 zaznamy.push({ akcia: "PRIJEM", pouzivatel: kto, polozka_id: fin, nazov: fin, dlzka: 0, pozicia: P.loc || "", popis: "Hromadny prijem" });
             });
             if (nove.length) {

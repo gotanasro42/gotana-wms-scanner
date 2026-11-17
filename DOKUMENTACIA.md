@@ -310,3 +310,6 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
 - Hlavička: v Zozname je riadok „Gotana + meno“ a „Posledná akcia“ skrytý natrvalo (CSS `body:has(#view-db:not(.hidden))`).
   Pôvodné skrývanie pri scrollovaní (17. 11. ráno) preblikávalo, zrušené. Na nízkych obrazovkách (≤ 860 px) nižšie záložky.
 - Filtre Zoznamu: od šírky 640 px sú pracovisko, sklad a počet v jednom riadku.
+- (17. 11. 2026, doplnok) Nový stĺpec `polozky.prijate` = dátum naskladnenia (pri presune sa nemení, default `now()`).
+  Doplnené: z `historia` (posledný PRIJEM) alebo `date`, ak rolka nemá žiadnu históriu; 30 rolí (prijaté pred 5. 8. 2026 a odvtedy presunuté) má NULL.
+  Zoznam ukazuje `prijate` (bez neho „pred 5.8.26“), tooltip aj poslednú zmenu (`date`). Zoznam je zoradený podľa `prijate` (najnovšie navrchu).
