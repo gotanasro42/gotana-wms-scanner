@@ -288,3 +288,7 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
 - (16. 11. 2026, doplnok 2) Marža Hometextilu zahŕňa aj **dnešok doteraz**: `dash_marza_ht_dnes(p_kod)` (len správca, živo z `objednavky_polozky`
   × `nakupna_cena`, rovnaký spôsob ako marža v Tržbách pri „Dnes“), v appke sa obnoví najviac raz za 5 min. Dnešný stĺpec v grafe je šrafovaný.
   Overené na 11. 11.: živý výpočet = `predaj_den` (2 526,89 € / 1 141,78 €).
+
+## Tržby – priemerná objednávka pod stĺpcami denného grafu (17. 11. 2026)
+- Graf Tržby → Dni má pod každým stĺpcom priemernú objednávku v € (tržba / objednávky z `dash_trzby.graf`), zelená = nad priemerom
+  zobrazených dní, oranžová = pod. Klik na deň ukáže aj Ø obj. rovnakých dní v týždni. Rovnaký mechanizmus ako graf tržieb krajiny (`opt.priem`).

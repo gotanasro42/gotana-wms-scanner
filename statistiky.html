@@ -2844,10 +2844,10 @@ function vykresliTrGraf(){
     .map(([k, n]) => `<button type="button" data-k="${k}" aria-pressed="${k === trKrok}">${n}</button>`).join('');
   if(trKrok === 'dni'){
     const jeDnesG = trzby.do === den(new Date());
-    const dni = graf.map(x => ({den: x.den, obj: Math.round(+x.trzba || 0), pocet: +x.obj || 0, rok: Math.round(+x.rok || 0), metre: 0, kusy: 0}));
+    const dni = graf.map(x => ({den: x.den, obj: Math.round(+x.trzba || 0), pocet: +x.obj || 0, priem: +x.obj ? +x.trzba / +x.obj : 0, rok: Math.round(+x.rok || 0), metre: 0, kusy: 0}));
     obal.innerHTML = `<div class="tr-graf-hl"><div class="tr-krok">${kroky0}</div><div class="tr-leg"><span><i class="r"></i>pred rokom</span></div></div>`
-      + grafOkno('__trzby', dni, jeDnesG, null, {eur: true})
-      + `<div class="okno-pozn">Tržba bez DPH v €. Ťukni na deň – zvýraznia sa všetky rovnaké dni v týždni.${jeDnesG ? ' Dnešný deň je zatiaľ neúplný.' : ''}</div>`;
+      + grafOkno('__trzby', dni, jeDnesG, null, {eur: true, priem: true})
+      + `<div class="okno-pozn">Tržba bez DPH v €. Pod stĺpcom priemerná objednávka v € (zelená = nad priemerom zobrazených dní, oranžová = pod). Ťukni na deň – zvýraznia sa všetky rovnaké dni v týždni.${jeDnesG ? ' Dnešný deň je zatiaľ neúplný.' : ''}</div>`;
     obnovVyber();
     return;
   }
