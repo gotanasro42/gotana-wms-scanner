@@ -24,11 +24,11 @@
       #reader { width: 100%; border-radius: 12px; margin-bottom: 16px; border: 3px solid #334155; min-height: 250px; background: #000; overflow: hidden; }
       .nav-item.active { border-bottom: 3px solid #60a5fa; color: white; background: rgba(255,255,255,0.1); }
       .nav-item { border-bottom: 3px solid transparent; color: #94a3b8; }
-      /* kompaktná hlavička: pri scrollovaní dole sa skryje riadok Gotana + meno a posledná akcia, pri scrollovaní hore sa vráti */
-      body.gt-zbal #hlavaHorna, body.gt-zbal #lastActionPanel { display: none !important; }
+      /* kompaktná hlavička: v Zozname je riadok Gotana + meno a posledná akcia skrytý natrvalo (bez preblikovania pri scrollovaní) */
+      body:has(#view-db:not(.hidden)) #hlavaHorna, body:has(#view-db:not(.hidden)) #lastActionPanel { display: none !important; }
       /* nízke obrazovky (malé PC na pracovisku): nižšie záložky */
       @media (max-height: 860px) { .nav-item { padding-top: .45rem !important; padding-bottom: .45rem !important; } }
-      .gt-meta .gt-kto { max-width: 11rem; gap: 1px; }
+      .gt-kto { max-width: 45%; gap: 1px; flex-shrink: 0; }
       
       /* Animácie */
       @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -1874,7 +1874,8 @@
          let displayTitle = (i.name && i.name.trim() !== "") ? i.name : (dbCatalog[i.sku || getBaseCode(i.id)] || "");
          // Hustý riadok: kód, názov na 1 riadok, dátum + podpracovisko + zásoba v jednom riadku
          const bezUv = t => String(t).replace(/"/g,'&quot;');
-         let titleHtml = `<div class="font-black text-slate-900 text-[13px] font-mono leading-tight truncate tracking-tight">${i.id}</div>`;
+         const ktoHtml = i.kto ? `<span class="gt-kto text-[10px] text-slate-500 font-bold inline-flex items-center min-w-0 font-sans" title="Prijal: ${bezUv(i.kto)}"><span class="material-icons" style="font-size:12px">person</span><span class="truncate">${String(i.kto).replace(/\s*\(INVENT[UÚ]RA\)/i, ' (inv.)').replace(/[<>&]/g, '')}</span></span>` : '';
+         let titleHtml = `<div class="flex items-center justify-between gap-2 min-w-0"><div class="font-black text-slate-900 text-[13px] font-mono leading-tight truncate tracking-tight">${i.id}</div>${ktoHtml}</div>`;
          let subtitleHtml = (displayTitle && displayTitle !== i.id) ? `<div class="font-bold text-slate-700 text-xs leading-tight truncate" title="${bezUv(displayTitle)}">${displayTitle}</div>` : '';
          const datum = (function(){ const d = String(i.date || '').substring(0,10).split('-'); return d.length === 3 ? `${+d[2]}.${+d[1]}.${d[0].slice(2)}` : ''; })();
          const podprac = dbPodprac[String(i.sku||'').toUpperCase()] || dbPodprac[String(getBaseCode(i.id)||'').toUpperCase()] || '';
@@ -1890,7 +1891,7 @@
                 ${titleHtml}
                 ${subtitleHtml}
                 <div class="gt-meta text-[10px] text-slate-400 font-medium flex items-center gap-1.5 whitespace-nowrap overflow-hidden mt-0.5">
-                    <span>${datum}</span>${i.kto ? `<span class="gt-kto text-slate-500 font-bold inline-flex items-center min-w-0" title="Prijal: ${bezUv(i.kto)}"><span class="material-icons" style="font-size:11px">person</span><span class="truncate">${String(i.kto).replace(/\s*\(INVENT[UÚ]RA\)/i, ' (inv.)').replace(/[<>&]/g, '')}</span></span>` : ''}${podprac ? `<span class="text-indigo-600 font-bold">\u{1F3ED} ${podprac}</span>` : ''}
+                    <span>${datum}</span>${podprac ? `<span class="text-indigo-600 font-bold">\u{1F3ED} ${podprac}</span>` : ''}
                 </div>
             </div>
             <div style="${locStyle}" class="${locClasses}" onclick="openDetailModal('${i.id}')">
@@ -2483,23 +2484,6 @@
 </script>
   <script>
     (function(){
-      /* po prepnutí sa výška hlavičky zmení a prehliadač posunie stránku – ten posun ignorujeme (zámok 300 ms) */
-      var poslY = window.scrollY || 0, zamok = 0;
-      function zbal(ano){
-        if (document.body.classList.contains("gt-zbal") === ano) return;
-        document.body.classList.toggle("gt-zbal", ano);
-        zamok = Date.now() + 300;
-        setTimeout(function(){ poslY = window.scrollY || 0; nastavHlavicku(); }, 320);
-      }
-      window.addEventListener("scroll", function(){
-        var y = window.scrollY || 0;
-        if (y < 40) { zbal(false); poslY = y; return; }
-        if (Date.now() < zamok) return;
-        var d = y - poslY;
-        if (d > 8 && y > 90) zbal(true);
-        else if (d < -8) zbal(false);
-        if (Math.abs(d) > 8) poslY = y;
-      }, { passive: true });
       function nastavHlavicku(){
         var h = document.querySelector(".sticky.top-0");
         if (h) document.documentElement.style.setProperty("--hlavicka", h.offsetHeight + "px");

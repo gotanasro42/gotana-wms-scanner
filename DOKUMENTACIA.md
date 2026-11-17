@@ -306,7 +306,7 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
 ## Zoznam – kto prijal rolku + kompaktná hlavička (17. 11. 2026)
 - DB: nový stĺpec `polozky.kto` (meno, kto rolku prijal). Appka ho zapisuje pri `createItem` aj hromadnom príjme.
   Staršie rolky doplnené z `historia` (posledný PRIJEM pre dané id): 3 734 zo 6 207; zvyšok (príjmy spred zápisu histórie, pred 6. 8. 2026) je bez mena.
-- Zoznam: v sivom riadku pod názvom za dátumom ikonka osoby a meno („(INVENTURA)“ sa skráti na „(inv.)“).
-- Hlavička: pri scrollovaní dole sa skryje riadok „Gotana + meno“ a „Posledná akcia“ (trieda `body.gt-zbal`), pri scrollovaní hore sa vráti.
-  Zámok 300 ms po prepnutí, aby posun stránky po zmene výšky hlavičky neprepínal tam a späť. Na nízkych obrazovkách (≤ 860 px) nižšie záložky.
+- Zoznam: meno je vpravo v riadku s kódom (ikonka osoby, „(INVENTURA)“ → „(inv.)“), aby sa zmestilo aj na mobile.
+- Hlavička: v Zozname je riadok „Gotana + meno“ a „Posledná akcia“ skrytý natrvalo (CSS `body:has(#view-db:not(.hidden))`).
+  Pôvodné skrývanie pri scrollovaní (17. 11. ráno) preblikávalo, zrušené. Na nízkych obrazovkách (≤ 860 px) nižšie záložky.
 - Filtre Zoznamu: od šírky 640 px sú pracovisko, sklad a počet v jednom riadku.
