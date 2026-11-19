@@ -2397,7 +2397,8 @@ function vykresliKrajiny(){
   if(jeSpravca() && trzby && trzby.od === obdobie.od && trzby.do === obdobie.do){
     const k = trzby.krajiny || [], spolu = k.reduce((a, x) => a + (+x.trzba || 0), 0) || 1;
     k.forEach(x => { trKrMapa[x.krajina] = {trzba: +x.trzba, priemer: +x.priemer, podiel: (+x.trzba || 0) / spolu * 100,
-      trzbaPor: x.trzba_por == null ? null : +x.trzba_por, priemerPor: x.priemer_por == null ? null : +x.priemer_por}; });
+      trzbaPor: x.trzba_por == null ? null : +x.trzba_por, priemerPor: x.priemer_por == null ? null : +x.priemer_por,
+      objPor: x.por_typ === 'opak' && x.obj_por != null ? +x.obj_por : null}; });
   }
   const pole = data && data.krajiny;
   const ciel = $('#krajiny');
@@ -2409,7 +2410,8 @@ function vykresliKrajiny(){
     const h = Number(x.obj)||0;
     const sirka = Math.max(1,(h/max)*100).toFixed(1);
     const otv = otvoreneKrajiny.has(x.krajina);
-    const tr = (ok7 && obdobie.od === obdobie.do) ? trendKrajiny(sedem.krajiny[x.krajina], sedem.jeDnes, h) : null;
+    const tr = (ok7 && obdobie.od === obdobie.do) ? trendKrajiny(sedem.krajiny[x.krajina], sedem.jeDnes, h)
+      : (obdobie.od !== obdobie.do ? trendObjObd(h, trKrMapa[x.krajina]) : null);
     let rozbal = '';
     if(otv){
       const dni = ok7 ? sedem.krajiny[x.krajina] : null;
@@ -2460,6 +2462,15 @@ function odchylka(dni, jeDnes){
 function znackaZmeny(z, minPriem){
   if(!z || z.priem < (minPriem||0)) return '';
   return z.pct >= 0 ? `<span class="odch hore">↑ +${z.pct} %</span>` : `<span class="odch dole">↓ ${z.pct} %</span>`;
+}
+/* štítok objednávok krajiny pre viacdňové obdobie (7 dní, 30 dní): oproti priemeru predošlých období */
+function trendObjObd(teraz, t){
+  if(!t || !(t.objPor > 0) || !trzby || !trzby.porovnanie || !trzby.porovnanie.opak) return null;
+  const pct = Math.round((teraz - t.objPor) / t.objPor * 100);
+  const vys = ` data-vys="${esc(trPorTxt('Objednávky', teraz, t.objPor, 'obj.'))}"`;
+  if(pct >= 10) return {trieda:'tr-hore', html:`<span class="odch hore"${vys}>↑ +${pct} %</span>`};
+  if(pct <= -10) return {trieda:'tr-dole', html:`<span class="odch dole"${vys}>↓ ${pct} %</span>`};
+  return {trieda:'tr-rovno', html:`<span class="odch rovno"${vys}>≈ ${pct >= 0 ? '+' : ''}${pct} %</span>`};
 }
 /* ---- Denné hlásenie podľa situácie ---- */
 function trendKrajiny(dni, jeDnes, teraz){
@@ -2641,6 +2652,15 @@ function trZnacka(a, b, vys){
 }
 const DNI_GEN = ['nedieľ','pondelkov','utorkov','stried','štvrtkov','piatkov','sobôt'];
 /* text vysvetlivky: s čím sa porovnáva */
+/* popis porovnania s priemerom predošlých období (Včera → 8 stried, 7 dní → 8 týždňov, 30 dní → 3 obdobia) */
+function opakNazov(d, p, kratko){
+  const o = p.opak, dl = Math.round((new Date(d.do + 'T12:00') - new Date(d.od + 'T12:00')) / 864e5) + 1;
+  const rozsah = ` (${trObd(o.od, o.do)})`;
+  if(o.krok === 7 && dl === 1) return (kratko ? 'Priemer' : 'priemeru') + ` posledných ${o.n} ${DNI_GEN[new Date(d.do + 'T12:00').getDay()]}`;
+  if(o.krok === 7 && dl === 7) return (kratko ? 'Priemer' : 'priemeru') + ` ${o.n} predošlých týždňov` + rozsah;
+  if(o.krok === 7) return (kratko ? 'Priemer' : 'priemeru') + ` rovnakých dní v ${o.n} predošlých týždňoch` + rozsah;
+  return (kratko ? 'Priemer' : 'priemeru') + ` ${o.n} predošlých ${dl}-dňových období` + rozsah;
+}
 function trPorTxt(co, teraz, por, jed){
   const d = trzby || {}, p = d.porovnanie || {};
   const f = v => jed === '€' ? eur(v, v < 100 ? 2 : 0) : cis(v, v < 10 ? 1 : 0) + ' ' + jed;
@@ -2650,6 +2670,7 @@ function trPorTxt(co, teraz, por, jed){
   }
   const r = p.rok && p.rok.obj ? p.rok : null, pr = p.predch;
   const obd = trObd(d.od, d.do);
+  if(p.opak) return `${co} za ${obd}${p.cas ? ' (dnes do ' + esc(p.cas) + ')' : ''}: <b>${f(teraz)}</b><br>oproti ${opakNazov(d, p)}${p.cas ? ', posledný deň do rovnakej hodiny' : ''}: <b>${f(por)}</b>`;
   if(r) return `${co} za ${obd}: <b>${f(teraz)}</b><br>oproti rovnakému obdobiu pred rokom (${trObd(r.od, r.do)}): <b>${f(por)}</b>`;
   if(pr) return `${co} za ${obd}: <b>${f(teraz)}</b><br>oproti rovnako dlhému obdobiu predtým (${trObd(pr.od, pr.do)}): <b>${f(por)}</b>`;
   return '';
@@ -2688,7 +2709,7 @@ const DNI_KR = ['nedele','pondelky','utorky','stredy','štvrtky','piatky','sobot
 function vykresliTrzby(){
   const d = trzby, s = d.suhrn || {}, p = d.porovnanie || {};
   /* hore v páse */
-  const hlavneZ = d.jeDnes ? p.tyzden : (p.rok && p.rok.obj ? p.rok : p.predch);
+  const hlavneZ = d.jeDnes ? p.tyzden : (p.opak ? p.opak : (p.rok && p.rok.obj ? p.rok : p.predch));
   $('#heroTrzba').hidden = false;
   $('#heroTrzbaH').textContent = cis(s.trzba);
   $('#heroTrzbaZ').innerHTML = hlavneZ ? trZnacka(s.trzba, hlavneZ.trzba, trPorTxt('Tržba', s.trzba, hlavneZ.trzba, '€')) : '';
@@ -2705,12 +2726,13 @@ function vykresliTrzby(){
       + riadok(`4 týždne do ${esc(p.cas)} (priemer dňa)`, p.styri)
       + (p.rok && p.rok.obj ? riadok(`Pred rokom (${trDatum(p.rok.od, true)}) do ${esc(p.cas)}`, p.rok) : '');
   } else {
-    por = riadok(`Predchádzajúce obdobie (${trObd(p.predch.od, p.predch.do)})`, p.predch)
+    por = (p.opak ? riadok(opakNazov(d, p, true), p.opak) : '')
+      + riadok(`Predchádzajúce obdobie (${trObd(p.predch.od, p.predch.do)})`, p.predch)
       + (p.rok && p.rok.obj ? riadok(`Pred rokom (${trObd(p.rok.od, p.rok.do)})`, p.rok) : '');
   }
   const priemPor = hlavneZ;
   const dowP = new Date(d.do + 'T12:00').getDay();
-  const priemNazov = d.jeDnes ? `v ${DNI_KR[dowP]}` : (p.rok && p.rok.obj ? 'pred rokom' : 'v predch. období');
+  const priemNazov = d.jeDnes ? `v ${DNI_KR[dowP]}` : (p.opak ? '– ' + opakNazov(d, p, true).toLowerCase() : (p.rok && p.rok.obj ? 'pred rokom' : 'v predch. období'));
   const html = `
     <div class="tr-karta">
       <div class="tr-hlava"><span class="velke">${cis(s.trzba)}</span><span class="eur">€</span><span class="bez">bez DPH · vrátane dopravy</span></div>

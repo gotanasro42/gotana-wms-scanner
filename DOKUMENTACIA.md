@@ -313,3 +313,16 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
 - (17. 11. 2026, doplnok) Nový stĺpec `polozky.prijate` = dátum naskladnenia (pri presune sa nemení, default `now()`).
   Doplnené: z `historia` (posledný PRIJEM) alebo `date`, ak rolka nemá žiadnu históriu; 30 rolí (prijaté pred 5. 8. 2026 a odvtedy presunuté) má NULL.
   Zoznam ukazuje `prijate` (bez neho „pred 5.8.26“), tooltip aj poslednú zmenu (`date`). Zoznam je zoradený podľa `prijate` (najnovšie navrchu).
+
+## Porovnanie tržieb a objednávok pre Včera / 7 dní / 30 dní (19. 11. 2026)
+- **Čo:** percentá pri krajinách (tržba, Ø objednávka, objednávky) a v páse hore sa pre uzavreté obdobia
+  neporovnávajú s minulým rokom, ale s priemerom predošlých období:
+  - 1–7 dní (Včera, Predvčerom, 7 dní, vlastné do 7 dní): priemer **8 predošlých období posunutých o týždeň**
+    (Včera = posledných 8 rovnakých dní v týždni, 7 dní = 8 predošlých týždňov).
+  - 8–31 dní okrem „Tento mesiac" (30 dní): priemer **3 predošlých rovnako dlhých období**.
+  - Tento mesiac, Tento rok a dlhšie: ostáva porovnanie s minulým rokom.
+  - Ak obdobie končí dnes (7 dní, 30 dní), posledný deň každého porovnávacieho obdobia sa berie len do aktuálnej hodiny.
+- **DB:** `dash_trzby_vypocet` vracia `porovnanie.opak` {trzba, obj, priemer, n, krok, od, do} a pri krajinách
+  `obj_por` + `por_typ = 'opak'`. Cache `dash_cache` (kľúč `trzby|…`) bola po zmene vymazaná.
+- **Appka:** `opakNazov()` (text porovnania), `trPorTxt()` (vysvetlivka po ťuknutí), `trendObjObd()` (štítok objednávok
+  krajiny pre viacdňové obdobia, len správca).
