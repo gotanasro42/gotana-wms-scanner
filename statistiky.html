@@ -912,6 +912,11 @@ h2{font-size:12px;letter-spacing:.12em}
 .rk-r .rk-k{flex:0 0 auto;font-weight:600;min-width:42px;font-family:"Twemoji Country Flags","IBM Plex Sans",sans-serif}
 .rk-r .rk-c{flex:1 1 auto;color:var(--sedy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rk-r .rk-c b{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--atrament);font-size:13.5px}
+@media (min-width:640px){.rk-mriezka.tri .rk-box.rk-suma{grid-column:1 / -1}}
+@media (min-width:1000px){.rk-mriezka.tri{grid-template-columns:1fr 1fr 1fr}.rk-mriezka.tri .rk-box.rk-suma{grid-column:auto}}
+.rk-box.rk-suma{border-left-color:#2F8F5B}
+.rk-suma .rk-p{color:#2F8F5B}
+.rk-r .rk-c b.e{font-size:14px;color:#2F8F5B}
 .rk-r .rk-o{flex:0 0 auto;color:var(--sedy);font-size:11px;font-family:'IBM Plex Mono',monospace}
 .rk-nic{font-size:12px;color:var(--sedy);padding:6px 0}
 .rk-priemer{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-top:8px;padding:7px 10px;border-radius:8px;background:var(--platno-tmavsi);border-left:3px solid var(--atrament-svetly);font-size:12.5px;color:var(--sedy)}
@@ -1443,6 +1448,7 @@ function prednacitaj(){
   if(jeSpravca()) rpc('dash_trzby', {p_kod: localStorage.getItem('trh_kod') || '', p_od: od, p_do: dd}).catch(ticho);
   rpc('dash_top3', {p_od: od, p_do: dd, p_podla: 'poloziek'}).catch(ticho);
   rpc('dash_top3', {p_od: od, p_do: dd, p_podla: 'metre'}).catch(ticho);
+  if(jeSpravca()) rpc('dash_top3_suma', {p_kod: localStorage.getItem('trh_kod') || '', p_od: od, p_do: dd}).catch(ticho);
   rpc('dash_dni', {p_do: dd, p_dni: POCET_DNI}).catch(ticho);
   rpc('dash_minuly_rok', {p_od: od, p_do: dd}).catch(ticho);
 }
@@ -1986,7 +1992,7 @@ function zavriObjednavku(){
   document.body.style.overflow = '';
 }
 
-let top3 = { poloziek: [], metre: [] };
+let top3 = { poloziek: [], metre: [], suma: [] };
 
 /* kompaktný riadok rekordu: poradie, krajina, položky · m · ks, číslo objednávky; klik = detail objednávky */
 function riadokRekordu(o, poradie){
@@ -1998,20 +2004,32 @@ function riadokRekordu(o, poradie){
     <span class="rk-o">${esc(d)} ›</span></div>`;
 }
 
+/* riadok rekordu podľa sumy (len správca): suma bez DPH v €, položky · m */
+function riadokSumy(o, poradie){
+  const d = new Date(o.den + 'T12:00').toLocaleDateString('sk-SK',{day:'numeric',month:'numeric'});
+  const kr = KRAJINY[o.krajina] || o.krajina || '—';
+  return `<div class="rk-r rekord klik" data-cislo="${esc(o.cislo)}" role="button" tabindex="0" title="${esc(kr)} · č. ${esc(o.cislo)} · ${esc(d)}">
+    <span class="rk-p">${poradie}.</span><span class="rk-k">${vlajka(o.krajina)} ${esc(o.krajina || '—')}</span>
+    <span class="rk-c"><b class="e">${cis(o.suma, 2)} €</b> · <b>${cis(o.poloziek)}</b> pol. · <b>${cis(o.metre,1)}</b> m</span>
+    <span class="rk-o">${esc(d)} ›</span></div>`;
+}
 function vykresliRekordy(){
   const e = data.extremy || {};
   const p = top3.poloziek || [], m = top3.metre || [];
+  const sum = jeSpravca() && Array.isArray(top3.suma) && top3.suma.length ? top3.suma : null;
   const skup = (nadpis, pole) => `<div class="rk-box"><div class="rk-hl">${nadpis}</div>${pole.length ? pole.map((o,i)=>riadokRekordu(o,i+1)).join('') : '<div class="rk-nic">Nič.</div>'}</div>`;
-  $('#extremy').innerHTML = `<div class="rk-mriezka">${skup('Najviac položiek', p)}${skup('Najviac metrov', m)}</div>
+  const skupSum = sum ? `<div class="rk-box rk-suma"><div class="rk-hl">Najvyššia suma <small style="font-weight:400;text-transform:none;letter-spacing:0">(bez DPH, s dopravou)</small></div>${sum.map((o,i)=>riadokSumy(o,i+1)).join('')}</div>` : '';
+  $('#extremy').innerHTML = `<div class="rk-mriezka${sum ? ' tri' : ''}">${skup('Najviac položiek', p)}${skup('Najviac metrov', m)}${skupSum}</div>
     <div class="rk-priemer"><span>Priemerná objednávka</span><b>${cis(e.priemPoloziek,1)}</b> pol. · <b>${cis(e.priemMetrov,1)}</b> m</div>`;
 }
 
 async function nacitajTop3(){
   try{
     const vol = (podla) => rpc('dash_top3', {p_od: obdobie.od, p_do: obdobie.do, p_podla: podla}).catch(() => []);
-    const [a,b] = await Promise.all([vol('poloziek'), vol('metre')]);
-    top3 = { poloziek: a || [], metre: b || [] };
-  }catch(_e){ top3 = { poloziek: [], metre: [] }; }
+    const volSum = () => jeSpravca() ? rpc('dash_top3_suma', {p_kod: localStorage.getItem('trh_kod') || '', p_od: obdobie.od, p_do: obdobie.do}).catch(() => []) : Promise.resolve([]);
+    const [a,b,c] = await Promise.all([vol('poloziek'), vol('metre'), volSum()]);
+    top3 = { poloziek: a || [], metre: b || [], suma: Array.isArray(c) ? c : [] };
+  }catch(_e){ top3 = { poloziek: [], metre: [], suma: [] }; }
   if(data) vykresliRekordy();
 }
 

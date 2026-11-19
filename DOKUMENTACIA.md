@@ -326,3 +326,12 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
   `obj_por` + `por_typ = 'opak'`. Cache `dash_cache` (kľúč `trzby|…`) bola po zmene vymazaná.
 - **Appka:** `opakNazov()` (text porovnania), `trPorTxt()` (vysvetlivka po ťuknutí), `trendObjObd()` (štítok objednávok
   krajiny pre viacdňové obdobia, len správca).
+
+## Rekordy obdobia: Najvyssia suma (len spravca, od 19. 11. 2026)
+- Tretia karta v Rekordoch obdobia: 3 objednavky s najvyssou sumou za vybrane obdobie (bez DPH, vratane dopravy,
+  po odpocitani zlavy, v EUR kurzom ECB – rovnaky vypocet ako Trzby). Riadok: poradie, krajina, suma, polozky · m, datum ›;
+  klik otvori detail objednavky.
+- DB: `dash_top3_suma(p_kod, p_od, p_do)` overi spravcu (`je_spravca`) a vola `dash_top3_suma_vypocet` cez `dash_cache_volaj`
+  (cache kluc `top3suma|od|do`, rok sa pocita ~3 s, potom z cache). `dash_top3_suma_vypocet` nie je pristupna zvonka.
+- Appka: `riadokSumy()`, `vykresliRekordy()`, `nacitajTop3()`. Na PC 640–1000 px je karta na celu sirku pod dvoma ostatnymi,
+  nad 1000 px tri vedla seba.
