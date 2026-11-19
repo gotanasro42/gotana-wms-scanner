@@ -333,5 +333,4 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
   klik otvori detail objednavky.
 - DB: `dash_top3_suma(p_kod, p_od, p_do)` overi spravcu (`je_spravca`) a vola `dash_top3_suma_vypocet` cez `dash_cache_volaj`
   (cache kluc `top3suma|od|do`, rok sa pocita ~3 s, potom z cache). `dash_top3_suma_vypocet` nie je pristupna zvonka.
-- Appka: `riadokSumy()`, `vykresliRekordy()`, `nacitajTop3()`. Na PC 640–1000 px je karta na celu sirku pod dvoma ostatnymi,
-  nad 1000 px tri vedla seba.
+- Appka: `riadokSumy()`, `vykresliRekordy()`, `nacitajTop3()`. Na PC je karta vzdy na celu sirku pod dvoma ostatnymi (3 vedla seba boli prilis uzke a orezane).
