@@ -2477,9 +2477,10 @@ function odchylka(dni, jeDnes){
   if(!(priem > 0)) return null;
   return { teraz, priem, kedy, pct: Math.round((teraz - priem) / priem * 100) };
 }
-function znackaZmeny(z, minPriem){
+function znackaZmeny(z, minPriem, vys){
   if(!z || z.priem < (minPriem||0)) return '';
-  return z.pct >= 0 ? `<span class="odch hore">↑ +${z.pct} %</span>` : `<span class="odch dole">↓ ${z.pct} %</span>`;
+  const v = vys ? ` data-vys="${esc(vys)}"` : '';
+  return z.pct >= 0 ? `<span class="odch hore"${v}>↑ +${z.pct} %</span>` : `<span class="odch dole"${v}>↓ ${z.pct} %</span>`;
 }
 /* štítok objednávok krajiny pre viacdňové obdobie (7 dní, 30 dní): oproti priemeru predošlých období */
 function trendObjObd(teraz, t){
@@ -2495,7 +2496,7 @@ function trendKrajiny(dni, jeDnes, teraz){
   const z = odchylka(dni, jeDnes);
   const vys = z ? ` data-vys="${esc(`Objednávky ${jeDnes ? 'dnes do ' + (sedem && sedem.cas) : 'v tento deň'}: <b>${cis(z.teraz)}</b><br>oproti priemeru ${z.kedy === 'v predošlých dňoch' ? 'predošlých dní' : 'posledných 8 ' + DNI_GEN[new Date(dni[dni.length - 1].den + 'T12:00').getDay()]}${jeDnes ? ' do rovnakej hodiny' : ''}: <b>${cis(z.priem, z.priem < 10 ? 1 : 0)}</b>`)}"` : '';
   if(!z){
-    return teraz > 0 ? {trieda:'tr-hore', html:'<span class="odch hore">nové</span>'} : null;
+    return teraz > 0 ? {trieda:'tr-hore', html:'<span class="odch hore" data-vys="Krajina v porovnávaných dňoch nemala žiadne objednávky, preto sa percento nedá vypočítať – je označená ako <b>nové</b>.">nové</span>'} : null;
   }
   if(z.pct >= 10) return {trieda:'tr-hore', html:`<span class="odch hore"${vys}>↑ +${z.pct} %</span>`};
   if(z.pct <= -10) return {trieda:'tr-dole', html:`<span class="odch dole"${vys}>↓ ${z.pct} %</span>`};
@@ -2632,7 +2633,7 @@ function vykresliMinulyRok(){
   const rokTeraz = String(obdobie.do).slice(0,4), rokVtedy = String(m.do).slice(0,4);
   const riadok = (nazov, teraz, vtedy, des, jed) => {
     const a = Number(teraz)||0, b = Number(vtedy)||0;
-    const z = b > 0 ? znackaZmeny({pct: Math.round((a-b)/b*100), priem: b}) : '';
+    const z = b > 0 ? znackaZmeny({pct: Math.round((a-b)/b*100), priem: b}, 0, porTxt(`${nazov} ${rokTeraz}`, a, `rovnakému obdobiu v ${rokVtedy} (${obd}${m.jeDnes ? ' do ' + m.cas : ''})`, b, jed.trim())) : '';
     return `<span>${nazov}</span><span class="c">${cis(a,des)}${jed}</span><span class="s">${cis(b,des)}${jed}</span><span class="z">${z}</span>`;
   };
   el.innerHTML = `<div class="mr"><div class="mr-t">
@@ -2678,6 +2679,11 @@ function opakNazov(d, p, kratko){
   if(o.krok === 7 && dl === 7) return (kratko ? 'Priemer' : 'priemeru') + ` ${o.n} predošlých týždňov` + rozsah;
   if(o.krok === 7) return (kratko ? 'Priemer' : 'priemeru') + ` rovnakých dní v ${o.n} predošlých týždňoch` + rozsah;
   return (kratko ? 'Priemer' : 'priemeru') + ` ${o.n} predošlých ${dl}-dňových období` + rozsah;
+}
+/* všeobecná vysvetlivka: čo, teraz, s čím (popis), vtedy */
+function porTxt(co, teraz, popis, por, jed, pozn){
+  const f = v => jed === '€' ? eur(v, v < 100 ? 2 : 0) : jed === '%' ? cis(v, 1) + ' %' : cis(v, v < 10 && v % 1 ? 1 : 0) + (jed ? ' ' + jed : '');
+  return `${co}: <b>${f(teraz)}</b><br>oproti ${popis}: <b>${f(por)}</b>${pozn ? '<br>' + pozn : ''}`;
 }
 function trPorTxt(co, teraz, por, jed){
   const d = trzby || {}, p = d.porovnanie || {};
@@ -2732,11 +2738,11 @@ function vykresliTrzby(){
   $('#heroTrzbaH').textContent = cis(s.trzba);
   $('#heroTrzbaZ').innerHTML = hlavneZ ? trZnacka(s.trzba, hlavneZ.trzba, trPorTxt('Tržba', s.trzba, hlavneZ.trzba, '€')) : '';
   /* zbalené: v tlačidle len suma; obsah (aj graf) sa vykreslí až po rozbalení, dáta sú už načítané */
-  $('#trSum').innerHTML = `<b>${eur(s.trzba)}</b>${hlavneZ ? ' ' + trZnacka(s.trzba, hlavneZ.trzba) : ''}`;
+  $('#trSum').innerHTML = `<b>${eur(s.trzba)}</b>${hlavneZ ? ' ' + trZnacka(s.trzba, hlavneZ.trzba, trPorTxt('Tržba', s.trzba, hlavneZ.trzba, '€')) : ''}`;
   if($('#trzby').hidden){ if(data) vykresliKrajiny(); return; }
   /* porovnania */
   let por = '';
-  const riadok = (nazov, x) => x ? `<span class="h">${nazov}</span><span class="c">${eur(x.trzba)}</span><span class="z">${trZnacka(s.trzba, x.trzba)}</span>` : '';
+  const riadok = (nazov, x) => x ? `<span class="h">${nazov}</span><span class="c">${eur(x.trzba)}</span><span class="z">${trZnacka(s.trzba, x.trzba, `${d.jeDnes ? 'Tržba dnes do ' + esc(p.cas) : 'Tržba za ' + trObd(d.od, d.do)}: <b>${eur(s.trzba)}</b><br>${nazov}: <b>${eur(x.trzba)}</b>`)}</span>` : '';
   if(d.jeDnes){
     const dow = new Date(d.do + 'T12:00').getDay();
     por = `<span class="h">Dnes do ${esc(p.cas)}</span><span class="c">${eur(s.trzba)}</span><span class="z"></span>`
@@ -2761,7 +2767,7 @@ function vykresliTrzby(){
         <div><b>${eur(s.doprava)}</b><span>Doprava</span></div>
       </div>
       ${trMarzaHtml(d)}
-      <div class="tr-pozn">Zľavy kupónmi: <b>${eur(s.zlava)}</b>${priemPor && priemPor.priemer ? ` · priemerná obj. ${priemNazov}: ${eur(priemPor.priemer, 2)} ${trZnacka(s.priemer, priemPor.priemer)}` : ''}${s.bezCeny ? ` · ${cis(s.bezCeny)} obj. ešte čaká na cenu` : ''}</div>
+      <div class="tr-pozn">Zľavy kupónmi: <b>${eur(s.zlava)}</b>${priemPor && priemPor.priemer ? ` · priemerná obj. ${priemNazov}: ${eur(priemPor.priemer, 2)} ${trZnacka(s.priemer, priemPor.priemer, trPorTxt('Priemerná objednávka', s.priemer, priemPor.priemer, '€'))}` : ''}${s.bezCeny ? ` · ${cis(s.bezCeny)} obj. ešte čaká na cenu` : ''}</div>
       <div class="tr-porov">${por}</div>
     </div>
     <div class="tr-graf-obal" id="trGrafObal"></div>`;
@@ -2807,6 +2813,14 @@ function trMarzaOkna(od, dd){
   }
   return {dl, jeMes, okna};
 }
+function mzVysTxt(co, teraz, priem, hist, dl, jeMes, dow, jeDnes){
+  const n = hist.length, rozsah = ` (${trObd(hist[0].od, hist[n - 1].do)})`;
+  const popis = dl === 1 ? `priemeru posledných ${n} ${DNI_GEN[dow]}` + rozsah
+    : jeMes ? `priemeru ${n} predošlých mesiacov` + rozsah
+    : dl === 7 ? `priemeru ${n} predošlých týždňov` + rozsah
+    : `priemeru ${n} predošlých období po ${dl} dní` + rozsah;
+  return porTxt(co + (jeDnes ? ' (dnes zatiaľ)' : ''), teraz, popis, priem, '%', `Rozdiel je v percentuálnych bodoch (b.): ${cis(teraz, 1)} − ${cis(priem, 1)}.`);
+}
 function trMarzaHistHtml(d){
   const m = d.marza;
   if(!jeSpravca() || !m || !(+m.sNakladom > 0) || m.pct == null) return '';
@@ -2829,7 +2843,7 @@ function trMarzaHistHtml(d){
     : jeMes ? `Predošlé mesiace (${hist.length})` : dl === 7 ? `Predošlé týždne (${hist.length})` : `Predošlé obdobia po ${dl} dní (${hist.length})`;
   const rozdiel = teraz - priem;
   const zn = Math.abs(rozdiel) < 0.05 ? '<span class="mz-zn">= rovnako</span>'
-    : rozdiel > 0 ? `<span class="odch hore">↑ +${cis(rozdiel, 1)} b.</span>` : `<span class="odch dole">↓ −${cis(-rozdiel, 1)} b.</span>`;
+    : rozdiel > 0 ? `<span class="odch hore" data-vys="${esc(mzVysTxt('Hrubá marža tovaru', teraz, priem, hist, dl, jeMes, dow, d.jeDnes))}">↑ +${cis(rozdiel, 1)} b.</span>` : `<span class="odch dole" data-vys="${esc(mzVysTxt('Hrubá marža tovaru', teraz, priem, hist, dl, jeMes, dow, d.jeDnes))}">↓ −${cis(-rozdiel, 1)} b.</span>`;
   let trend = '';
   if(hist.length >= 5){
     const nove = hist.slice(-3), stare = hist.slice(0, -3);
@@ -2920,7 +2934,7 @@ function trInfo(sk, i){
   const neuplny = trKrok !== 'dni' && x.dni && ((trKrok === 'tyzdne' && x.dni < 7) || (trKrok === 'mesiace' && x.do.slice(8) !== String(new Date(+x.od.slice(0,4), +x.od.slice(5,7), 0).getDate())));
   const doCasu = trzby.jeDnes && x.do === trzby.do && trzby.porovnanie && trzby.porovnanie.cas ? ` <small>(do ${esc(trzby.porovnanie.cas)})</small>` : '';
   $('#trInfo').innerHTML = `${esc(nazov)}${neuplny ? ' <small>(neúplné)</small>' : ''}${doCasu}: <b>${eur(x.trzba)}</b> · ${cis(x.obj)} obj. · priem. ${eur(x.obj ? x.trzba / x.obj : 0, 2)}`
-    + (x.rok > 0 ? ` · pred rokom <b>${eur(x.rok)}</b> ${trZnacka(x.trzba, x.rok)}` : '');
+    + (x.rok > 0 ? ` · pred rokom <b>${eur(x.rok)}</b> ${trZnacka(x.trzba, x.rok, porTxt(`Tržba – ${nazov}${trzby.jeDnes && x.do === trzby.do && trzby.porovnanie && trzby.porovnanie.cas ? ' (do ' + trzby.porovnanie.cas + ')' : ''}`, x.trzba, 'rovnakému obdobiu pred rokom', x.rok, '€'))}` : '');
 }
 function vykresliTrKrajiny(){
   const k = (trzby && trzby.krajiny) || [];
@@ -3832,7 +3846,7 @@ async function nacitajHtTrzby(){
   if(!d || d.chyba){ $('#htTrzby').innerHTML = ''; return; }
   const t = d.typy || {}, ht = t.HT || {trzba:0, obj:0, pred:0}, hf = t.HF || {trzba:0, obj:0, pred:0};
   const dnes = od === dd && dd === den(new Date());
-  const por = x => (!dnes && d.predOk) ? `<div class="pod">predtým ${cis(x.pred)} € ${trZnacka(x.trzba, x.pred)}</div>` : '';
+  const por = (x, nm) => (!dnes && d.predOk) ? `<div class="pod">predtým ${cis(x.pred)} € ${trZnacka(x.trzba, x.pred, porTxt(`Tržba ${nm} za ${trObd(od, dd)}`, x.trzba, `rovnako dlhému obdobiu tesne predtým`, x.pred, '€'))}</div>` : '';
   const otv = htTrOtv();
   $('#htTrzby').innerHTML = `
     <button type="button" class="tr-prepni" id="htTrPrepni" aria-expanded="${otv}" aria-controls="htTrTelo">
@@ -3841,8 +3855,8 @@ async function nacitajHtTrzby(){
     </button>
     <div id="htTrTelo"${otv ? '' : ' hidden'}>
     <div class="ht-tr">
-      <div><div class="typ">HT · hotový tovar</div><div class="velke">${cis(ht.trzba)} €</div><div class="pod">${cis(ht.obj)} obj. · priem. ${eur(ht.obj ? ht.trzba / ht.obj : 0, 2)}</div>${por(ht)}</div>
-      <div class="hf"><div class="typ">HF · od dodávateľa</div><div class="velke">${cis(hf.trzba)} €</div><div class="pod">${cis(hf.obj)} obj. · priem. ${eur(hf.obj ? hf.trzba / hf.obj : 0, 2)}</div>${por(hf)}</div>
+      <div><div class="typ">HT · hotový tovar</div><div class="velke">${cis(ht.trzba)} €</div><div class="pod">${cis(ht.obj)} obj. · priem. ${eur(ht.obj ? ht.trzba / ht.obj : 0, 2)}</div>${por(ht, 'HT')}</div>
+      <div class="hf"><div class="typ">HF · od dodávateľa</div><div class="velke">${cis(hf.trzba)} €</div><div class="pod">${cis(hf.obj)} obj. · priem. ${eur(hf.obj ? hf.trzba / hf.obj : 0, 2)}</div>${por(hf, 'HF')}</div>
     </div>
     <div class="tr-pozn-p">Spolu ${eur(+ht.trzba + +hf.trzba)}${dnes ? ' · dnes zatiaľ, bez porovnania' : (d.predOk ? ' · porovnanie s rovnako dlhým obdobím predtým' : '')}. Priemer = tržba Hometextilu na objednávku, v ktorej bol.</div>
     <div id="htTrDni">${otv ? htTrDniHtml(d) : ''}</div>
@@ -3934,14 +3948,15 @@ function htMarzaHtml(){
     hlava = `<div class="tr-marza"><span class="t">Hrubá marža Hometextilu</span><b>${cis(m.tn - m.n)} €</b><span class="pct">${cis(m.pct, 1)} %</span>
       <span class="poz">Tržba HT + HF ${eur(m.tn)} − nákup ${eur(m.n)}${zahrnaDnes ? ' (dnešok doteraz)' : ''}. Doprava nie je započítaná.</span>`;
     const {dl, jeMes, okna} = trMarzaOkna(od, dd);
-    const h = okna.filter(w => w.od >= '2026-01-01' && w.do <= htDni.do).map(w => htMzSucet(w.od, w.do)).filter(x => x.pct != null);
+    const hOkna = okna.filter(w => w.od >= '2026-01-01' && w.do <= htDni.do).filter(w => htMzSucet(w.od, w.do).pct != null);
+    const h = hOkna.map(w => htMzSucet(w.od, w.do));
     if(h.length){
       const priem = h.reduce((a, x) => a + x.pct, 0) / h.length, roz = m.pct - priem;
       const dow = new Date(dd + 'T12:00').getDay();
       const nazov = dl === 1 ? `${DNI_KR[dow].charAt(0).toUpperCase() + DNI_KR[dow].slice(1)} (posl. ${h.length})`
         : jeMes ? `Predošlé mesiace (${h.length})` : dl === 7 ? `Predošlé týždne (${h.length})` : `Predošlé obdobia po ${dl} dní (${h.length})`;
       const zn = Math.abs(roz) < 0.05 ? '<span class="mz-zn">= rovnako</span>'
-        : roz > 0 ? `<span class="odch hore">↑ +${cis(roz, 1)} b.</span>` : `<span class="odch dole">↓ −${cis(-roz, 1)} b.</span>`;
+        : roz > 0 ? `<span class="odch hore" data-vys="${esc(mzVysTxt('Hrubá marža Hometextilu', m.pct, priem, hOkna, dl, jeMes, dow, zahrnaDnes))}">↑ +${cis(roz, 1)} b.</span>` : `<span class="odch dole" data-vys="${esc(mzVysTxt('Hrubá marža Hometextilu', m.pct, priem, hOkna, dl, jeMes, dow, zahrnaDnes))}">↓ −${cis(-roz, 1)} b.</span>`;
       hist = `<div class="mz-hl"><span>${esc(nazov)}: priemer <b>${cis(priem, 1)} %</b> · teraz <b>${cis(m.pct, 1)} %</b></span>${zn}</div>`;
     }
   }
@@ -3970,7 +3985,7 @@ function htTrDniHtml(d){
     const rd = dni.slice(0, -1).filter(x => new Date(x.den + 'T12:00').getDay() === dow).slice(-8);
     if(rd.length){
       const pr = rd.reduce((a, x) => a + x.obj, 0) / rd.length;
-      hl = `<div class="mz-hl ht-tr-hl"><span>${DNI_KR[dow].charAt(0).toUpperCase() + DNI_KR[dow].slice(1)} (posl. ${rd.length}): priemer <b>${cis(pr)} €</b> · ${jeDnes ? 'dnes zatiaľ' : 'teraz'} <b>${cis(posl.obj)} €</b></span>${jeDnes ? '' : trZnacka(posl.obj, pr)}</div>`;
+      hl = `<div class="mz-hl ht-tr-hl"><span>${DNI_KR[dow].charAt(0).toUpperCase() + DNI_KR[dow].slice(1)} (posl. ${rd.length}): priemer <b>${cis(pr)} €</b> · ${jeDnes ? 'dnes zatiaľ' : 'teraz'} <b>${cis(posl.obj)} €</b></span>${jeDnes ? '' : trZnacka(posl.obj, pr, porTxt(`Tržba HT + HF ${trDatum(posl.den, true)}`, posl.obj, `priemeru posledných ${rd.length} ${DNI_GEN[dow]} (${trObd(rd[0].den, rd[rd.length - 1].den)})`, pr, '€'))}</div>`;
     }
   }
   return `${hl}${grafOkno('__htTr', dni, jeDnes, null, {eur: true, novsie: nov})}

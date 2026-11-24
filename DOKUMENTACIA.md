@@ -334,3 +334,8 @@ Skladova appka -> tlacidlo POCITADLO ROLIEK (pod Skenerom kobercov). Nic sa neza
 - DB: `dash_top3_suma(p_kod, p_od, p_do)` overi spravcu (`je_spravca`) a vola `dash_top3_suma_vypocet` cez `dash_cache_volaj`
   (cache kluc `top3suma|od|do`, rok sa pocita ~3 s, potom z cache). `dash_top3_suma_vypocet` nie je pristupna zvonka.
 - Appka: `riadokSumy()`, `vykresliRekordy()`, `nacitajTop3()`. Na PC je karta vzdy na celu sirku pod dvoma ostatnymi (3 vedla seba boli prilis uzke a orezane).
+
+## Vysvetlivky ku všetkým percentuálnym štítkom (24. 11. 2026)
+- Každý štítok zmeny (↑/↓ %, „b.“, „nové“) má po ťuknutí vysvetlivku: aktuálna hodnota, s čím sa porovnáva (obdobie/priemer a dátumy) a porovnávaná hodnota.
+- Doplnené: zbalený riadok Tržby, riadky porovnaní tržby, priemerná objednávka, hrubá marža tovaru (b. = percentuálne body), štítok „pred rokom“ v grafe tržieb, Oproti minulému roku, Hometextil (tržba HT/HF, marža, denný priemer), štítok „nové“ v Krajinách.
+- Kód: `porTxt()` (všeobecný text), `mzVysTxt()` (marža), `trZnacka(a, b, vys)` a `znackaZmeny(z, min, vys)` berú text vysvetlivky; zobrazenie rieši spoločný `[data-vys]` handler.
